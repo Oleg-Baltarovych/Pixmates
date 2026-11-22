@@ -37,6 +37,8 @@ function main(): void {
     app.quit();
     return;
   }
+  // Compat mode (S3, ADR 007): software compositing for GPUs that show black instead of transparency. Before ready.
+  if (process.argv.includes('--compat-mode')) app.disableHardwareAcceleration();
   app.setAppUserModelId(APP_ID);
   // Must happen before ready: pages load from app://renderer/<role>/index.html, not file://.
   protocol.registerSchemesAsPrivileged([APP_SCHEME_PRIVILEGES]);

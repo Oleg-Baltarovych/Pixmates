@@ -10,7 +10,7 @@ import { createInterface } from 'node:readline';
 
 // Memory is checked on the private-bytes sum (avg) for now; working set is reported alongside. The final metric is
 // decided in ADR 007.
-const BUDGET = { cpuPercent: 2, memoryMb: 200 } as const;
+const BUDGET = { cpuPercent: 2, memoryMb: 280 } as const; // ADR 007: private-bytes sum, avg
 /** Every child-process call is bounded (rules/security.md, tools/ exception). */
 const TIMEOUT_MS = { build: 10 * 60_000, short: 30_000 } as const;
 const root = path.resolve(import.meta.dirname, '..');

@@ -16,13 +16,13 @@ pure behavior core in `src/core` · Zustand (renderer view state) · zod (IPC, m
 
 ## Commands
 > Keep in sync with `package.json` (`/sync-context`). Planned (not wired yet): `pnpm sprites` (M-ART), `pnpm eval` (M2), `pnpm dist` NSIS + `pnpm e2e` (M6).
-- `pnpm dev` — electron-vite dev (HMR for renderers, main restarts); dev-only switches `--dev-windows`, `--capture-stage`
+- `pnpm dev` — electron-vite dev (HMR for renderers, main restarts); dev-only switches `--dev-windows`, `--capture-stage`. App flag `--compat-mode` (any build) = software rendering for GPUs that show black instead of transparency
 - `pnpm typecheck && pnpm test && pnpm lint && pnpm format:check` — must be green before reporting a task done (typecheck = 6 TS projects: core, main, preload, renderer, tools, tests)
 - `pnpm test:coverage` — Vitest + v8 coverage (core ≥ 90%)
 - `pnpm format` — Prettier write
 - `pnpm build` — electron-vite production build into `out/` (pages served from `app://renderer/...`)
 - `pnpm dist:dir` — build + `electron-builder --dir` (unpacked app with fuses in `release/win-unpacked/`, no installer, no publish)
-- `pnpm perf` — builds `dist:dir`, launches the packaged app with a temp profile, samples all processes 30 s warm-up + 120 s → `reports/perf/<date>.md`; verdict on private-bytes avg until ADR 007 fixes the metric (SPEC §1). Run plugged in, with no `pnpm dev` instance open
+- `pnpm perf` — builds `dist:dir`, launches the packaged app with a temp profile, samples all processes 30 s warm-up + 120 s → `reports/perf/<date>.md`; verdict: CPU < 2 % and private-bytes sum avg ≤ 280 MB (ADR 007, SPEC §1). Run plugged in, with no `pnpm dev` instance open
 - `pnpm security` — `pnpm audit --prod --audit-level high`
 
 ## Non-negotiable rules
