@@ -1,0 +1,27 @@
+node_modules/
+out/
+dist/
+release/
+coverage/
+reports/
+test-results/
+playwright-report/
+*.log
+
+# generated character sheets (pnpm sprites)
+resources/characters/
+
+# owner's personal character packs — never committed or bundled (ADR 005)
+skins-local/
+
+# secrets and signing
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.p8
+
+.claude/settings.local.json
+.DS_Store
+Thumbs.db

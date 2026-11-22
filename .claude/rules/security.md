@@ -1,0 +1,56 @@
+---
+paths:
+  - "src/main/**"
+  - "src/preload/**"
+  - "src/shared/ipc.ts"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - ".npmrc"
+  - "electron.vite.config.ts"
+  - "electron-builder.yml"
+  - ".github/workflows/**"
+  - ".github/dependabot.yml"
+---
+# Security rules — Electron desktop app with local LLM tools and local servers (SPEC §10; ADR 001, 003, 006)
+
+Threats that matter here:
+- a compromised renderer escalating to the OS;
+- malicious character packs;
+- prompt injection via system data, hooks or MCP;
+- local servers reachable from web pages (DNS rebinding);
+- leaked API keys;
+- supply chain (npm native modules, GitHub Actions);
+- update tampering.
+
+- **Windows:**
+  - `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, `webSecurity: true`;
+  - no `webviewTag`, `allowRunningInsecureContent` or `experimentalFeatures`;
+  - strict CSP (no `unsafe-eval`; `unsafe-inline` only for styles if unavoidable, documented);
+  - deny `will-navigate`, `setWindowOpenHandler` → deny;
+  - `session.setPermissionRequestHandler` denies by default.
+- **No dynamic code:** no `eval`, `new Function` or `executeJavaScript` with dynamic strings. `shell.openExternal` only for `https:` URLs on the allow-list.
+- **Processes:** no `child_process` except the allow-listed read-only `git`/`gh` calls (`execFile`, argument array, no shell, timeout). No AI tool can reach it.
+- **IPC:** zod-validated, sender-checked, minimal preload API (see `ipc.md`).
+- **Local servers:** `127.0.0.1` only, token, `Origin`/`Host` checks, size and rate limits (see `dev.md`). Never bind `0.0.0.0`.
+- **Packs:** see `characters.md`. Zip-slip, symlinks, magic bytes and limits are checked; static assets only.
+- **Secrets:**
+  - API keys and tokens only via `safeStorage`;
+  - never in `electron-store` plain text, logs, crash reports, IPC to renderers, fixtures or the repo;
+  - code-signing certificates never in the repo.
+  - CI runs gitleaks.
+- **Supply chain:**
+  - exact versions; lockfile committed; `pnpm install --frozen-lockfile` in CI;
+  - lifecycle scripts blocked except for an explicit allowlist of native modules (`electron`, the SQLite driver if native), each with a reason;
+  - new dependency → one-line reason + maintainer, downloads, last release and install scripts checked;
+  - `pnpm audit --prod` has no high/critical; keep `minimumReleaseAge`.
+- **Packaging:**
+  - Electron fuses: `RunAsNode` off, `EnableNodeOptionsEnvironmentVariable` off, `EnableNodeCliInspectArguments` off, `EnableEmbeddedAsarIntegrityValidation` on, `OnlyLoadAppFromAsar` on;
+  - devtools disabled in production;
+  - electron-updater over https from GitHub Releases only.
+- **GitHub Actions:**
+  - third-party actions pinned by full SHA (with a tag comment);
+  - `permissions: contents: read` by default, widened per job only (release: `contents: write`);
+  - no `pull_request_target`; no untrusted `${{ }}` inside `run:`;
+  - Dependabot for npm + actions.
+- **Review:** changes under these paths → `electron-security-reviewer`. Before each release → `/release-check`.
