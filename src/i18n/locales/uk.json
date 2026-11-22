@@ -1,0 +1,18 @@
+{
+  "tray.tooltip": "Pixmates",
+  "tray.show": "Показати персонажа",
+  "tray.hide": "Сховати персонажа",
+  "tray.chat": "Чат",
+  "tray.settings": "Налаштування",
+  "tray.layer": "Шар",
+  "tray.layer.onTop": "Поверх усіх вікон",
+  "tray.layer.desktop": "Лише на робочому столі",
+  "tray.size": "Розмір",
+  "tray.size.s": "Малий",
+  "tray.size.m": "Середній",
+  "tray.size.l": "Великий",
+  "tray.size.bigger": "Більше",
+  "tray.size.smaller": "Менше",
+  "tray.quit": "Вийти",
+  "hotkey.conflict": "Хоткей {{accelerator}} зайнятий іншою програмою"
+}
