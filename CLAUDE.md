@@ -15,16 +15,15 @@ pure behavior core in `src/core` · Zustand (renderer view state) · zod (IPC, m
 `@modelcontextprotocol/server` · electron-store + SQLite · i18next (uk, en) · electron-builder (NSIS) · Vitest · Playwright `_electron` · ESLint + Prettier. Windows 11 only in v1.
 
 ## Commands
-> Planned until M0 scaffold lands — keep this list in sync with `package.json` (`/sync-context`).
-- `pnpm dev` — electron-vite dev (HMR for renderers, main restarts)
-- `pnpm typecheck && pnpm test && pnpm lint` — must be green before reporting a task done
-- `pnpm format` / `pnpm format:check` — Prettier
-- `pnpm sprites` — rig + parts in `assets-src/` → `resources/characters/<id>/` sheets + manifest (deterministic, prints hashes); `pnpm sprites:sheet <id>` → contact sheet in `reports/sprites/`
-- `pnpm eval [--provider mock|ollama|anthropic] [--case <glob>]` — LLM eval suite → `reports/evals/<date>/`; `mock` runs in CI
-- `pnpm build` — production build; `pnpm dist` — electron-builder NSIS installer into `release/`
-- `pnpm perf` — launches the packaged app, measures idle CPU/RAM over all processes (active character) → `reports/perf/<date>.md`; fails over budget (SPEC §1)
-- `pnpm e2e` — Playwright `_electron` smoke on the built app
-- `pnpm security` — `pnpm audit --prod --audit-level high` + Electron hardening checks
+> Keep in sync with `package.json` (`/sync-context`). Planned (not wired yet): `pnpm sprites` (M-ART), `pnpm eval` (M2), `pnpm dist` NSIS + `pnpm e2e` (M6).
+- `pnpm dev` — electron-vite dev (HMR for renderers, main restarts); dev-only switches `--dev-windows`, `--capture-stage`
+- `pnpm typecheck && pnpm test && pnpm lint && pnpm format:check` — must be green before reporting a task done (typecheck = 6 TS projects: core, main, preload, renderer, tools, tests)
+- `pnpm test:coverage` — Vitest + v8 coverage (core ≥ 90%)
+- `pnpm format` — Prettier write
+- `pnpm build` — electron-vite production build into `out/` (pages served from `app://renderer/...`)
+- `pnpm dist:dir` — build + `electron-builder --dir` (unpacked app with fuses in `release/win-unpacked/`, no installer, no publish)
+- `pnpm perf` — builds `dist:dir`, launches the packaged app with a temp profile, samples all processes 30 s warm-up + 120 s → `reports/perf/<date>.md`; verdict on private-bytes avg until ADR 007 fixes the metric (SPEC §1). Run plugged in, with no `pnpm dev` instance open
+- `pnpm security` — `pnpm audit --prod --audit-level high`
 
 ## Non-negotiable rules
 - If a task conflicts with the SPEC — stop and ask. Behaviour/architecture changes go into `docs/SPEC.md` + an ADR (`/adr`).
