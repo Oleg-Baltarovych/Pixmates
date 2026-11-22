@@ -10,3 +10,4 @@
 | 006 | [Dev companion: local hooks endpoint + MCP server](006-dev-companion.md) | Accepted |
 | 007 | Window strategy: stage overlay vs per-character window | Pending — M0 spike |
 | 008 | SQLite driver: `node:sqlite` vs `better-sqlite3` | Pending — M0 spike |
+| 009 | Frame size (48/64) and style direction for all-code art | Pending — M-ART spike |

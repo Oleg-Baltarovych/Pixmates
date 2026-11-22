@@ -97,7 +97,7 @@ Before installing, review the SKILL.md and any scripts, and pin a commit.
 
 | When | Tool | Install | Why |
 |---|---|---|---|
-| M0, M6 | **pedronauck/skills** — `electron-dev`, `electron-builder`, `electron-release` (MIT, markdown only) | `npx skills add pedronauck/skills/skills/curated --skill electron-dev` (same for the others) | electron-vite + IPC; NSIS, electron-updater, GitHub Releases |
+| M6 | **pedronauck/skills** — `electron-builder`, `electron-release` (MIT, markdown only; review first) | `npx skills add pedronauck/skills/skills/curated --skill electron-builder` | NSIS, electron-updater, GitHub Releases |
 | M2 | **ai-sdk** (Vercel, official) | `npx skills add https://github.com/vercel/ai --skill ai-sdk` | makes the agent read the docs bundled in `node_modules/ai/docs`, not memory |
 | M2 | **claude-api** | built into Claude Code | model ids, streaming, tool use, caching for the Anthropic provider |
 | M2 | **semgrep llm-security** (Semgrep Rules License, not OSI — use only) | `npx skills add semgrep/skills --skill llm-security` | OWASP LLM Top 10: prompt injection, excessive agency, output handling |
@@ -115,6 +115,7 @@ Rejected:
 - `security-guidance`: sends every diff to an LLM, duplicates our reviewers.
 - Third-party Ollama skills: unvetted; ai-sdk covers the provider.
 - XState / stately skills: we use our own state machine (ADR 002).
+- `pedronauck electron-dev` (reviewed 2026-11-22 at bba9fa3): it teaches the removed `enableRemoteModule` and a generic `invoke(channel)` preload, which contradicts `rules/ipc.md`.
 
 Not carried over from Cossack Kin:
 - `balance-designer`, `platform-reviewer` (no store or ads);

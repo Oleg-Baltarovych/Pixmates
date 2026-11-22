@@ -8,7 +8,7 @@ paths:
 ---
 # Release rules — SPEC §2, §12 (M6), §14; ADR 001
 
-- Target: Windows NSIS (x64; arm64 when tested). `appId` is `com.pixmates.app`, fixed after the first public release.
+- Target: Windows NSIS (x64; arm64 when tested). `appId` is `io.github.oleg-baltarovych.pixmates`, fixed after the first public release. Electron fuses are on from M0 (see `security.md`).
 - Versioning: SemVer, tag `vX.Y.Z`, `CHANGELOG.md` updated in the release PR.
 - Auto-update:
   - `electron-updater` with the GitHub provider;

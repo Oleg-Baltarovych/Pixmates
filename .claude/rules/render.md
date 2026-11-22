@@ -6,7 +6,7 @@ paths:
 
 - The stage draws the core's state and sends input (hover, click, drag, fling, petting circles). It makes no behaviour decisions.
 - Pixel discipline:
-  - integer scale (×2–×4);
+  - integer physical scale from `computeScale` (target DIP × scaleFactor / frameH, SPEC §3.3), sized so the sprite is exactly frameH × scale device px;
   - nearest filtering (`scaleMode: 'nearest'`), `roundPixels`, integer positions;
   - non-integer scaling only for deliberate squash/stretch.
 - Budget:

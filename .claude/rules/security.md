@@ -30,7 +30,8 @@ Threats that matter here:
   - deny `will-navigate`, `setWindowOpenHandler` → deny;
   - `session.setPermissionRequestHandler` denies by default.
 - **No dynamic code:** no `eval`, `new Function` or `executeJavaScript` with dynamic strings. `shell.openExternal` only for `https:` URLs on the allow-list.
-- **Processes:** no `child_process` except the allow-listed read-only `git`/`gh` calls (`execFile`, argument array, no shell, timeout). No AI tool can reach it.
+- **Processes:** no `child_process` in the app except the allow-listed read-only `git`/`gh` calls (`execFile`, argument array, no shell, timeout). No AI tool can reach it. Exception — dev tooling in `tools/` (not shipped): `tools/perf.ts` may run fixed commands (`pnpm dist:dir`, a fixed PowerShell sampling script, `taskkill` with an argument array) with no interpolated input and a timeout on every call.
+- **Renderer origin:** pages are served from a privileged custom scheme (`protocol.handle`, containment-checked paths inside `out/renderer`), not `file://`; fuse `grantFileProtocolExtraPrivileges: false`. Packaged builds quit on `--remote-debugging-port` / `--inspect*` switches. No default application menu (`Menu.setApplicationMenu(null)`).
 - **IPC:** zod-validated, sender-checked, minimal preload API (see `ipc.md`).
 - **Local servers:** `127.0.0.1` only, token, `Origin`/`Host` checks, size and rate limits (see `dev.md`). Never bind `0.0.0.0`.
 - **Packs:** see `characters.md`. Zip-slip, symlinks, magic bytes and limits are checked; static assets only.
