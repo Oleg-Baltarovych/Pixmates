@@ -1,0 +1,15 @@
+# Generated / byte-exact (mirrors .claude/hooks/format.mjs)
+out/
+release/
+coverage/
+reports/
+resources/characters/
+tests/fixtures/
+pnpm-lock.yaml
+test-results/
+playwright-report/
+
+# Hand-authored prose and agent tooling: not reformatted (also keeps the format hook off them)
+*.md
+docs/
+.claude/

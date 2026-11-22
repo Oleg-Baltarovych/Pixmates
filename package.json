@@ -1,0 +1,50 @@
+{
+  "name": "pixmates",
+  "productName": "Pixmates",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Windows desktop companions: original pixel-art characters that live on top of your windows.",
+  "license": "MIT",
+  "type": "module",
+  "main": "out/main/index.js",
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "dist:dir": "pnpm build && electron-builder --dir --publish never",
+    "perf": "node tools/perf.ts",
+    "typecheck": "tsc -p tsconfig.core.json && tsc -p tsconfig.main.json && tsc -p tsconfig.preload.json && tsc -p tsconfig.renderer.json && tsc -p tsconfig.tools.json && tsc -p tsconfig.tests.json",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "security": "pnpm audit --prod --audit-level high"
+  },
+  "dependencies": {
+    "i18next": "27.2.2",
+    "pixi.js": "8.23.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "@vitest/coverage-v8": "5.1.0",
+    "electron": "45.4.1",
+    "electron-builder": "26.18.0",
+    "electron-vite": "6.0.0",
+    "eslint": "10.15.0",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
+  }
+}

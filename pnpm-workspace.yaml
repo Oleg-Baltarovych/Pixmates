@@ -1,0 +1,18 @@
+# Supply-chain policy (plan M0-01, .claude/rules/security.md). Single-project workspace: this file only
+# carries settings. pnpm 12 rejects unknown keys here (ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS), so a typo
+# cannot silently drop a policy. Check with `pnpm config get <key>`.
+
+# Dependency lifecycle (build) scripts are blocked unless a package is listed here as `name: true` with a
+# one-line reason comment; `false` = reviewed and denied on purpose. No entry is `true`: electron@45 ships no
+# install script (checked at M0-01: its binary is fetched by `pnpm exec install-electron` or on first run).
+allowBuilds:
+  # Transitive via electron-builder-squirrel-windows; its `install` only picks a 7-Zip binary for the Squirrel
+  # target, which Pixmates does not build (NSIS only). Denied.
+  electron-winstaller: false
+
+# An unapproved build script fails the install instead of being skipped silently.
+strictDepBuilds: true
+
+# Do not resolve versions published less than 3 days ago (in minutes): time for the registry and the
+# community to catch a compromised release. Explicit, so pnpm also enforces it strictly (no silent excludes).
+minimumReleaseAge: 4320
