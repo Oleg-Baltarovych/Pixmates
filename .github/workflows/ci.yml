@@ -1,0 +1,116 @@
+# CI (plan M0-03, .claude/rules/security.md). Hardening: every third-party action is pinned by full commit SHA
+# (tag in the comment; Dependabot github-actions bumps both), read-only token, no pull_request_target, no secrets,
+# checkout without persisted credentials, no untrusted `${{ }}` inside `run:`.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # No `version` input: the action reads `packageManager` (pnpm@12.21.0) from package.json.
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # pnpm-workspace.yaml policy applies: blocked dependency build scripts, minimumReleaseAge.
+      # The Electron binary is not downloaded (electron@45 has no install script; nothing here runs it).
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm security
+
+      # Dev dependencies also run code in CI: the full audit is reported but does not block.
+      - name: pnpm audit (all deps, non-blocking)
+        id: audit_full
+        continue-on-error: true
+        run: pnpm audit --audit-level high
+      - name: Report full audit result
+        if: steps.audit_full.outcome == 'failure'
+        run: echo "::warning title=pnpm audit::high/critical advisories in dev dependencies — see the 'pnpm audit (all deps, non-blocking)' step"
+
+  build:
+    name: Build (Windows, unpacked)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      # electron-vite build + electron-builder --dir --publish never (electron-builder fetches its own Electron zip
+      # through @electron/get and flips the fuses).
+      - run: pnpm dist:dir
+      - name: Check the packaged layout
+        shell: pwsh
+        run: |
+          foreach ($p in 'release/win-unpacked/Pixmates.exe', 'release/win-unpacked/resources/app.asar') {
+            if (-not (Test-Path $p)) { Write-Error "missing $p"; exit 1 }
+          }
+
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    # gitleaks CLI from a pinned release, verified by SHA-256 (no third-party JS, no license secret). Bump: version +
+    # checksum from the release's gitleaks_<ver>_checksums.txt.
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gitleaks
+        run: |
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/$tarball" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$tarball"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP/gitleaks" gitleaks
+          "$RUNNER_TEMP/gitleaks/gitleaks" version
+
+      # gitleaks reads allowlists from the scanned repo; a change could hide a committed secret. Any such file must be
+      # added deliberately together with an edit to this step.
+      - name: Refuse in-repo gitleaks allowlists
+        run: |
+          for f in .gitleaks.toml .gitleaksignore; do
+            if [ -e "$f" ]; then echo "::error file=$f::in-repo gitleaks config is not allowed"; exit 1; fi
+          done
+
+      # Whole history; findings are redacted in the log.
+      - run: '"$RUNNER_TEMP/gitleaks/gitleaks" git --redact --no-banner --exit-code 1 .'
