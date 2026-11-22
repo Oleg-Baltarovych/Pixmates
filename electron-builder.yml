@@ -1,0 +1,33 @@
+# Packaging (plan M0-03, rules/release.md, rules/security.md). Unsigned in v1; NSIS + auto-update land in M6.
+# `pnpm dist:dir` builds release/win-unpacked/ only (used by CI `build` and `pnpm perf`).
+appId: io.github.oleg-baltarovych.pixmates # fixed after the first public release (D-9); = src/shared/app.ts
+productName: Pixmates
+executableName: Pixmates
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+asar: true
+# No native modules yet (the SQLite spike S2 may change this).
+npmRebuild: false
+# Ship only the UI languages (uk default, en) — smaller install.
+electronLanguages: [en-US, uk]
+# Electron fuses on from M0 (owner decision D-9). Key names verified against app-builder-lib 26.18.0
+# `FuseOptionsV1` (out/configuration.d.ts). Playwright `_electron` cannot drive a build with
+# `enableNodeCliInspectArguments: false`, so e2e (M6) runs on `out/` via the electron binary, not on release/.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  enableCookieEncryption: true
+  # Pages load from the privileged app:// scheme (src/main/windows/app-protocol.ts), not file://.
+  grantFileProtocolExtraPrivileges: false
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+publish: null

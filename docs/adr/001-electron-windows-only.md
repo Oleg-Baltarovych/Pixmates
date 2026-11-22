@@ -15,5 +15,5 @@ Electron (45.x at scaffold) with electron-vite, TypeScript and React. v1 targets
 
 ## Consequences
 - Positive: `setIgnoreMouseEvents(true, { forward: true })`; one language end to end; mature packaging (electron-builder, electron-updater).
-- Negative: higher RAM. The budget is ≤ 200 MB total (SPEC §1), measured on the packaged build with `pnpm perf`. Only the stage window stays alive.
+- Negative: higher RAM. The budget is ≤ 280 MB private-bytes sum (SPEC §1, ADR 007; originally 200 MB), measured on the packaged build with `pnpm perf`. Only the stage window stays alive.
 - Follow-ups: ADR 007 (window strategy) after the M0 spike; unsigned NSIS → SmartScreen note in README.

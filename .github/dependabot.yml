@@ -1,0 +1,30 @@
+# Dependency updates (plan M0-03, rules/security.md). Weekly; minor + patch bumps grouped into one PR per
+# ecosystem, majors stay separate PRs. pnpm's minimumReleaseAge (pnpm-workspace.yaml, 3 days) still applies
+# when CI installs, so a too-fresh version fails the PR instead of landing. Security updates are not
+# grouped and not delayed.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 3
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    groups:
+      actions-minor-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]

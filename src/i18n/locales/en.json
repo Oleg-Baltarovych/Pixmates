@@ -1,0 +1,18 @@
+{
+  "tray.tooltip": "Pixmates",
+  "tray.show": "Show character",
+  "tray.hide": "Hide character",
+  "tray.chat": "Chat",
+  "tray.settings": "Settings",
+  "tray.layer": "Layer",
+  "tray.layer.onTop": "On top of all windows",
+  "tray.layer.desktop": "Desktop only",
+  "tray.size": "Size",
+  "tray.size.s": "Small",
+  "tray.size.m": "Medium",
+  "tray.size.l": "Large",
+  "tray.size.bigger": "Bigger",
+  "tray.size.smaller": "Smaller",
+  "tray.quit": "Quit",
+  "hotkey.conflict": "Hotkey {{accelerator}} is taken by another app"
+}
