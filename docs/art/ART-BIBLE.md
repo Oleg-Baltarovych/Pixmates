@@ -1,14 +1,20 @@
-# Pixmates ART-BIBLE v0.1 (M-ART phase 1, anime style D-13)
+# Pixmates ART-BIBLE v0.5 (M-ART phase 2: ADR 009 numbers, anime soft only)
 
 The source of style for every built-in character (rules/art.md). v0 holds what the spike needs. v0.5 adds the
-numbers chosen in ADR 009 (frame size, style); v1 closes M-ART. All art is made by code (D-11): masks and geometry
+numbers chosen in ADR 009 (frame size, style) and the arm-over-torso rule (§3) with the goth recipe (§11.8); v1
+closes M-ART. All art is made by code (D-11): masks and geometry
 are authored in `assets-src/`, and procedural code is used only for material texture.
 
 ## 1. Grid and frame
-- Frame 48×48 or 64×64 (ADR 009 decides). Pivot at the feet: anchor (0.5, 1). The bottom row stays free for the outline.
+- Frame **48 × 56** (ADR 009): a 48 × 48 figure box (feet on row 46, row 47 free for the outline) plus 8 rows of
+  headroom on top, so horns, ears and the happy jump never clip. Row 0 stays transparent in every frame (builder
+  check). Manifests carry `scaleRef: 48`, so sizing follows the figure, not the frame (S/M/L ×3/×4/×5 at
+  1080p / 125 %). Pivot at the feet: anchor (0.5, 1); `sit_edge` pivots on the seat (per-animation `anchor`).
+  Rig details: `docs/art/RIG.md`.
 - Body axis on a pixel boundary (x = 24 in 48-units), so left and right mirror exactly.
 - Integer scale on screen (`computeScale`). Never resample art. Squash means inserting or removing whole rows.
-- One atlas per character: one row per animation, `origin` per animation in the manifest.
+- One atlas per character, strips shelf-packed (≤ 1024², ≈ 1008 × 336 for the 15 animations), `origin` per
+  animation in the manifest.
 
 ## 2. Light
 - One light from the top-left (`SUN` in `passes.ts`). Every shading pass uses it.
@@ -16,11 +22,15 @@ are authored in `assets-src/`, and procedural code is used only for material tex
 - Cast shadow and AO from part depth: under the chin, under the bib, behind the arms.
 
 ## 3. Outline and rim
-- Outline is coloured: the neighbour's own ramp, 2 steps darker (anime soft) or 3 steps (anime cel). Never `#000`. The ink ramp starts at a dark plum.
+- Outline is coloured: the neighbour's own ramp, 2 steps darker (anime soft). Never `#000`. The ink ramp starts at a dark plum.
 - Selective outline: one step lighter on the lit (top-left) side.
 - Internal lines appear only where materials meet and the part behind gets the line.
 - Rim light: the inner edge on the side away from the light gets 2 steps brighter (anime soft), so the sprite holds on dark wallpapers.
 - Outline, AA and rim run after compositing, on the whole figure, so part seams never show.
+- **Arm over torso (rig rule, art round 5).** Wherever an arm overlaps or touches the torso: (i) at least one value
+  step across the edge (the sleeve has its own ramp/tone, never the bodice tone); (ii) a 1-px separator in the
+  deepest outline tone (shade 0 of the sleeve ramp) on the sleeve px along the edge; (iii) ≥ 2 px of a contrasting
+  arm end (hand skin or cuff) at the tip. Measured per frame by `tests/unit/art/rig.test.ts` (RIG.md «Arm over torso»).
 
 ## 4. Palette and ramps
 - `assets-src/palettes/master.json`, swatch `docs/art/palette.png`. Each ramp has 5–7 tones with monotonic OKLab L and ≥ 15° hue drift: shadows move cool or purple, lights move warm. No pure black or white (tested).
@@ -42,11 +52,26 @@ are authored in `assets-src/`, and procedural code is used only for material tex
 - Happy: anticipation squash, then a jump with arms up, then a landing squash and a settle.
 - Secondary motion (locks, ribbons, tail) comes from a verlet chain: 2 warm-up loops, the residual spread over the loop, positions quantized to px. Loops must be seamless (tested).
 
-## 8. Mirroring (open, R4)
-- Runtime mirroring flips the top-left light. v0 proposal: accept the flip for walking left. If art-director flags it in phase 2, bake a facing row instead (2× atlas, still ≤ 1024×2048). ADR 009 decides.
+## 8. Mirroring (closed, R4)
+- Walking left uses the runtime mirror; the top-left light flips, which is accepted (plan M-ART phase 2). The
+  art-director judges a mirrored walk sheet in MA-27; if rejected, a baked facing row is an M1 follow-up (it still fits
+  ≤ 1024² with shelf packing).
 
 ## 9. Originality (ADR 005)
-- Own designs only. `maid` is an original horned demoness housekeeper: a chibi anime girl with copper hair in pointed clumps, thin ivory hook horns shading to plum at the base, teal dress, cream apron with scalloped lace, rose bow and ribbons, plum stockings, a thin plum tail with a pointed spade at knee height and amber eyes with round pupils. She has no signature costume or colour scheme from any existing character; in particular she must not read as a «dragon maid» (no thick scaled tail, no tan dragon horns, no slit pupils).
+- Own designs only. `maid` is an original horned demoness housekeeper: a chibi anime girl with lilac hair in pointed clumps, thin ivory hook horns shading to plum at the base, teal dress, cream apron with scalloped lace, rose bow and ribbons, plum stockings, a thin plum tail with a pointed spade at knee height and amber eyes with round pupils. She has no signature costume or colour scheme from any existing character; in particular she must not read as a «dragon maid» (no thick scaled tail, no tan dragon horns, no slit pupils).
+- **kitsune** (chibi fox-boy ninja, hyperactive braggart). Colourway (owner Q3): ash-silver fur, deep indigo garb,
+  teal scarf. Own traits: one oversized tail with a pale tip, a fox mask worn tilted on the side of the head, a short
+  scarf whose ends lag in motion. Forbidden: leaf or forehead-plate headband, whisker marks, orange jumpsuit, nine
+  tails, red-white shrine scheme.
+- **goth** (stylized pixel-anime goth girl, calm, ironic, warm to friends): long blue-black hair with bangs, all-black
+  gothic dress, lace choker, brown eyes. Own traits (owner Q4): a small garnet drop on the choker, a moth hair clip,
+  sleeves past the hands. Forbidden: red or heterochromatic eyes, clock or eyepatch motifs, twin-tails or drills,
+  scythe/halberd/umbrella props, white collar + braids, hood with a forehead gem, purple headband. A stylized
+  archetype, not a portrait: no tattoos or other identifying details, no reference images in the repo.
+- **Black cloth and hair rule** (R6): "black" is a lifted ramp (`hair_black` blue-black with a cool angel ring,
+  `cloth_black` desaturated plum-blue); its darkest tone is never `#000` (tested), the rim stays at 2 and the
+  selective outline is lighter, so the figure holds on a dark IDE (judged first on that backdrop).
+- Every new character passes an originality gate before its first sheet, and every art round re-checks it.
 
 ## 10. Beauty checklist (art-director and owner)
 1. The silhouette reads at real size on white and on dark.
@@ -81,7 +106,7 @@ highlights sit the same way in both eyes (never mirror them); the lash shape is 
 - 64: iris 6×7, pupil 2×3, lash 6 + a 3-px peak over the pupil + corner + up-out flick, sclera on both sides; eye
   block 8 rows starting 1 px lower than round 3 (fringe tips 2 px lower), so the eyes take about the same share of the
   face as at 48.
-- Iris per style: soft = 3 steps `c` → `i` → `I`; cel remaps `eye` to 2 tones (dark `c` top, flat `I` below).
+- Iris: 3 steps `c` → `i` → `I` (anime soft).
 - Brows stay hidden under the fringe in neutral (they read as a frown when fringe tips touch the lash); keep ≥ 1 skin
   row between fringe tips and the lash line.
 
@@ -89,11 +114,10 @@ highlights sit the same way in both eyes (never mirror them); the lash shape is 
 - Mouth minimal: calm symmetric smile = corners `x..x` + centre `XX` (4 px), never a v/cat mouth; keep ≥ 1 skin row
   above the chin (48: lifted 1 px in round 3). Happy: open 4-px `XXXX` + rose tongue.
 - Nose: none at 48; 1 skin-shadow px left of the axis at 64.
-- Blush per style (rig `face.cheeks`, under every emotion layer): **cel** = hard 2×1 `FF` block per cheek;
-  **soft** = `fFFf` with a dithered `f.f` row under it (AA edges). Hatching «/» moves to the FX intensified blush.
-- Forehead hair-shadow band: derived from the fringe by `withBand` (`maid.ts`): the first skin px under the hair in
-  every column becomes `z` (rows ≤ rig `band`, so it never touches the lash). Cel: one hard tone. Soft: plus a 1-px
-  AA step (`s`) under the band at staircase corners.
+- Blush (face library `cheeks`, under every expression): soft = `fFFf` with a dithered `f.f` row under it (AA edges). Hatching «/» moves to the FX intensified blush.
+- Forehead hair-shadow band: derived from the fringe by `withBand` (`rig/body.ts`): the first skin px under the hair in
+  every column becomes `z` (rows ≤ rig `band`, so it never touches the lash). Plus a 1-px AA
+  step (`s`) under the band at staircase corners.
 
 ### 11.4 Hair
 - Clumps with pointed tips: 4 fringe clumps, each 1 px narrower per row to a 1-px point, off-centre parting, split
@@ -107,23 +131,29 @@ highlights sit the same way in both eyes (never mirror them); the lash shape is 
 - «Angel ring»: a shine band 1 row (48) / 2 rows (64) on the crown, broken into one segment per clump, brightest on
   the lit left (`Y`), dimmer on the right (`y`), following the skull arc.
 
-### 11.5 Shading directions (spike axis, ADR 009 picks one)
-| | Anime cel (`spike-maid-*cel`) | Anime soft (`spike-maid-*soft`) |
-|---|---|---|
-| Tones per material | 2–3 with hard terminators: procedural px snap to ramp stops (`celSnap`), masks remap 6 → 3 tones | full 6–7-tone ramps, gentle light (2.0), texture dither 0.35 |
-| Outline | crisp, 3 steps below the neighbour, lighter on the lit side | 2 steps, lighter on the lit side, manual AA on staircases |
-| Rim | none | 2 steps on the side away from the light (dark wallpapers) |
-| AO | almost none (0.2) | soft (1.0) |
-| Face | flat skin, hard 1-tone fringe band, 2-tone iris, 2×1 blush block | cheek light (`e`/`E`), band + AA step, 3-step iris, AA/dithered blush |
-Eye shapes, ink and highlights are the same in both directions (the face must read the same); only the tone
-treatment above differs.
+### 11.5 Shading: anime soft only (ADR 009)
+The owner picked 48 soft in the blind lineup; the cel preset, `celSnap` and mask tone remaps were deleted (MA-22).
+One preset, `SOFT` in `assets-src/rig/style.ts`: full 6–7-tone ramps, gentle light 2.0, texture dither 0.35 (cloth
+only), soft AO 1.0, 2-step coloured outline lighter on the lit side, manual AA on staircases, 2-step rim on the side
+away from the light; faces keep cheek light (`e`/`E`), the band + AA step and the 3-step iris.
 
 ### 11.6 Emotion marks (FX, phase 2+)
 Drawn as FX sprites over the head, not in face layers: sweat drop (cream-outlined blue drop at the temple), anger
-vein (rose «#»-cross at the forehead corner), blush hatching intensified (3 rows), ^^ eyes (happy, already a face
-layer), >< eyes (startle / embarrassed face layer). Each mark ≤ 7×7 at 48, 2–4 frames in.
+vein (rose «#»-cross at the forehead corner), blush hatching intensified (3 rows), ^^ and >< eye glyphs (the face
+library also has them as `happy` / `startle` eyes), Zzz, heart, «?», «!», smoke puff (switch). Each mark ≤ 7×7, frame
+16×16, ≤ 6 frames, 1-px outline (cream around ink marks for dark IDEs); atlas `resources/fx/` (RIG.md), placed at the
+rig `fx` anchor, played from M1.
 
 ### 11.7 Mascots (non-human characters, later)
 Robots and creatures use the same chibi head ratio with rounder forms and no human nose/mouth detail: screen eyes
 (emissive ramp, 2–3 px shapes swapped per emotion) or flame/glow eyes, a single highlight, soft round silhouette;
 emotion marks are shared with humans.
+
+### 11.8 Goth costume recipe (MA-29 note)
+Black costumes must still separate on dark wallpapers and across the arm/torso edge:
+- hue-shifted black ramp: bodice plum-black ~`#1c1626`; sleeves one step lighter and cooler ~`#2c2840` (a separate
+  sleeve ramp via `Body.sleeve`), sleeve light side ~`#47405f`;
+- 1-px rim on the lit outer arm edge; outer silhouette outline in a lighter plum ~`#5a4a70` (never `#000`);
+- bell cuff flaring 1 px with a 1–2 px lace edge (off-white or deep red); hand skin always 1–2 px below the cuff
+  (think / wave must show the hand — the arm-over-torso rule iii);
+- a light front detail (collar, lacing or ribbon) to break the bodice mass.
