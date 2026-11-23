@@ -63,9 +63,11 @@ const withoutExpression = (lib: ViewFaceLibrary, id: ExpressionId): ViewFaceLibr
 const BODIES: readonly Body[] = [DUMMY_A, DUMMY_B, MAID_PREVIEW, MAID];
 
 describe('q34 rest layout (ADR 010)', () => {
-  it('leans the head 1 px and the face 3 px toward the facing; chest/hip axis unchanged; feet on one row', () => {
-    expect(REST_Q34.head[0] - REST.head[0]).toBe(1);
-    expect(REST_Q34.face[0] - REST.face[0]).toBe(3);
+  it('sets the head 1 px back (behind the hip axis) with the face 1 px toward the facing; chest/hip axis unchanged', () => {
+    // Owner (MA-27d): the head sat ahead of the torso; in q34 the back of the head overhangs behind instead.
+    expect(REST_Q34.head[0] - REST_Q34.hip[0]).toBe(-1);
+    expect(REST_Q34.face[0] - REST.face[0]).toBe(1);
+    expect(REST_Q34.face[0] - REST_Q34.head[0]).toBe(REST.face[0] - REST.head[0] + 2);
     for (const j of ['root', 'hip', 'chest', 'neck', 'seat'] as const) expect(REST_Q34[j]).toEqual(REST[j]);
     expect(REST_Q34.shoulderL[0]).toBe(REST.shoulderL[0] - 1);
     expect(REST_Q34.shoulderR[0]).toBe(REST.shoulderR[0] - 2);

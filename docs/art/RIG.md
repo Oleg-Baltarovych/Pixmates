@@ -33,31 +33,53 @@ style, `anims/`), bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `d
   (the shoe mask gets its sole row again minus the outer px). `dangle` (drag) points the toes too.
 - Side locks below their root trail the head by ≤ 1 px from the previous frame (walk, drag), on top of the chain.
 
-## Views (D-16, ADR 010 proposed; implemented in MA-27b…d — outline, not yet code)
+## Views (D-16, ADR 010 accepted; implemented MA-27b…d, maid signed off 2026-11-24)
 - **`front`** = every pose above. **`q34`** = three-quarter, authored facing screen-right; left = runtime mirror
-  about x = 24 (manifest `facing: right`). M-ART q34 poses: `walk` (replaces the front walk), `turn` (2 frames: front
-  body + q34 head, then q34 rest). M1: `run`, `climb`. All other poses stay front.
-- **Pose:** `RigAnim.view` (`front` default) and optional `PoseFrame.headView` (turn: head leads the body).
-- **Rest layout `REST.q34`:** head +1 px toward facing (constant lean, never animated), face anchor +3 px toward
-  facing; near shoulder (screen-left, L) +1 px out, far shoulder (R) −2 px in and 1 row lower; feet on the body axis,
-  stride fore/aft along x.
-- **Depth (`order: 'q34'`):** far arm + far leg (R) → back hair/tail → legs → hem → torso → near leg (L) → near arm.
-  Far leg one ramp step darker; the far arm shows only where it clears the torso.
-- **Body `views.q34`:** `{ head, face, masks (headAcc, neckAcc, shoe), apron?, tweaks? }`; required when any q34
-  pose is built. Head mask: fringe parted toward facing, far side lock hidden behind the cheek, near lock full, 2 px
-  of back hair behind the nape; horns near full / far shorter behind the skull. Fox ears: near full, far 2 px
-  narrower and 1 px lower. Clip: on the near side of the right-facing art (swaps when mirrored). Neck accessory and
-  bib 1 px narrower, shifted toward facing; apron panel 8 px; shoe = 5-px side shoe, toe forward.
+  about x = 24. M-ART q34 poses: `walk` (front walk retired), `turn` (2 frames: f0 front body + q34 head, f1 q34
+  rest). M1: `run`, `climb`. All other poses stay front.
+- **Pose frame fields** (`rig/types.ts`): `view` (body view, default `front`); `headView` (head leads the body, turn
+  f0); `irisDx: 1` (irises 1 px toward screen-right, lashes/shine stay; turn f0); `hairDx: −1|0|1` (back-hair tips,
+  full at the tips; the tail tip swings the other way); `tailTucked` (turn f0: no tube, spade tip under the hem
+  centre, fox tail hidden — the tail never jumps sides between front and q34). Manifest facing is derived, never
+  authored: `animFacing()` (`rig/compose.ts`) = `right` when any frame's body is q34; a leading q34 head alone stays
+  `front`.
+- **Rest `REST_Q34`** (`rig/body.ts`, via `restOf(view)`): head joint = hip x − 1 (behind the axis: back-of-head
+  hair overhangs behind, the face never juts past the chest; owner, MA-27d); face anchor = head + 2 relative to
+  front (absolute +1); chest/hip axis unchanged; near shoulder (L) 1 px out, far (R) 2 px in and 1 row lower; tail
+  root 2 px trailing; feet 1 px either side of the axis. Constant in every frame (steady-head rule): poses never
+  move head-x − hip-x.
+- **Depth (`order: 'q34'`):** far arm + far leg (R) → back hair / tail / `hairFar` → near leg → hem → apron ties →
+  torso → near arm (L). Far leg, far shoe and far hand one ramp step darker.
+- **Body `views.q34`** (`BodyView`): `{ head, face, masks { headAcc?, neckAcc?, shoe, hairFar? }, apron?,
+  sleeveHairLine?, hideFarShoulder?, tweaks? }`; required when any q34 pose is built.
+  - `masks.hairFar`: authored far-lock sliver beyond the far jaw (frames the facing-side contour); when set, the
+    procedural back hair keeps clear of the facing side under the jaw (only the nape shows).
+  - `sleeveHairLine` (opt-in ramp): hair px touching the near sleeve take shade 1 — a 1-px line so a puff never
+    melts into a lock of similar value (maid: plum vs lilac).
+  - `hideFarShoulder` (opt-in): far upper-arm px down to `FAR_SHOULDER_CLIP_ROWS` (2) under the shoulder joint are
+    not drawn — the far puff sits behind neck and collar; needed when no back-hair mass covers it (e.g. `hairFar`).
+  - `Apron.ties`: waist bow at the small of the back, trailing (q34 only), placed from the hip; painted over the
+    skirt, never over the arms; a hand crossing them gets a 1-px skin-dark (shade 1) edge, ties keep their tones.
+  - Head mask: fringe parted toward facing, far lock hidden behind the cheek, near lock full; horns near full / far
+    shorter behind the skull; fox ears near full, far 2 px narrower and 1 px lower. Clip on the near side (swaps when
+    mirrored). Neck accessory and bib 1 px narrower toward facing; apron panel 8 px; shoe = 5-px side shoe.
+- **q34 face contour** (gated in `tests/unit/art/maid.test.ts`; owner rounds MA-27d): no cheekbone bump; from eye
+  level down the facing-side skin edge is monotonic — never steps out, steps in ≤ 1 px per row — to a 1-px chin
+  point ahead of the face centre; q34 skin width per row ≤ front skin width; on walk frames the facing overhang of
+  the head past the torso ≤ the back overhang + 4 px.
 - **Procedural view params:** bodice half-width near 4.8 / far 3.6 (`curveX` centre +1); hem flare trails; back hair
-  mass +2 px trailing (long hair more); fox/spade tail rooted 2 px to the trailing side, behind the body; scarf ends
-  and side locks trail by chain.
-- **q34 walk:** contact feet 6–8 px apart fore/aft, passing foot lifted 2 px, contact foot planted ≥ 4 frames, 1-px
-  bob, arms swing fore/aft; root dx = 0 and head-x − hip-x constant (head steady, owner rule).
-- **Face `face.q34`:** near eye full, far eye 1 px narrower and 1 px nearer the profile edge, mouth +2 px toward
-  facing, blush on the near cheek; required = expressions used by q34 poses (`neutral`, `blink`).
-- **Gates on q34 frames:** headroom (H re-measured), seams, `validateFace` per view, `armTorsoContrast` (far arm
+  mass +2 px trailing; tail behind the body; scarf ends and side locks trail by chain.
+- **q34 walk (accepted, 8 @ 10):** 8-px contact stride fore/aft (near foot forward f0, far f4); stance foot planted 5
+  frames, sliding back 2 px/frame in place — M1 moves the sprite at `WALK_TRAVEL` (`src/content/stage.ts`, 2 px/frame
+  = 20 px/s); swing foot lifts 1–2 px, on passing frames (2 / 6) 1 px behind the planted one, toe down. 1-px bob
+  down on contact, head follows 1 frame late (≤ 1 px vertical). Root dx = 0, head-x − hip-x constant. Arms swing
+  fore/aft against the legs; hem and back-hair tips trail 1 px on the passing frames, tail tip against them.
+- **Face `face.q34`:** exactly `neutral` + `blink`; near eye full, far eye 1 px narrower; blush on the near cheek.
+- **Glance rule** (`irisShift` / `onlyIrisDiffers`, `rig/face.ts`): `glance` and `irisDx` move only iris/pupil px
+  below the lash row, 1 px toward screen-right within each eye (same px count); lash row, outline and shine stay.
+- **Gates on q34 frames:** headroom (row 0 transparent), seams, `validateFace` per view, `armTorsoContrast` (far arm
   behind the torso: separator on its visible edge; arm-end rule only when ≥ 3 sleeve px show), mirror test (exact
-  column flip, same alpha count).
+  column flip, same alpha count), the contour rules above.
 
 ## Slots and variants
 | slot | variants | notes |
@@ -121,8 +143,8 @@ expressions: `neutral`, `blink`, `half`, `talk_a/b/c`, `happy`, `worried`, `thin
 `wince`. `validateFace` fails the build on a missing expression, an unknown part, a non-face slot (allowed: ink,
 eye, blush, skin, trim, apron) or a face px that lands on a hair px of the head mask. Optional `raisedMouth` per
 expression = the mouth on frames with both arms `up` (maid: open D-mouth on the happy jump, closed smile on the ground).
-Planned in MA-27c (shared, art-director LATER on maid): required `glance` (neutral, irises 1 px to the side) on one
-`idle_a` frame; `chin` fist 1 px toward its own arm with a 2-px darker outline break at the jaw (+ optional 1-px
+Done in MA-27c (shared, art-director LATER on maid): required `glance` (neutral, irises 1 px toward screen-right,
+glance rule in «Views») on one `idle_a` frame; `chin` fist 1 px toward its own arm with a 2-px darker outline break at the jaw (+ optional 1-px
 knuckle highlight); `pointToe` adds a 1-px light toe highlight (`sit_edge`).
 Spade tail (MA-27): a 2-tone tube (top px of each column light, rest base; no light/dither noise) that follows the hip
 one frame late (tip = full previous-frame hip offset); the spade mask carries its own light upper rim.

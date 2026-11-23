@@ -123,6 +123,11 @@ export interface PoseFrame {
   readonly hairDx?: -1 | 0 | 1;
   /** Eyes lead: the irises move 1 px toward screen-right on this frame (turn f0), lashes and shine stay. */
   readonly irisDx?: 1;
+  /**
+   * The tail is tucked behind the skirt on this frame (turn f0, art round MA-27d-1): no tube; a spade tip shows under
+   * the hem near the centre, a fox tail is hidden. Avoids the tail jumping sides between the front and q34 frames.
+   */
+  readonly tailTucked?: true;
 }
 
 export interface RigAnim {
@@ -154,6 +159,8 @@ export interface Apron {
   readonly bib: PlacedMask;
   readonly panelW: number;
   readonly dx?: number;
+  /** Apron ties / waist bow (q34: at the small of the back, trailing), top-left from the hip joint; under the arms. */
+  readonly ties?: PlacedMask;
 }
 
 /** Per-view authored parts (ADR 010): a body supplies them for every non-front view its poses use. */
@@ -166,8 +173,24 @@ export interface BodyView {
     readonly shoe: Mask;
     readonly headAcc?: PlacedMask;
     readonly neckAcc?: PlacedMask;
+    /**
+     * q34 far back hair (from the head joint): an authored sliver beyond the far jaw line. When set, the procedural
+     * back hair keeps clear of the facing side under the jaw (only the nape behind the neck shows).
+     */
+    readonly hairFar?: PlacedMask;
   };
   readonly apron?: Apron;
+  /**
+   * Opt-in: hair px touching the near (L) sleeve take this ramp's shade 1, a 1-px line so a sleeve puff never melts
+   * into a near lock of a similar value (maid: plum against lilac).
+   */
+  readonly sleeveHairLine?: RampName;
+  /**
+   * Opt-in arm-clip rule: the far (R) shoulder puff sits behind the neck and collar, so far upper-arm px down to
+   * `FAR_SHOULDER_CLIP_ROWS` under the shoulder joint are not drawn (RIG.md: the far arm shows only where it clears
+   * the torso). Needed when no back-hair mass covers that area (e.g. with `masks.hairFar`).
+   */
+  readonly hideFarShoulder?: true;
   /** Rest offsets in this view (default: the body's front `tweaks`). */
   readonly tweaks?: Partial<Readonly<Record<Joint, Offset>>>;
 }

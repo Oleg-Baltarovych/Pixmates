@@ -39,17 +39,18 @@ export const REST: JointMap = {
 };
 
 /**
- * Three-quarter rest (ADR 010, RIG.md «Views»), authored facing screen-right: the head joint leans 1 px toward the
- * facing (constant, never animated), the face anchor sits 3 px toward it, chest/hip axis unchanged; the near
+ * Three-quarter rest (ADR 010, RIG.md «Views»), authored facing screen-right: the head joint sits 1 px BEHIND the hip
+ * axis (owner, MA-27d: the back-of-head hair overhangs behind, the face never juts past the chest; constant, never
+ * animated), the face anchor 1 px toward the facing (+2 inside the head), chest/hip axis unchanged; the near
  * (screen-left) shoulder 1 px out, the far one 2 px in and 1 row lower; the tail roots 2 px to the trailing side;
  * both feet on the ground row (y ± 0), 1 px either side of the axis (the stride runs fore/aft along x).
  */
 export const REST_Q34: JointMap = {
   ...REST,
-  head: [25, 14],
-  face: [17, 12],
-  acc: [25, 3],
-  fx: [34, 5],
+  head: [23, 14],
+  face: [15, 12],
+  acc: [23, 3],
+  fx: [32, 5],
   back: [22, 34],
   shoulderL: [17.8, 25.2],
   shoulderR: [27.2, 26.2],

@@ -8,5 +8,5 @@ export const TURN: RigAnim = {
   name: 'turn',
   fps: 10,
   loop: false,
-  frames: [frame({ view: 'front', headView: 'q34', irisDx: 1 }), frame({ view: 'q34' })],
+  frames: [frame({ view: 'front', headView: 'q34', irisDx: 1, tailTucked: true }), frame({ view: 'q34' })],
 };

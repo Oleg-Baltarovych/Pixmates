@@ -4,7 +4,7 @@
 // highlight, both top-left), arched lash with a 1-px up-flick at the outer corner, calm symmetric soft smile.
 // happy: ^^ eyes; closed wide smile on the ground frames, the open D-mouth (dark interior + 2×1 pink tongue) on the
 // arms-up frames (`raisedMouth`). think: the eyes glance aside by 1 px with the pupils 1 px up.
-import type { FaceLibrary, FacePart } from '../../rig/face.ts';
+import type { FaceLibrary, FacePart, ViewFaceLibrary } from '../../rig/face.ts';
 import type { Mask } from '../../lib/mask.ts';
 
 const part = (mask: Mask, x: number, y: number): FacePart => ({ mask, at: [x, y] });
@@ -105,5 +105,36 @@ export const MAID_FACE: FaceLibrary = {
     petted: { eyes: 'happy', mouth: 'wide', cheeks: 'strong' },
     wince: { eyes: 'wince', mouth: 'flat', cheeks: 'soft' },
     glance: { eyes: 'side', mouth: 'smile', cheeks: 'soft' },
+  },
+};
+
+// ── q34 face library (MA-27d; owner D-16 Q-D16-2: `neutral` + `blink` only) ───────────────────────────────────────
+// Same 20-px grid on the q34 face anchor (head mask col 7). Near (left) eye = the front eye; the far eye is 1 px
+// narrower (one iris column foreshortened) with its inner corner 1 px nearer the profile; its iris rows keep the
+// 2-px pupil inside ≥ 3 iris px so `irisShift` (turn f0, eyes lead) moves it cleanly. Mouth 1 px toward the facing (owner, MA-27d: +2 stretched the narrower lower face),
+// blush on the near cheek only.
+const OPEN_Q34: Mask = [
+  '.X.XXXX.......XXX.X.',
+  '..XPcccx.....xPccX..',
+  '..pPXXc.......PXXc..',
+  '..piXXi.......iXXi..',
+  '...IIpI.......IIpI..',
+  '....kk.........kk...',
+];
+
+export const MAID_FACE_Q34: ViewFaceLibrary = {
+  eyes: {
+    open: part(OPEN_Q34, 0, 3),
+    closed: part(['..x....x.....x...x..', '...XXXX.......XXX...'], 0, 6),
+  },
+  mouths: {
+    smile: part(['.........x..x.......', '..........XX........'], 0, 10),
+  },
+  cheeks: {
+    soft: part(['..fFFf..............', '...f.f..............'], 0, 9),
+  },
+  expressions: {
+    neutral: { eyes: 'open', mouth: 'smile', cheeks: 'soft' },
+    blink: { eyes: 'closed', mouth: 'smile', cheeks: 'soft' },
   },
 };

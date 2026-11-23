@@ -1,10 +1,10 @@
 // q34 (three-quarter, facing screen-right) derivations from front masks (ADR 010, RIG.md «Views»), plus the q34 shoe
-// helpers the composer uses. The derivations serve the rig test bodies (dummies) and the maid's TEMPORARY q34
-// stand-in until MA-27d authors her real q34 head, face and accessories; characters ship authored q34 masks.
+// helpers the composer uses. The derivations serve only the rig test bodies (dummies); characters ship authored q34
+// masks (maid: assets-src/characters/maid/, MA-27d).
 import { LEGEND, type Mask } from '../lib/mask.ts';
 import type { ExpressionId, FacePart, ViewFaceLibrary } from './face.ts';
 
-/** Front head mask layout (assets-src/characters/maid/masks.ts, spike head): 30 wide, face anchor at col 5. */
+/** Front head mask layout (the dummies' spike-derived head): 30 wide, face anchor at col 5. */
 const HEAD_W = 30;
 const FACE_COL = 5;
 /** q34 shift of the head content toward the facing (with the +1 head-joint lean the face sits +3). */

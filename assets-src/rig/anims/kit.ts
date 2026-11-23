@@ -24,6 +24,7 @@ export interface FrameInput {
   readonly headView?: View;
   readonly hairDx?: -1 | 0 | 1;
   readonly irisDx?: 1;
+  readonly tailTucked?: true;
 }
 
 export function frame(p: FrameInput): PoseFrame {
@@ -46,5 +47,6 @@ export function frame(p: FrameInput): PoseFrame {
     ...(p.headView ? { headView: p.headView } : {}),
     ...(p.hairDx ? { hairDx: p.hairDx } : {}),
     ...(p.irisDx ? { irisDx: p.irisDx } : {}),
+    ...(p.tailTucked ? { tailTucked: p.tailTucked } : {}),
   };
 }

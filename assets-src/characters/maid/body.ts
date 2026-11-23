@@ -6,10 +6,22 @@ import type { Outfit } from '../../lib/mask.ts';
 import type { PackDef } from '../../lib/types.ts';
 import { ANIMS } from '../../rig/anims/index.ts';
 import { createRigPack } from '../../rig/compose.ts';
-import { deriveQ34Face, deriveQ34Head, deriveQ34Shoe } from '../../rig/q34.ts';
 import type { Body, BodyView } from '../../rig/types.ts';
-import { MAID_FACE } from './face.ts';
-import { BAND, BIB, BOW, HEAD, SHOE, SPADE } from './masks.ts';
+import { MAID_FACE, MAID_FACE_Q34 } from './face.ts';
+import {
+  BAND,
+  BIB,
+  BIB_Q34,
+  BOW,
+  BOW_Q34,
+  HEAD,
+  HAIR_FAR_Q34,
+  HEAD_Q34,
+  SHOE,
+  SHOE_Q34,
+  SPADE,
+  TIES_Q34,
+} from './masks.ts';
 
 const T6 = [0, 1, 2, 3, 4, 5] as const;
 const T6UP = [1, 2, 3, 4, 5, 6] as const;
@@ -29,15 +41,19 @@ const OUTFIT: Outfit = {
 };
 
 /**
- * TEMPORARY q34 STAND-IN (MA-27b/c, replaced in MA-27d): the q34 walk/turn need `views.q34`, so until the maid's
- * three-quarter head (near/far horns, parted fringe), q34 face, bow/bib/apron and side shoe are authored, they are
- * DERIVED from her front masks (assets-src/rig/q34.ts). Not art-reviewed; the owner judges maid after MA-27d.
+ * Three-quarter view (MA-27d, ADR 010), authored facing screen-right: own head (near/far horns, parted fringe, far
+ * lock hidden, jaw taper + chin point), face (neutral + blink), collar bow and bib 1 px narrower with the near side
+ * wider, an 8-px apron panel 1 px toward the facing, apron ties trailing at the back, and the side shoe.
  */
-const MAID_Q34_STAND_IN: BodyView = {
-  head: { mask: deriveQ34Head(HEAD), at: [-15, -14], band: BAND },
-  face: deriveQ34Face(MAID_FACE),
-  masks: { shoe: deriveQ34Shoe(SHOE), neckAcc: { mask: BOW, at: [-1, 3] } },
-  apron: { bib: { mask: BIB, at: [-3, 3] }, panelW: 8, dx: 2 },
+const MAID_Q34: BodyView = {
+  head: { mask: HEAD_Q34, at: [-15, -14], band: BAND },
+  face: MAID_FACE_Q34,
+  masks: { shoe: SHOE_Q34, neckAcc: { mask: BOW_Q34, at: [-1, 3] }, hairFar: { mask: HAIR_FAR_Q34, at: [8, -1] } },
+  apron: { bib: { mask: BIB_Q34, at: [-4, 3] }, panelW: 8, dx: 1, ties: { mask: TIES_Q34, at: [-10, -12] } },
+  // Plum line between the pink near puff and the lilac near lock; far puff hidden behind the neck (no back-hair
+  // block under the jaw with the far lock).
+  sleeveHairLine: 'hair_plum',
+  hideFarShoulder: true,
 };
 
 export const MAID: Body = {
@@ -67,7 +83,7 @@ export const MAID: Body = {
   // Cream apron: bib on the bodice under the rose bow, ~10-px front panel with a frill from waist to hem.
   apron: { bib: { mask: BIB, at: [-4, 3] }, panelW: 10 },
   hornOutline: 'hair_plum',
-  views: { q34: MAID_Q34_STAND_IN },
+  views: { q34: MAID_Q34 },
 };
 
 /** Manifest `emotions` (plan MA-32 content-integrity list): each is an animation of the pack. */

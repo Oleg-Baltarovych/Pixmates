@@ -58,3 +58,77 @@ export const BIB: Mask = ['pPPPPPPa', 'pPPPPPPa', 'pAAAAAAq'];
 
 /** One shoe (top-left = foot − (2, 0.6)): plum, 1-px lighter rim at toe and heel for dark IDEs. */
 export const SHOE: Mask = ['.LM.', 'lmlm', 'lMMl'];
+
+// ── q34 (three-quarter, facing screen-right; MA-27d, ADR 010, RIG.md «Views») ─────────────────────────────────────
+// Authored, not derived: the face sits 2 px further toward the facing (q34 face anchor at mask col 7), the near
+// (screen-left) lock is full and the far one hides behind the cheek, the fringe parts toward the facing (skin V at
+// col 18), the angel ring compresses on the far side, the jaw tapers on the facing side to a 1-px chin point. Near
+// horn = the front left horn; the far horn is one row shorter, one ramp step darker, its plum base tucked behind the
+// skull edge and its outward curl inside the mask (col 28).
+const Q_EYE_ROW = '..' + 'HyHhj' + 'SSSSSSSSSSSSSSSSSSs' + '....';
+/** Cheek rows: the same width as the eye rows (owner, MA-27d: no cheekbone bump). */
+const Q_CHEEK_ROW = '...' + 'HHhj' + 'SSSSSSSSSSSSSSSSSSs' + '....';
+
+/** 30 × 27, top-left at head joint − (15, 14). q34 face anchor at mask (7, 12). */
+export const HEAD_Q34: Mask = [
+  '.uUO' + '.'.repeat(26),
+  'U.nOn' + '.'.repeat(20) + 'uoO..',
+  '...UOn' + '.'.repeat(18) + 'uoN.u.',
+  '....UOn....' + 'jHHHHhhj' + '....' + 'uoN....',
+  '.....Lbm.' + 'jHHyyHHHHhhj' + 'bm' + '.......',
+  '.......' + 'jHHYYyHHHHHHhhhj' + '.......',
+  '......' + 'jHHyHHHHHHHHHhhhhj' + '......',
+  '.....' + 'jHHHHHHHHHHHHHHhhhhj' + '.....',
+  // Angel ring: wide clumps on the near side, compressed toward the far side.
+  '....' + 'jHyYYyHhyYyHhyyHhhyhhj' + '....',
+  '...' + 'jHHyyHHHyyHHHHyyhhhyhhjj' + '...',
+  // Fringe clumps, the part toward the facing (col 19 gap, skin V at col 18 below).
+  '...' + 'jHHHHHHHjHHHhjHHhhjhhhjJ' + '...',
+  '...' + 'HHhj' + 'HHHhjHHhhjHHhhjHhhhj' + '...',
+  // The near side of the skull rounds out 1 px (col 2) over the eye band.
+  // Three pointed clumps cut into the forehead (2 rows deep: above the near eye's inner corner, at the part
+  // toward the facing, a short one over the far eye); the skin band (`withBand`) follows each tip down.
+  '..' + 'HHHhj' + 'hSSSSHhjSSHhjSShjShj' + '...',
+  '..' + 'HHHhj' + 'SSSSSSjSSSSjSSSSSSh' + '....',
+  '..' + 'HHHhj' + 'SSSSSSSSSSSSSSSSSSs' + '....',
+  Q_EYE_ROW,
+  Q_EYE_ROW,
+  Q_EYE_ROW,
+  Q_CHEEK_ROW,
+  Q_CHEEK_ROW,
+  Q_CHEEK_ROW,
+  // Facing-side contour (owner, MA-27d): widest at eye level (col 25), one smooth convex curve stepping in by
+  // 1 px per row from the mouth down (25 → 24 → 23 → 22) to the 1-px chin; the far sidelock (`HAIR_FAR_Q34`)
+  // frames it, so skin is never the outer silhouette above the jaw.
+  '....' + 'Hhj' + 'SSSSSSSSSSSSSSSSSSs' + '....',
+  '....' + 'Hhj' + 'SSSSSSSSSSSSSSSSSSs' + '....',
+  '....' + 'Hhj' + 'SSSSSSSSSSSSSSSSSs' + '.....',
+  '..' + 'Hhj' + '...' + 'sSSSSSSSSSSSSSSs' + '......',
+  '..h' + '........' + 'ssssssssssss' + '.......',
+  '.'.repeat(21) + 's' + '.'.repeat(8),
+];
+
+/** q34 collar bow (3 × 3, 1 px narrower): near loop full height, knot, far loop foreshortened to 2 rows. */
+export const BOW_Q34: Mask = ['R.t', 'rgt', 'r..'];
+
+/** q34 bib (7 × 3, 1 px narrower): 3 px show on the near side of the bow, 1 px on the far side (turning away). */
+export const BIB_Q34: Mask = ['pPPPPAa', 'pPPPPAa', 'pAAAAAq'];
+
+/** Side shoe (5 px, toe forward = screen-right): ankle opening at the heel, lit vamp, light heel and toe rims. */
+export const SHOE_Q34: Mask = ['.Lm..', 'lmbBl', 'lMMMm'];
+
+/**
+ * Apron ties at the small of the back (q34 only; front hides them): a cream bow loop with a dark-cream outer edge
+ * peeking past the trailing waist, then two distinct 1-px tails with a 1-px gap trailing down and back over the
+ * skirt edge. Top-left from the hip joint; never painted over the near arm, which gets a dark-cream line against
+ * them (composer).
+ */
+export const TIES_Q34: Mask = ['.QQ...', 'QpaqA.', '.QQa.a', '...a.a', '..A..a', '..a.A.'];
+
+/**
+ * Far sidelock (q34, top-left = head joint + (8, −1), i.e. head mask col 23, row 13): the temple hair continues from
+ * the fringe edge as a 1-px lock in the hair shadow step framing the far cheek down to the mouth (one mid-tone px at
+ * the top), then a 2-px strand steps in 1 px per row along the jaw taper to a 1-px point. Its outer edge never passes
+ * the face's widest column + 1.
+ */
+export const HAIR_FAR_Q34: Mask = ['...j', ...Array.from({ length: 9 }, () => '...J'), '..JJ', '.JJ.', 'JJ..', 'J...'];
