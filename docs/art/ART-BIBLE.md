@@ -56,6 +56,9 @@ are authored in `assets-src/`, and procedural code is used only for material tex
 - Walking left uses the runtime mirror; the top-left light flips, which is accepted (plan M-ART phase 2). The
   art-director judges a mirrored walk sheet in MA-27; if rejected, a baked facing row is an M1 follow-up (it still fits
   ≤ 1024² with shelf packing).
+- D-16: travel poses (`walk`, `turn`; M1 `run`, `climb`) are drawn in a three-quarter view facing right and mirrored
+  for left (`facing` in the manifest; RIG.md «Views»). Asymmetric details swap sides in the mirror. The head never
+  rocks sideways in a walk.
 
 ## 9. Originality (ADR 005)
 - Own designs only. `maid` is an original horned demoness housekeeper: a chibi anime girl with lilac hair in pointed clumps, thin ivory hook horns shading to plum at the base, teal dress, cream apron with scalloped lace, rose bow and ribbons, plum stockings, a thin plum tail with a pointed spade at knee height and amber eyes with round pupils. She has no signature costume or colour scheme from any existing character; in particular she must not read as a «dragon maid» (no thick scaled tail, no tan dragon horns, no slit pupils).
