@@ -10,4 +10,4 @@
 | 006 | [Dev companion: local hooks endpoint + MCP server](006-dev-companion.md) | Accepted |
 | 007 | [Window strategy: stage overlay (A); RAM budget ≤ 280 MB private](007-window-strategy.md) | Accepted |
 | 008 | [SQLite driver: `node:sqlite` behind `storage/db.ts`](008-sqlite-driver.md) | Accepted |
-| 009 | Frame size (48/64) and style direction for all-code art | Pending — M-ART spike |
+| 009 | [Character frame 48 px, style «anime soft»](009-art-frame-and-style.md) | Accepted |

@@ -3,7 +3,7 @@
 // Windows only. No dependencies: one long-running PowerShell sampler (Win32_Process tree + Get-Process counters).
 // Not via Playwright: the EnableNodeCliInspectArguments fuse is off, so `_electron` cannot drive the build.
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
@@ -24,6 +24,10 @@ function arg(name: string, fallback: number): number {
 const warmupS = arg('warmup', 30);
 const durationS = arg('duration', 120);
 const skipBuild = process.argv.includes('--skip-build');
+// M-ART phase 1: `--character=spike-maid-64soft` measures one art-spike pack. Spike packs are never shipped
+// (electron-builder excludes them), so the harness copies that one pack next to the unpacked build and launches
+// with `--perf-spike`, the only switch that lets a packaged build list spike packs.
+const character = process.argv.find((a) => /^--character=spike-[a-z0-9-]{1,48}$/.test(a))?.slice('--character='.length);
 
 interface Proc {
   readonly pid: number;
@@ -93,17 +97,55 @@ async function main(): Promise<void> {
   // Own temp profile: a running `pnpm dev` or installed instance holds the single-instance lock of the default
   // userData, which would make the measured launch quit at once; it also keeps perf runs off real user data.
   const userData = mkdtempSync(path.join(os.tmpdir(), 'pixmates-perf-'));
-  const app = spawn(exe, ['--perf-seed=1', `--user-data-dir=${userData}`], { cwd: root, env, stdio: 'ignore' });
-  if (app.pid === undefined) throw new Error(`could not start ${exe}`);
-  const sampler = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', SAMPLER], {
-    env: { ...env, PERF_ROOT_PID: String(app.pid) },
-    stdio: ['ignore', 'pipe', 'inherit'],
-  });
-
+  const extra: string[] = [];
+  // The spike pack copied into the unpacked build (removed again in `finally`, so it never lingers in release/).
+  const spikeTarget =
+    character === undefined
+      ? undefined
+      : path.join(root, 'release', 'win-unpacked', 'resources', 'characters', character);
   const samples: Sample[] = [];
   const totalS = warmupS + durationS;
-  console.log(`[perf] warm-up ${String(warmupS)} s, measuring ${String(durationS)} s …`);
+  let app: ReturnType<typeof spawn> | undefined;
+  let sampler: ReturnType<typeof spawn> | undefined;
+  // Cleanup must also run on Ctrl+C: `finally` does not run when the process is killed by a signal.
+  const cleanup = (): void => {
+    sampler?.kill();
+    if (app?.pid !== undefined) {
+      try {
+        execFileSync('taskkill', ['/PID', String(app.pid), '/T', '/F'], { stdio: 'ignore', timeout: TIMEOUT_MS.short });
+      } catch {
+        // the app may already have exited
+      }
+    }
+    rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+    if (spikeTarget !== undefined)
+      rmSync(spikeTarget, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+  };
+  const onSigint = (): void => {
+    cleanup();
+    process.exit(130);
+  };
+  process.once('SIGINT', onSigint);
   try {
+    // Copy and spawn inside `try`, so a failed copy/spawn still removes the spike pack and the temp profile.
+    if (character !== undefined && spikeTarget !== undefined) {
+      rmSync(spikeTarget, { recursive: true, force: true });
+      cpSync(path.join(root, 'resources', 'characters', character), spikeTarget, { recursive: true });
+      extra.push(`--character=${character}`, '--perf-spike');
+    }
+    const started = spawn(exe, ['--perf-seed=1', `--user-data-dir=${userData}`, ...extra], {
+      cwd: root,
+      env,
+      stdio: 'ignore',
+    });
+    app = started;
+    if (started.pid === undefined) throw new Error(`could not start ${exe}`);
+    const sampling = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', SAMPLER], {
+      env: { ...env, PERF_ROOT_PID: String(started.pid) },
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+    sampler = sampling;
+    console.log(`[perf] warm-up ${String(warmupS)} s, measuring ${String(durationS)} s …`);
     await new Promise<void>((resolve) => {
       // Overall deadline: never hang if the sampler dies while the app keeps running.
       const deadline = setTimeout(resolve, (totalS + 60) * 1000);
@@ -111,7 +153,7 @@ async function main(): Promise<void> {
         clearTimeout(deadline);
         resolve();
       };
-      const lines = createInterface({ input: sampler.stdout });
+      const lines = createInterface({ input: sampling.stdout });
       lines.on('line', (line) => {
         let parsed: Sample;
         try {
@@ -122,16 +164,11 @@ async function main(): Promise<void> {
         samples.push(parsed);
         if (parsed.t >= totalS * 1000) done();
       });
-      app.on('exit', done);
+      started.on('exit', done);
     });
   } finally {
-    sampler.kill();
-    try {
-      execFileSync('taskkill', ['/PID', String(app.pid), '/T', '/F'], { stdio: 'ignore', timeout: TIMEOUT_MS.short });
-    } catch {
-      // the app may already have exited
-    }
-    rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+    process.removeListener('SIGINT', onSigint);
+    cleanup();
   }
 
   const measured = samples.filter((s) => s.t >= warmupS * 1000);
