@@ -1,0 +1,21 @@
+{
+  "$comment": "Pixmates master palette (M-ART MA-03, ART-BIBLE §4). Ramps dark → light, hue-shifted (cool/purple shadows, warm lights), never pure black or white. Generators address colours as (ramp, index) only.",
+  "ramps": {
+    "ink": ["#1a1223", "#281d3b", "#342d4e", "#403f5a", "#4e5166"],
+    "skin": ["#664242", "#89564f", "#aa6d5c", "#c58a6d", "#daaa88", "#eccbac", "#feebd2"],
+    "skin_alt": ["#452220", "#67352b", "#874b36", "#a26648", "#b88664", "#c9a688", "#e2c5a5"],
+    "hair_copper": ["#470f16", "#701e19", "#963615", "#b5581e", "#ca7f40", "#d8a771", "#f0cb92"],
+    "hair_plum": ["#201036", "#422056", "#673271", "#8d4a83", "#ad6892", "#c78ba3", "#e7abb7"],
+    "hair_lilac": ["#31335b", "#504d85", "#7168aa", "#9484cb", "#b5a0dd", "#d9bae7", "#f8d6e8"],
+    "hair_ash": ["#31313f", "#4d5267", "#69768e", "#8a9cb1", "#b1c3d1", "#d8ebf5"],
+    "cloth_teal": ["#002236", "#003f53", "#055f6f", "#04818a", "#46a19d", "#82beb1", "#abdec9"],
+    "cloth_cream": ["#735e56", "#937767", "#b0937a", "#c8b296", "#ded3ba", "#f7f2dc"],
+    "cloth_ochre": ["#5e2d19", "#89440c", "#ac6401", "#c38b35", "#d3b573", "#eadba0"],
+    "cloth_rose": ["#522740", "#813a58", "#af5469", "#d3797d", "#eba69b", "#ffd3c4"],
+    "metal": ["#161a29", "#2d394f", "#465c75", "#648199", "#89a8ba", "#b4cfda", "#dcf7ff"],
+    "horn": ["#442c29", "#66453a", "#88624d", "#a58366", "#bfa687", "#d8cbb0", "#f6efd4"],
+    "fur_fox": ["#561e1c", "#7f2f1c", "#a44718", "#c26825", "#d68e4a", "#e4b57d", "#fcd99e"],
+    "fur_snow": ["#717481", "#838da0", "#97a8bc", "#aec3d3", "#cbdde8", "#e7f9ff"],
+    "emissive": ["#216076", "#068398", "#0ba7b2", "#48c9c5", "#93e6d7", "#dafff1"]
+  }
+}
