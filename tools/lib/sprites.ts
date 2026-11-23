@@ -176,6 +176,7 @@ export function buildPack(def: PackDef, ctx: RenderContext): BuiltPack {
       loop: anim.loop,
       origin,
       ...(anim.anchor ? { anchor: anim.anchor } : {}),
+      ...(anim.facing ? { facing: anim.facing } : {}),
     };
   });
   const atlas = encodePng({ width, height, data });
@@ -282,4 +283,19 @@ export function buildFx(ctx: RenderContext): BuiltFx {
   const hash = sha256(atlas);
   const manifest = { version: '0.1.0', frameSize: { w: size, h: size }, marks, files: { [FX_FILE]: hash } };
   return { manifest, atlas, atlasSize: { width, height }, sha256: hash, frames };
+}
+
+/**
+ * Horizontal mirror about the frame centre (x → w − 1 − x): the runtime flip of a `facing: 'right'` strip for walking
+ * left (ADR 010). The rig keeps the body axis at x = 24 of the 48-px frame, so the feet pivot stays put.
+ */
+export function mirrorFrame(img: RgbaImage): RgbaImage {
+  const data = new Uint8Array(img.data.length);
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      const src = (y * img.width + x) * 4;
+      data.set(img.data.subarray(src, src + 4), (y * img.width + (img.width - 1 - x)) * 4);
+    }
+  }
+  return { width: img.width, height: img.height, data };
 }

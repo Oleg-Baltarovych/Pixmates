@@ -23,3 +23,9 @@ export const DRAG_FPS = 60;
 
 /** The character shown when none is chosen (M-ART: `maid`; until phase 2 builds it, the placeholder stays). */
 export const DEFAULT_CHARACTER = builtinPackId('maid');
+
+/**
+ * M1 travel speed matched to the q34 `walk` (art round MA-27c-1): the planted foot slides back 2 native px per frame
+ * at 10 fps, so the sprite moves 20 native px/s (× the integer sprite scale on screen); any other speed skates.
+ */
+export const WALK_TRAVEL = { pxPerFrame: 2, fps: 10, pxPerSecond: 20 } as const;

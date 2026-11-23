@@ -2,7 +2,7 @@
 
 > Living map for AI agents and humans. Goal: orient in a new session without re-reading code or the whole SPEC.
 > Keep it terse and current. Update in the same commit that changes structure, systems, commands, or decisions.
-> Last updated: 2026-11-23 (M0 ✅ merged; M-ART phase 2 — maid MA-27 READY; D-16 three-quarter travel view planned)
+> Last updated: 2026-11-23 (M0 ✅ merged; M-ART phase 2 — maid MA-27 READY; D-16 MA-27a/b/c implemented, MA-27d next)
 
 ## 1. Status
 - Phase: **M0 ✅** (merged to `main`) · **M-ART 🚧** on `feat/m-art` — plan `docs/plans/2026-11-23-m-art.md` (phase 1 art spike → ADR 009). M0 history: M0-01…M0-08 implemented on `feat/m0-scaffold`, reviewed (code + security) and accepted by qa-lead 2026-11-22; owner visual check ✅ 2026-11-22 (transparency, click-through, drag without focus, tray incl. layer + size); first CI run green (PR #1); spikes M0-09 done 2026-11-23 (`docs/plans/spikes/`: S1 windows, S2 SQLite, S3 GPU; code on branches `spike/s1-windows`, `spike/s2-sqlite`, never merged); M0-10: ADR 007 (overlay A, budget private ≤ 280 MB — A measures 250 MB) and ADR 008 (`node:sqlite`) accepted, `--compat-mode` flag added. SPEC v1.6, decisions D-1…D-12 in `docs/SPEC-REVIEW.md`.
@@ -53,7 +53,7 @@ Legend: — not started · 🚧 in progress · ✅ done (link key files when don
 - Original characters only; personal packs in git-ignored `skins-local/` (005).
 - Dev companion: localhost hooks endpoint + MCP server, off by default, token + Origin checks (006).
 - Art (009): frame 48 px with headroom, «anime soft» preset (owner's blind pick A = 48soft); 11 characters, `goth` joins the M-ART trio with `maid` and `kitsune`, `robot` → M3 (D-14, D-15).
-- Rig views (010, proposed; D-16): `front` + `q34` (three-quarter, facing right, left = runtime mirror); q34 for travel only (`walk`, `turn`; M1 `run`, `climb`); manifest per-anim `facing`.
+- Rig views (010, accepted; D-16): `front` + `q34` (three-quarter, facing right, left = runtime mirror); q34 for travel only (`walk`, `turn`; M1 `run`, `climb`); manifest per-anim `facing` (`front|right|left`, default front; `facingOf()` in `shared/pack.ts`), carried on `stage:characters` (renderer ignores it until M1).
 - Window strategy: overlay on the work area (A); RAM budget = private-bytes sum avg ≤ 280 MB, WS reported only (007). SQLite: built-in `node:sqlite` behind `storage/db.ts`, better-sqlite3 as fallback (008).
 
 ## 5. Gotchas
@@ -91,3 +91,4 @@ Legend: — not started · 🚧 in progress · ✅ done (link key files when don
 ## 6. SPEC section index (`docs/SPEC.md`)
 §0 principles · §1 goals/non-goals, budgets · §2 stack · §3 architecture (3.1 windows, 3.2 IPC, 3.3 render budget) · §4 behavior (4.1 state machine + priorities + anti-spam, 4.2 physics/surfaces, 4.3 activities + cursor, 4.4 character switch, 4.5 mood) ·
 §5 characters (5.1 pack format, 5.2 rig, 5.3 roster) · §6 AI (6.1 UX, 6.2 text + body, 6.3 providers, 6.4 tools, 6.5 prompt/memory/security, 6.7 evals) · §7 Dev companion · §8 non-AI features · §9 settings · §10 privacy & security · §11 structure · §12 milestones · §13 risks · §14 v1 acceptance.
+- Rig q34 (MA-27b/c): per-frame `PoseFrame.view`/`headView` is the only view source (turn f0 = front body + q34 head); manifest `facing` = `animFacing()` (`right` if any frame's body is q34), `REST_Q34`/`ARMS_Q34` in `rig/body.ts`, `Body.views.q34` = `{head, face (neutral+blink, `Q34_EXPRESSIONS`), masks.shoe/headAcc/neckAcc, apron?, tweaks?}`; a body without it fails `createRigPack` when any pose uses q34. q34 draw order: far arm/leg (R) behind everything, near arm (L) in front. `armTorsoProblems(r, { far: 'R' })` on q34 frames. Walk is q34 only (front walk retired): 8-px contact stride, planted foot slides an even 2 px/frame = `WALK_TRAVEL` (src/content/stage.ts, 20 native px/s — M1 must travel at exactly this), passing foot 1 px behind with toe tipped down, far shoe one ramp step darker, `PoseFrame.hairDx` trails the back-hair tips (tail swings against it); glance = iris/pupil-only shift (`irisShift`, rule `onlyIrisDiffers`), turn f0 `irisDx: 1` (eyes lead); q34 fox tail is a fixed curve `q34FoxTail` (tip past the hair, clear of the near hand); 16 anims / 105 frames; `idle_a` frame 4 = required front `glance`. `rig/q34.ts` derives q34 masks from front ones — dummies use it, and **maid's q34 is a TEMPORARY derived stand-in (`MAID_Q34_STAND_IN`) until MA-27d**. `pnpm sprites:preview` also writes `<id>-<anim>-mirrored.apng.png` for `facing` ≠ front; `mirrorFrame` lives in `tools/lib/sprites.ts`.

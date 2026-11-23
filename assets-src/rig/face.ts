@@ -19,6 +19,8 @@ export const EXPRESSIONS = [
   'startle',
   'petted',
   'wince',
+  /** idle_a micro-variation: neutral with the irises 1 px toward the facing side (screen-right). */
+  'glance',
 ] as const;
 export type ExpressionId = (typeof EXPRESSIONS)[number];
 
@@ -48,13 +50,64 @@ export interface FaceLibrary {
   readonly expressions: Readonly<Record<ExpressionId, Expression>>;
 }
 
+/** q34 expressions every body authors (Q-D16-2): M1 travel blinks on its own timer, so `blink` is required too. */
+export const Q34_EXPRESSIONS: readonly ExpressionId[] = ['neutral', 'blink'];
+
+/** A face library of a non-front view: only the expressions its poses use (ADR 010; q34 = neutral + blink). */
+export type ViewFaceLibrary = Omit<FaceLibrary, 'expressions'> & {
+  readonly expressions: Partial<Readonly<Record<ExpressionId, Expression>>>;
+};
+
+const IRIS = new Set(['c', 'C', 'i', 'I', 'k', 'K', 'X']);
+
+/**
+ * Glance (art round MA-27c-2): the irises and pupils move 1 px toward screen-right inside each eye; the lash row,
+ * the eye outline and the shine stay put. Only rows with a 2-px pupil (`XX`) below the lash row change, and in each
+ * eye half (cols < 10, ≥ 10) the iris/pupil px rotate one position right among themselves (same px count).
+ */
+export function irisShift(mask: Mask, half = 10): Mask {
+  return mask.map((row, y) => {
+    if (y === 0 || !row.includes('XX')) return row;
+    const out = row.split('');
+    for (const [from, to] of [
+      [0, half],
+      [half, row.length],
+    ] as const) {
+      const pos: number[] = [];
+      for (let x = from; x < to; x++) if (IRIS.has(row.charAt(x))) pos.push(x);
+      if (pos.length < 2) continue;
+      pos.forEach((x, k) => {
+        out[x] = row.charAt(pos[(k - 1 + pos.length) % pos.length] ?? x);
+      });
+    }
+    return out.join('');
+  });
+}
+
+/** True when `b` differs from `a` only in iris/pupil px below the lash row (the glance rule). */
+export function onlyIrisDiffers(a: Mask, b: Mask): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((row, y) => {
+    const other = b[y] ?? '';
+    if (row.length !== other.length) return false;
+    for (let x = 0; x < row.length; x++) {
+      const p = row.charAt(x);
+      const q = other.charAt(x);
+      if (p !== q && (y === 0 || !IRIS.has(p) || !IRIS.has(q))) return false;
+    }
+    return true;
+  });
+}
+
 /** The parts of an expression in stamp order (cheeks under everything, then eyes, brows, mouth). */
-export function expressionParts(lib: FaceLibrary, id: ExpressionId, armsUp = false): FacePart[] {
+export function expressionParts(lib: ViewFaceLibrary, id: ExpressionId, armsUp = false, irisDx = false): FacePart[] {
   const e = lib.expressions[id];
+  if (!e) throw new Error(`face library has no expression "${id}"`);
   const mouth = armsUp && e.raisedMouth !== undefined ? e.raisedMouth : e.mouth;
+  const eyes = lib.eyes[e.eyes];
   const parts = [
     lib.cheeks[e.cheeks],
-    lib.eyes[e.eyes],
+    irisDx && eyes ? { ...eyes, mask: irisShift(eyes.mask) } : eyes,
     e.brows === undefined ? undefined : lib.brows?.[e.brows],
     lib.mouths[mouth],
   ];
@@ -68,9 +121,10 @@ const HAIR = new Set(['j', 'J', 'h', 'H', 'y', 'Y']);
  * `faceAt` is the face anchor in head-mask coordinates.
  */
 export function validateFace(
-  lib: FaceLibrary,
+  lib: ViewFaceLibrary,
   name: string,
   head?: { readonly mask: Mask; readonly faceAt: Point },
+  required: readonly ExpressionId[] = EXPRESSIONS,
 ): string[] {
   const problems: string[] = [];
   const groups = { eyes: lib.eyes, brows: lib.brows ?? {}, mouths: lib.mouths, cheeks: lib.cheeks } as const;
@@ -102,8 +156,8 @@ export function validateFace(
       });
     }
   }
-  for (const id of EXPRESSIONS) {
-    const e = (lib.expressions as Partial<Record<ExpressionId, Expression>>)[id];
+  for (const id of required) {
+    const e = lib.expressions[id];
     if (!e) {
       problems.push(`${name}: missing expression "${id}"`);
       continue;

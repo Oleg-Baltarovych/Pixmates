@@ -5,7 +5,11 @@
 import type { RampName } from '../lib/buffer.ts';
 import type { Point } from '../lib/chain.ts';
 import type { Mask, Outfit } from '../lib/mask.ts';
-import type { ExpressionId, FaceLibrary } from './face.ts';
+import type { ExpressionId, FaceLibrary, ViewFaceLibrary } from './face.ts';
+
+/** Rig views (ADR 010): `front` and three-quarter `q34`, authored facing screen-right (left = runtime mirror). */
+export const VIEWS = ['front', 'q34'] as const;
+export type View = (typeof VIEWS)[number];
 
 /** In parent-first order. */
 export const JOINTS = [
@@ -77,7 +81,11 @@ export type ArmVariant =
 /** `stand` = feet planted on the ground row (root motion does not move them); the rest hang from the hip. */
 export type LegVariant = 'stand' | 'dangle' | 'sit' | 'curl';
 
-export type DrawOrder = 'arms_front' | 'arm_l_back' | 'arm_r_back' | 'arms_back';
+/**
+ * `q34` (implied by a q34 body view): far arm + far leg (screen-right, R) → back hair/tail → near leg → hem → torso →
+ * near arm (L); the front orders apply to front-view frames only.
+ */
+export type DrawOrder = 'arms_front' | 'arm_l_back' | 'arm_r_back' | 'arms_back' | 'q34';
 
 /** Hem (skirt / shorts bottom) offsets: sideways lag, widening, lift (fall). */
 export interface HemPose {
@@ -107,6 +115,14 @@ export interface PoseFrame {
   readonly impulse?: { readonly x: number; readonly y: number };
   /** Back hair below the temples and the side locks float 1 px up (the up-beat of a jump). */
   readonly hairLift?: 1;
+  /** Body view of this frame (default `front`); any q34 body frame makes the animation `facing: 'right'`. */
+  readonly view?: View;
+  /** Head view when it leads the body (turn f0: front body, q34 head and eyes); default = the body view. */
+  readonly headView?: View;
+  /** Back-hair tips (below the temples) offset in px, full at the tips; the tail tip swings the other way. */
+  readonly hairDx?: -1 | 0 | 1;
+  /** Eyes lead: the irises move 1 px toward screen-right on this frame (turn f0), lashes and shine stay. */
+  readonly irisDx?: 1;
 }
 
 export interface RigAnim {
@@ -131,6 +147,29 @@ export interface BodyVariants {
   readonly back: 'none' | 'spade_tail' | 'fox_tail';
   readonly neckAcc: 'none' | 'bow' | 'choker' | 'scarf';
   readonly sleeves: 'short' | 'long';
+}
+
+/** Maid apron: bib mask on the bodice + front panel; `dx` shifts the panel off the hip centre (q34: toward facing). */
+export interface Apron {
+  readonly bib: PlacedMask;
+  readonly panelW: number;
+  readonly dx?: number;
+}
+
+/** Per-view authored parts (ADR 010): a body supplies them for every non-front view its poses use. */
+export interface BodyView {
+  readonly head: PlacedMask & { readonly band: number };
+  /** Only the expressions the view's poses reference are required (q34: neutral, blink). */
+  readonly face: ViewFaceLibrary;
+  readonly masks: {
+    /** Side shoe, toe forward (screen-right); top-left = foot − (2, 0.6). */
+    readonly shoe: Mask;
+    readonly headAcc?: PlacedMask;
+    readonly neckAcc?: PlacedMask;
+  };
+  readonly apron?: Apron;
+  /** Rest offsets in this view (default: the body's front `tweaks`). */
+  readonly tweaks?: Partial<Readonly<Record<Joint, Offset>>>;
 }
 
 export interface Body {
@@ -170,7 +209,7 @@ export interface Body {
    * arm-over-torso pass and check treat it as torso; drawn under `neckAcc`); the front panel is `panelW` px wide on
    * the skirt from the waist band to 1 row above the hem, with a 1-px frill on its sides and bottom.
    */
-  readonly apron?: { readonly bib: PlacedMask; readonly panelW: number };
+  readonly apron?: Apron;
   /** Outline ramp for px next to the horns (so ivory never reads as a pale ear). */
   readonly hornOutline?: RampName;
   /**
@@ -180,4 +219,6 @@ export interface Body {
   readonly chinHand?: Offset;
   /** Rest offsets per joint (proportions), never per-animation forks. */
   readonly tweaks?: Partial<Readonly<Record<Joint, Offset>>>;
+  /** Authored parts per non-front view; a body without `q34` fails the build when any pose uses q34. */
+  readonly views?: { readonly q34?: BodyView };
 }

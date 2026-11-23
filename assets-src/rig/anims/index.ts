@@ -1,4 +1,4 @@
-// The 15 shared animations (plan M-ART MA-25, frame budget in the plan), authored once and played by every body.
+// The 16 shared animations (plan M-ART MA-25, frame budget in the plan), authored once and played by every body.
 // Drop order if art rounds overrun: idle_b → petted → startle (their fallbacks: idle_a, happy, worried).
 import type { RigAnim } from '../types.ts';
 import { DRAG } from './drag.ts';
@@ -12,6 +12,7 @@ import { SIT_EDGE } from './sit_edge.ts';
 import { SLEEP } from './sleep.ts';
 import { STARTLE } from './startle.ts';
 import { TALK } from './talk.ts';
+import { TURN } from './turn.ts';
 import { THINK } from './think.ts';
 import { WALK } from './walk.ts';
 import { WAVE_ANIM } from './wave.ts';
@@ -21,6 +22,7 @@ export const ANIMS: readonly RigAnim[] = [
   IDLE_A,
   IDLE_B,
   WALK,
+  TURN,
   SIT_EDGE,
   SLEEP,
   DRAG,

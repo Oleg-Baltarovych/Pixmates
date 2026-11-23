@@ -1,13 +1,14 @@
 // M-ART phase 2 MA-23/24/25: rig composer (joints, squash, shelf atlas, headroom, seams), face library validator and
 // the 15 shared poses, checked on two dummy bodies (biped; biped + fox tail + ears).
 import { describe, expect, it } from 'vitest';
-import { FIGURE_H, resolveJoints, REST } from '../../../assets-src/rig/body.ts';
+import { FIGURE_H, resolveJoints, REST, REST_Q34 } from '../../../assets-src/rig/body.ts';
 import {
   chooseFrameH,
   closeSeams,
   createRigPack,
   createRigRenderer,
   ARM_LABEL,
+  bodyViewOf,
   RIG_H,
   squashRows,
 } from '../../../assets-src/rig/compose.ts';
@@ -182,11 +183,12 @@ describe('face library (MA-24)', () => {
   });
 });
 
-describe('the 15 shared poses (MA-25)', () => {
+describe('the 16 shared poses (MA-25, MA-27c)', () => {
   const budget: Record<string, readonly [number, number]> = {
     idle_a: [8, 6],
     idle_b: [12, 6],
     walk: [8, 10],
+    turn: [2, 10],
     sit_edge: [6, 6],
     sleep: [8, 3],
     drag: [4, 8],
@@ -200,10 +202,10 @@ describe('the 15 shared poses (MA-25)', () => {
     petted: [8, 8],
     startle: [5, 10],
   };
-  // The plan's table sums to 103 frames (its "111" total was an arithmetic slip).
-  it('matches the frame budget (103 frames) and only uses library expressions', () => {
+  // 103 frames (MA-25) + the 2-frame q34 turn (D-16; the q34 walk replaces the front walk) = 105.
+  it('matches the frame budget (105 frames) and only uses library expressions', () => {
     expect(Object.fromEntries(ANIMS.map((a) => [a.name, [a.frames.length, a.fps]]))).toEqual(budget);
-    expect(ANIMS.reduce((n, a) => n + a.frames.length, 0)).toBe(103);
+    expect(ANIMS.reduce((n, a) => n + a.frames.length, 0)).toBe(105);
     for (const a of ANIMS) for (const f of a.frames) expect(EXPRESSIONS).toContain(f.face);
   });
   it('loops wrap without jumps (body joints move ≤ 2 px, hands ≤ 5 px, from the last frame to the first)', () => {
@@ -219,30 +221,42 @@ describe('the 15 shared poses (MA-25)', () => {
   });
   const walk = ANIMS.find((a) => a.name === 'walk')?.frames ?? [];
   const at = (i: number) => resolveJoints(DUMMY_A, walk[(i + walk.length) % walk.length] ?? frame({}), RIG_H);
-  it('walk: 1-px bob, 3–4 px stride on contact, 1-px head drop on passing, no sideways head/body sway', () => {
+  it('walk (q34): 1-px bob, 8-px fore/aft stride, contact foot planted ≥ 4 frames, steady head', () => {
+    expect(walk.every((f) => f.view === 'q34')).toBe(true);
     const hipY = walk.map((_, i) => at(i).hip[1]);
     expect(Math.max(...hipY) - Math.min(...hipY)).toBe(1);
-    const gap = (i: number): number => at(i).footR[0] - at(i).footL[0];
-    const rest = REST.footR[0] - REST.footL[0];
+    const ground = at(0).footL[1];
     for (const contact of [0, 4]) {
-      expect(gap(contact) - rest).toBeGreaterThanOrEqual(3);
-      expect(gap(contact) - rest).toBeLessThanOrEqual(4);
-      expect(at(contact).footL[1]).toBe(at(contact).footR[1]);
+      const gap = Math.abs(at(contact).footR[0] - at(contact).footL[0]);
+      // 8-px contact stride (art round MA-27c-1: even 2 px/frame stance slide).
+      expect(gap).toBe(8);
+      expect(at(contact).footL[1]).toBe(ground);
+      expect(at(contact).footR[1]).toBe(ground);
     }
+    // Near foot forward (screen-right = facing) on frame 0, the far foot on frame 4.
+    expect(at(0).footL[0]).toBeGreaterThan(at(0).footR[0]);
+    expect(at(4).footR[0]).toBeGreaterThan(at(4).footL[0]);
     for (const foot of ['footL', 'footR'] as const) {
-      const planted = walk.filter((_, i) => at(i)[foot][1] === at(0)[foot][1]);
+      const planted = walk.map((_, i) => i).filter((i) => at(i)[foot][1] === ground);
       expect(planted.length).toBeGreaterThanOrEqual(4);
+      // The stance foot only slides back (in place; M1 moves the sprite), never forward.
+      for (const i of planted) {
+        if (planted.includes((i + 1) % 8)) {
+          expect(at((i + 1) % 8)[foot][0], `${foot}/${String(i)}`).toBeLessThanOrEqual(at(i)[foot][0]);
+        }
+      }
+      expect(Math.min(...walk.map((_, i) => at(i)[foot][1]))).toBe(ground - 2);
     }
     const passing = new Set([2, 6]);
+    const headY = walk.map((_, i) => at(i).head[1]);
+    expect(Math.max(...headY) - Math.min(...headY)).toBeLessThanOrEqual(1);
     walk.forEach((f, i) => {
-      // The head sits where the body was one frame earlier (1-frame lag) and dips 1 px on the passing frames.
-      const drop = passing.has(i) ? 1 : 0;
-      expect(at(i).head[1] - at(i).hip[1]).toBe(REST.head[1] - REST.hip[1] + at(i - 1).hip[1] - at(i).hip[1] + drop);
-      // Owner feedback: the head must not rock side to side — no lateral root or head offset in any frame.
+      // Owner: the head must not rock side to side — root dx = 0 and head-x − hip-x constant in every frame.
       expect(f.root.dx).toBe(0);
-      expect(at(i).head[0] - at(i).hip[0]).toBe(REST.head[0] - REST.hip[0]);
-      // The hip shift is carried by the hem alone: 1 px, only on the passing frames.
-      expect(Math.abs(f.parts.hem?.dx ?? 0)).toBe(passing.has(i) ? 1 : 0);
+      expect(at(i).head[0] - at(i).hip[0]).toBe(REST_Q34.head[0] - REST_Q34.hip[0]);
+      expect(at(i).hip[0]).toBe(REST_Q34.hip[0]);
+      // The hem trails 1 px (screen-left) on the passing frames only.
+      expect(f.parts.hem?.dx ?? 0).toBe(passing.has(i) ? -1 : 0);
       expect([f.parts.armL, f.parts.armR]).not.toContain('chest');
     });
   });
@@ -265,7 +279,7 @@ describe('dummy packs (MA-23 headroom, seams, determinism)', () => {
       expect(m.frameSize).toEqual({ w: 48, h: RIG_H });
       expect(m.scaleRef).toBe(48);
       expect(m.animations['sit_edge']?.anchor?.y).toBeLessThan(1);
-      expect(Object.keys(m.animations)).toHaveLength(15);
+      expect(Object.keys(m.animations)).toHaveLength(16);
       expect(b.atlasSize.width).toBeLessThanOrEqual(1024);
       expect(b.atlasSize.height).toBeLessThanOrEqual(1024);
       expect(checkStrips(m, new Map([['sprites/atlas.png', b.atlasSize]]), 1024)).toEqual([]);
@@ -368,7 +382,9 @@ describe('arm over torso (RIG.md rule, art round 5 c1/c2)', () => {
           const { image, labels } = r.renderLabeled(anim, f, ctx);
           const report = armTorsoContrast(image, labels, deepest);
           if (report.edge > 0) measured++;
-          for (const p of armTorsoProblems(report)) problems.push(`${body.id}/${anim.name}/${String(f)}: ${p}`);
+          // q34 frames: the far (screen-right) arm sits behind the torso (ADR 010 far-arm rule).
+          const opts = bodyViewOf(anim, f) === 'q34' ? ({ far: 'R' } as const) : {};
+          for (const p of armTorsoProblems(report, opts)) problems.push(`${body.id}/${anim.name}/${String(f)}: ${p}`);
         });
       }
     }

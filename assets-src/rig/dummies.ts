@@ -10,8 +10,9 @@ import type { PackDef } from '../lib/types.ts';
 import { RIG_48 } from '../spike/maid-48/rig.ts';
 import { ANIMS } from './anims/index.ts';
 import { createRigPack } from './compose.ts';
-import type { FaceLibrary, FacePart } from './face.ts';
-import type { Body } from './types.ts';
+import { irisShift, type FaceLibrary, type FacePart } from './face.ts';
+import { deriveQ34Face, deriveQ34Head, deriveQ34Shoe } from './q34.ts';
+import type { Body, BodyView } from './types.ts';
 
 const T6 = [0, 1, 2, 3, 4, 5] as const;
 const T6UP = [1, 2, 3, 4, 5, 6] as const;
@@ -62,6 +63,8 @@ export const DUMMY_FACE: FaceLibrary = {
     open: part(OPEN, 0, 3),
     low: part(OPEN, 0, 4),
     glance: part(OPEN, 1, 3),
+    /** idle_a glance: irises/pupils 1 px toward screen-right, lashes and shine in place. */
+    side: part(irisShift(OPEN), 0, 3),
     closed: part(rows(RIG_48.face.blink, 6, 7), 0, 6),
     half: part(['..XXXXX......XXXXX..', '..piXXi......iXXip..', '...IIpI......IIpI...', '....II........II....'], 0, 5),
     happy: part(rows(RIG_48.face.happy, 4, 6), 0, 4),
@@ -110,11 +113,25 @@ export const DUMMY_FACE: FaceLibrary = {
     startle: { eyes: 'startle', mouth: 'talk_c', cheeks: 'none' },
     petted: { eyes: 'happy', mouth: 'smile', cheeks: 'strong' },
     wince: { eyes: 'wince', mouth: 'flat', cheeks: 'soft' },
+    glance: { eyes: 'side', mouth: 'smile', cheeks: 'soft' },
   },
 };
 
 const EAR: Mask = ['.U....', '.uO...', '.uFO..', 'uFFoO.', 'uFfoOn', 'oooOnn', '..oonn'];
 const FOX_EARS: Mask = EAR.map((r) => r + '..........' + r.split('').reverse().join(''));
+/** q34 fox ears: near (screen-left) ear full, far ear 2 px narrower and 1 px lower. */
+const FAR_EAR: Mask = [
+  '....',
+  ...EAR.map((r) => r.split('').reverse().join('').slice(0, 1) + r.split('').reverse().join('').slice(3)),
+];
+const Q34_EARS: Mask = FAR_EAR.map((far, y) => (EAR[y] ?? '......') + '............' + far);
+
+/** q34 parts derived from the dummy front masks (assets-src/rig/q34.ts); the clip moves to the near side. */
+const dummyQ34 = (headMask: Mask, masks: Omit<BodyView['masks'], 'shoe'>): BodyView => ({
+  head: { mask: deriveQ34Head(headMask), at: HEAD_AT, band: RIG_48.band },
+  face: deriveQ34Face(DUMMY_FACE),
+  masks: { shoe: deriveQ34Shoe(RIG_48.shoe.mask), ...masks },
+});
 
 export const DUMMY_A: Body = {
   id: 'rig-dummy-a',
@@ -136,6 +153,12 @@ export const DUMMY_A: Body = {
     shoe: RIG_48.shoe.mask,
     headAcc: { mask: ['.rt', 'rtg', '.g.'], at: [6, 4] },
     neckAcc: { mask: RIG_48.bow.mask, at: [-3, 3] },
+  },
+  views: {
+    q34: dummyQ34(HORNLESS, {
+      headAcc: { mask: ['.rt', 'rtg', '.g.'], at: [-10, 4] },
+      neckAcc: { mask: RIG_48.bow.mask, at: [-2, 3] },
+    }),
   },
 };
 
@@ -167,6 +190,12 @@ export const DUMMY_B: Body = {
     headAcc: { mask: FOX_EARS, at: [-11, -4] },
     neckAcc: { mask: ['gtTTtg', '..rr..'], at: [-3, 2] },
   },
+  views: {
+    q34: dummyQ34(HORNLESS, {
+      headAcc: { mask: Q34_EARS, at: [-11, -4] },
+      neckAcc: { mask: ['gtTtg', '..rr.'], at: [-2, 2] },
+    }),
+  },
 };
 
 /** The spike maid's masks (horns, bow, spade tail) driven by the rig: a preview, not the MA-27 final. */
@@ -192,6 +221,7 @@ export const MAID_PREVIEW: Body = {
     spade: RIG_48.spade,
   },
   hornOutline: 'hair_plum',
+  views: { q34: dummyQ34(RIG_48.head.mask, { neckAcc: { mask: RIG_48.bow.mask, at: [-2, 3] } }) },
 };
 
 /** Review packs for `pnpm sprites:sheet --review` (never written to resources/). */

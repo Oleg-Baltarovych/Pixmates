@@ -6,7 +6,8 @@ import type { Outfit } from '../../lib/mask.ts';
 import type { PackDef } from '../../lib/types.ts';
 import { ANIMS } from '../../rig/anims/index.ts';
 import { createRigPack } from '../../rig/compose.ts';
-import type { Body } from '../../rig/types.ts';
+import { deriveQ34Face, deriveQ34Head, deriveQ34Shoe } from '../../rig/q34.ts';
+import type { Body, BodyView } from '../../rig/types.ts';
 import { MAID_FACE } from './face.ts';
 import { BAND, BIB, BOW, HEAD, SHOE, SPADE } from './masks.ts';
 
@@ -25,6 +26,18 @@ const OUTFIT: Outfit = {
   // F (index 3) = rose 3, visible on skin at real size; f (index 2) = rose 4, the lighter soft edge.
   blush: { ramp: 'cloth_rose', tones: [3, 3, 4, 3, 3, 3] },
   ink: { ramp: 'ink', tones: [0, 1, 2, 3, 4, 4] },
+};
+
+/**
+ * TEMPORARY q34 STAND-IN (MA-27b/c, replaced in MA-27d): the q34 walk/turn need `views.q34`, so until the maid's
+ * three-quarter head (near/far horns, parted fringe), q34 face, bow/bib/apron and side shoe are authored, they are
+ * DERIVED from her front masks (assets-src/rig/q34.ts). Not art-reviewed; the owner judges maid after MA-27d.
+ */
+const MAID_Q34_STAND_IN: BodyView = {
+  head: { mask: deriveQ34Head(HEAD), at: [-15, -14], band: BAND },
+  face: deriveQ34Face(MAID_FACE),
+  masks: { shoe: deriveQ34Shoe(SHOE), neckAcc: { mask: BOW, at: [-1, 3] } },
+  apron: { bib: { mask: BIB, at: [-3, 3] }, panelW: 8, dx: 2 },
 };
 
 export const MAID: Body = {
@@ -54,6 +67,7 @@ export const MAID: Body = {
   // Cream apron: bib on the bodice under the rose bow, ~10-px front panel with a frill from waist to hem.
   apron: { bib: { mask: BIB, at: [-4, 3] }, panelW: 10 },
   hornOutline: 'hair_plum',
+  views: { q34: MAID_Q34_STAND_IN },
 };
 
 /** Manifest `emotions` (plan MA-32 content-integrity list): each is an animation of the pack. */

@@ -27,6 +27,15 @@ const GLANCE: Mask = [
   '...IIpI......IIpI...',
   '....kk........kk....',
 ];
+/** Glance (idle_a micro-variation): neutral with the pupils 1 px toward the facing side (screen-right). */
+const SIDE: Mask = [
+  '.X.XXXX......XXXX.X.',
+  '..XPcccx....xPcccX..',
+  '..pPcXX......PcXXp..',
+  '..picXX......icXXp..',
+  '...IIpI......IIpI...',
+  '....kk........kk....',
+];
 /** Right eye squeezed shut (`<`), left eye open. */
 const WINCE: Mask = [
   '.X.XXXX.............',
@@ -59,6 +68,7 @@ export const MAID_FACE: FaceLibrary = {
       4,
     ),
     wince: part(WINCE, 0, 3),
+    side: part(SIDE, 0, 3),
   },
   brows: {
     worried: part(['.....xX......Xx.....', '...xX..........Xx...'], 0, 2),
@@ -94,5 +104,6 @@ export const MAID_FACE: FaceLibrary = {
     startle: { eyes: 'startle', mouth: 'talk_c', cheeks: 'none' },
     petted: { eyes: 'happy', mouth: 'wide', cheeks: 'strong' },
     wince: { eyes: 'wince', mouth: 'flat', cheeks: 'soft' },
+    glance: { eyes: 'side', mouth: 'smile', cheeks: 'soft' },
   },
 };

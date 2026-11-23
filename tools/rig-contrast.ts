@@ -1,7 +1,7 @@
 // Prints the arm-over-torso check (assets-src/rig/checks.ts) per pose and frame for the review bodies:
 //   node tools/rig-contrast.ts [<body id>]
 import { armTorsoContrast, armTorsoProblems } from '../assets-src/rig/checks.ts';
-import { createRigRenderer } from '../assets-src/rig/compose.ts';
+import { bodyViewOf, createRigRenderer } from '../assets-src/rig/compose.ts';
 import { ANIMS } from '../assets-src/rig/anims/index.ts';
 import { DUMMY_A, DUMMY_B, MAID_PREVIEW } from '../assets-src/rig/dummies.ts';
 import { MAID } from '../assets-src/characters/maid/body.ts';
@@ -17,7 +17,11 @@ for (const body of [MAID, DUMMY_A, DUMMY_B, MAID_PREVIEW]) {
   for (const anim of ANIMS) {
     const rows = anim.frames.map((_, f) => {
       const { image, labels } = r.renderLabeled(anim, f, ctx);
-      return armTorsoContrast(image, labels, deepest);
+      // q34 frames: the far (screen-right) arm sits behind the torso (ADR 010 far-arm rule).
+      return {
+        ...armTorsoContrast(image, labels, deepest),
+        far: bodyViewOf(anim, f) === 'q34' ? ('R' as const) : undefined,
+      };
     });
     const touched = rows.filter((x) => x.edge > 0);
     if (touched.length === 0) {
@@ -29,7 +33,7 @@ for (const body of [MAID, DUMMY_A, DUMMY_B, MAID_PREVIEW]) {
     const tip = Math.min(...touched.flatMap((x) => [x.tipL ?? 99, x.tipR ?? 99]));
     const trim = touched.filter((x) => x.trimSamples > 0);
     const shoulder = trim.length ? Math.min(...trim.map((x) => x.trimP10)).toFixed(3) : 'n/a';
-    const bad = touched.flatMap((x) => armTorsoProblems(x));
+    const bad = touched.flatMap((x) => armTorsoProblems(x, x.far ? { far: x.far } : {}));
     console.log(
       `${body.id}/${anim.name}: frames ${String(touched.length)}/${String(rows.length)} min p10 ΔL ${p10.toFixed(3)}, ` +
         `shoulder/trim p10 ΔL ${shoulder} (${String(trim.length)} fr), ` +

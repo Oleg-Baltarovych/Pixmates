@@ -14,8 +14,9 @@ import { join } from 'node:path';
 import { FX_MARKS } from '../assets-src/fx/marks.ts';
 import { PACKS } from '../assets-src/packs.ts';
 import { MAID_PREVIEW, reviewPacks } from '../assets-src/rig/dummies.ts';
+import { facingOf } from '../src/shared/pack.ts';
 import { encodeApng, encodePng, type RgbaImage } from './lib/png.ts';
-import { buildFx, buildPack, loadMasterPalette, renderContext, ROOT } from './lib/sprites.ts';
+import { buildFx, buildPack, loadMasterPalette, mirrorFrame, renderContext, ROOT } from './lib/sprites.ts';
 
 type Rgb = readonly [number, number, number];
 const LIGHT: Rgb = [236, 240, 244];
@@ -89,17 +90,7 @@ function backdrop(
   }
 }
 
-/** Horizontal mirror (the runtime flip for walking left). */
-function mirror(img: RgbaImage): RgbaImage {
-  const data = new Uint8Array(img.data.length);
-  for (let y = 0; y < img.height; y++) {
-    for (let x = 0; x < img.width; x++) {
-      const src = (y * img.width + x) * 4;
-      data.set(img.data.subarray(src, src + 4), (y * img.width + (img.width - 1 - x)) * 4);
-    }
-  }
-  return { width: img.width, height: img.height, data };
-}
+const mirror = mirrorFrame;
 
 /** Real M-preset scale at 1080p / 125 % (plan scale table): 48 → ×4, 64 → ×3. */
 const realScale = (frameH: number, scaleRef = frameH): number => Math.max(2, Math.round((136 * 1.25) / scaleRef));
@@ -296,6 +287,21 @@ if (args.includes('--fx')) {
       const file = join(reports, 'sprites', `${def.id}-${name}.apng.png`);
       writeFileSync(file, apng);
       console.log(file);
+      // Facing animations (ADR 010): also the runtime mirror (walking left) for the motion round.
+      if (facingOf(def.animations[name] ?? {}) === 'front') continue;
+      const mirrored = encodeApng(
+        frames.map((frame) => {
+          const c = new Canvas(panelW * kinds.length, panelH);
+          kinds.forEach((kind, i) => {
+            backdrop(c, i * panelW, 0, panelW, panelH, kind);
+            c.blit(mirror(frame), i * panelW + 16, panelH - h * s - 4, s);
+          });
+          return { image: c.image(), delayMs: Math.round(1000 / fps) };
+        }),
+      );
+      const mirroredFile = join(reports, 'sprites', `${def.id}-${name}-mirrored.apng.png`);
+      writeFileSync(mirroredFile, mirrored);
+      console.log(mirroredFile);
     }
   }
 }

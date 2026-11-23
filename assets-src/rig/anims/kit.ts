@@ -1,7 +1,7 @@
 // Pose authoring kit (plan M-ART MA-25): `frame({...})` fills a PoseFrame from shorthand (arms/legs/hem at the top
 // level, defaults = standing rest pose, neutral face), `o(dx, dy)` is a joint offset.
 import type { ExpressionId } from '../face.ts';
-import type { ArmVariant, DrawOrder, HemPose, Joint, LegVariant, Offset, PoseFrame, Squash } from '../types.ts';
+import type { ArmVariant, DrawOrder, HemPose, Joint, LegVariant, Offset, PoseFrame, Squash, View } from '../types.ts';
 
 export const o = (dx: number, dy: number): Offset => ({ dx, dy });
 
@@ -20,6 +20,10 @@ export interface FrameInput {
   readonly order?: DrawOrder;
   readonly impulse?: { readonly x: number; readonly y: number };
   readonly hairLift?: 1;
+  readonly view?: View;
+  readonly headView?: View;
+  readonly hairDx?: -1 | 0 | 1;
+  readonly irisDx?: 1;
 }
 
 export function frame(p: FrameInput): PoseFrame {
@@ -38,5 +42,9 @@ export function frame(p: FrameInput): PoseFrame {
     ...(p.order ? { order: p.order } : {}),
     ...(p.impulse ? { impulse: p.impulse } : {}),
     ...(p.hairLift ? { hairLift: p.hairLift } : {}),
+    ...(p.view ? { view: p.view } : {}),
+    ...(p.headView ? { headView: p.headView } : {}),
+    ...(p.hairDx ? { hairDx: p.hairDx } : {}),
+    ...(p.irisDx ? { irisDx: p.irisDx } : {}),
   };
 }

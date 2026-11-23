@@ -13,6 +13,8 @@ export const ARM_TORSO_RULE = {
   minSeparator: 0.95,
   /** (iii) visible arm-end px (hand skin or cuff, not separator) on every arm that crosses the torso. */
   minTip: 2,
+  /** q34 far arm (behind the torso): the arm-end rule applies only when at least this many sleeve px show. */
+  farMinSleeve: 3,
 } as const;
 
 export interface ArmTorsoReport {
@@ -31,6 +33,9 @@ export interface ArmTorsoReport {
   /** Visible arm-end px per arm that touches the torso (null = that arm does not cross it). */
   readonly tipL: number | null;
   readonly tipR: number | null;
+  /** Visible sleeve px per arm (q34 far-arm rule). */
+  readonly sleeveL: number;
+  readonly sleeveR: number;
 }
 
 const N4 = [
@@ -63,6 +68,7 @@ export function armTorsoContrast(img: RgbaImage, labels: RgbaImage, deepest: Rea
   const dlTrim: number[] = [];
   const crosses = { L: false, R: false };
   const tips = { L: 0, R: 0 };
+  const sleeves = { L: 0, R: 0 };
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const l = label(x, y);
@@ -75,6 +81,7 @@ export function armTorsoContrast(img: RgbaImage, labels: RgbaImage, deepest: Rea
         if (touchesTorso(x, y)) crosses[side] = true;
         continue;
       }
+      sleeves[side]++;
       if (!touchesTorso(x, y)) continue;
       edge++;
       crosses[side] = true;
@@ -103,11 +110,16 @@ export function armTorsoContrast(img: RgbaImage, labels: RgbaImage, deepest: Rea
     trimP10: trimSorted.length === 0 ? 1 : (trimSorted[Math.floor(trimSorted.length * 0.1)] ?? 1),
     tipL: crosses.L ? tips.L : null,
     tipR: crosses.R ? tips.R : null,
+    sleeveL: sleeves.L,
+    sleeveR: sleeves.R,
   };
 }
 
-/** Rule violations of one report (empty = pass). */
-export function armTorsoProblems(r: ArmTorsoReport): string[] {
+/**
+ * Rule violations of one report (empty = pass). `far` (q34 frames: the screen-right arm behind the torso) keeps the
+ * separator and value-step rules on its visible edge but checks its arm end only when ≥ `farMinSleeve` sleeve px show.
+ */
+export function armTorsoProblems(r: ArmTorsoReport, opts: { readonly far?: 'L' | 'R' } = {}): string[] {
   const out: string[] = [];
   if (r.edge === 0) return out;
   if (r.samples > 0 && r.p10 < ARM_TORSO_RULE.minDeltaL) out.push(`value step p10 ΔL ${r.p10.toFixed(3)}`);
@@ -119,7 +131,8 @@ export function armTorsoProblems(r: ArmTorsoReport): string[] {
     ['L', r.tipL],
     ['R', r.tipR],
   ] as const) {
-    if (tip !== null && tip < ARM_TORSO_RULE.minTip) out.push(`arm ${side} end ${String(tip)} px`);
+    const hidden = side === opts.far && (side === 'L' ? r.sleeveL : r.sleeveR) < ARM_TORSO_RULE.farMinSleeve;
+    if (tip !== null && !hidden && tip < ARM_TORSO_RULE.minTip) out.push(`arm ${side} end ${String(tip)} px`);
   }
   return out;
 }

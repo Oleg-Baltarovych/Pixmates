@@ -1,21 +1,23 @@
-// walk (8 @ 10): a real stride — the feet spread 4 px on the contact frames (0, 4) and pass under the hip with the
-// swing foot lifted (2, 6); 1-px body bob down on contact, 1-px head drop on the passing frames, sideways weight
-// shift, loose arm counter-swing beside the torso (never across it). The head and the hem lag the body by one frame;
-// the side locks trail the head by 1 px (compose), hair follows through by chain.
+// walk (8 @ 10), three-quarter view facing screen-right (ADR 010; left = runtime mirror). The stride runs fore/aft
+// along x: an 8-px contact stride (near foot forward on frame 0, far foot forward on frame 4); the stance foot stays
+// on the ground for 5 frames and slides back an even 2 px per frame (in place; M1 moves the sprite at
+// `WALK_TRAVEL`, src/content/stage.ts), the swing foot lifts 1–2 px and on the passing frames (2 / 6) sits 1 px
+// behind the planted one, toe tipped down (compose). Back-hair tips trail 1 px on the passing frames (half a step
+// out of phase with the hem), the tail tip swings against them. 1-px body bob down on contact. Head steady (owner): root dx = 0
+// and head-x − hip-x constant in every frame; the head only follows the bob one frame late (≤ 1 px vertical). Arms
+// swing fore/aft against the legs (near arm in front of the torso, far hand peeking out); the hem trails 1 px on the
+// passing frames; hair, locks and tail carry the follow-through. The front walk is retired (Q-D16-1).
 import type { RigAnim } from '../types.ts';
 import { frame, o } from './kit.ts';
 
 const BOB = [1, 1, 0, 0, 1, 1, 0, 0] as const;
-// No sideways body/head sway (owner: a ±1 px root sway plus the 1-frame head lag made the head rock 2 px side to
-// side, too much at 48 px while the character also travels across the screen). The head stays the steadiest part:
-// vertical bob and passing-frame dip only. The hip shift is carried by the hem alone (1 px on the passing frames).
-const SWAY = [0, 0, 0, 0, 0, 0, 0, 0] as const;
-const HIP = [0, 0, 1, 0, 0, 0, -1, 0] as const;
-/** Half the extra foot spread (each foot moves out by this much). */
-const SPREAD = [2, 1, 0, 1, 2, 1, 0, 1] as const;
-const LIFT_L = [0, -1, -2, -1, 0, 0, 0, 0] as const;
-const LIFT_R = [0, 0, 0, 0, 0, -1, -2, -1] as const;
-const DROP = [0, 0, 1, 0, 0, 0, 1, 0] as const;
+/** Foot x about the body axis (x = 24): stance 0–4 slides back, swing 5–7 returns forward; R runs 4 frames later. */
+const STRIDE = [4, 2, 0, -2, -4, -3, -1, 2] as const;
+const LIFT = [0, 0, 0, 0, 0, -1, -2, -1] as const;
+/** Back-hair tips trail on the passing frames and return on the next ones. */
+const HAIR = [0, 0, -1, 0, 0, 0, -1, 0] as const;
+/** Hem trail (screen-left) on the passing frames. */
+const HEM = [0, 0, -1, 0, 0, 0, -1, 0] as const;
 const ARM_L = [
   'swing_back',
   'swing_back',
@@ -38,22 +40,27 @@ const ARM_R = [
 ] as const;
 const at = <T>(list: readonly T[], i: number): T => list[(i + list.length) % list.length] as T;
 
+/** q34 rest feet sit 1 px either side of the axis (REST_Q34): the stride is measured from the axis. */
+const FOOT_REST = { L: -1, R: 1 } as const;
+
 export const WALK: RigAnim = {
   name: 'walk',
   fps: 10,
   loop: true,
   frames: BOB.map((bob, i) =>
     frame({
-      root: o(at(SWAY, i), bob),
+      view: 'q34',
+      root: o(0, bob),
       joints: {
-        // 1-frame lag: the head sits where the body was in the previous frame; it dips 1 px on the passing frame.
-        head: o(at(SWAY, i - 1) - at(SWAY, i), at(BOB, i - 1) - bob + at(DROP, i)),
-        footL: o(-at(SPREAD, i), at(LIFT_L, i)),
-        footR: o(at(SPREAD, i), at(LIFT_R, i)),
+        // The head follows the bob one frame late (vertical only, never sideways).
+        head: o(0, at(BOB, i - 1) - bob),
+        footL: o(at(STRIDE, i) - FOOT_REST.L, at(LIFT, i)),
+        footR: o(at(STRIDE, i + 4) - FOOT_REST.R, at(LIFT, i + 4)),
       },
       armL: at(ARM_L, i),
       armR: at(ARM_R, i),
-      hem: { dx: at(HIP, i) },
+      hem: { dx: at(HEM, i) },
+      hairDx: at(HAIR, i),
     }),
   ),
 };

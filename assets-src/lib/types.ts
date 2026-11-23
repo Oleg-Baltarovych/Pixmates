@@ -6,12 +6,18 @@ import type { RgbaImage } from '../../tools/lib/png.ts';
 import type { Palette } from './palette.ts';
 import type { RampSize } from './passes.ts';
 
+import type { Facing } from '../../src/shared/pack.ts';
+
+export type { Facing };
+
 export interface AnimDef {
   readonly frames: number;
   readonly fps: number;
   readonly loop: boolean;
   /** Per-animation pivot (e.g. `sit_edge` on the seat), emitted into the manifest. */
   readonly anchor?: { readonly x: number; readonly y: number };
+  /** Authored facing (ADR 010), emitted into the manifest; absent = front. */
+  readonly facing?: Facing;
 }
 
 export interface RenderContext {

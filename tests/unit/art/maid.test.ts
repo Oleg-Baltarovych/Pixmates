@@ -24,7 +24,7 @@ const same = (a: RgbaImage, b: RgbaImage): boolean => Buffer.from(a.data).equals
 describe('pixmates.maid pack (MA-27)', () => {
   const built = buildPack(createMaidPack(), ctx);
 
-  it('builds all 15 shared animations at 48 × 56 with scaleRef 48 and a valid manifest within 1024²', () => {
+  it('builds all 16 shared animations at 48 × 56 with scaleRef 48 and a valid manifest within 1024²', () => {
     const m = manifestSchema.parse(built.manifest);
     expect(m.id).toBe('pixmates.maid');
     expect(m.frameSize).toEqual({ w: 48, h: RIG_H });
@@ -44,7 +44,7 @@ describe('pixmates.maid pack (MA-27)', () => {
     expect(buildPack(createMaidPack(), ctx).sha256).toBe(built.sha256);
   });
 
-  it('has all 13 expressions and no face px on hair or outside the head', () => {
+  it('has all 14 expressions and no face px on hair or outside the head', () => {
     expect(Object.keys(MAID_FACE.expressions).sort()).toEqual([...EXPRESSIONS].sort());
     expect(validateFace(MAID_FACE, 'maid', { mask: MAID.head.mask, faceAt: [5, 12] })).toEqual([]);
   });
