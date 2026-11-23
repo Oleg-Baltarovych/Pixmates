@@ -12,9 +12,23 @@ import {
 import { maxScale, presetScales, stepScale, type ScaleInput } from '../../core/scale.ts';
 import { initialState, step } from '../../core/step.ts';
 import type { CoreEvent, CoreState, Effect } from '../../core/types.ts';
-import { CHANNEL } from '../../shared/ipc.ts';
+import { CHANNEL, type StageAnimation } from '../../shared/ipc.ts';
+import type { Manifest } from '../../shared/pack.ts';
 import { sendEvent, type IpcRouter } from '../ipc/handle.ts';
 import type { StageCharacter } from '../characters/selection.ts';
+
+/** One `stage:characters` animation entry from a validated manifest animation (pivot and facing pass through). */
+export function stageAnimation(a: Manifest['animations'][string]): StageAnimation {
+  return {
+    frames: a.frames,
+    fps: a.fps,
+    loop: a.loop,
+    origin: a.origin ?? { x: 0, y: 0 },
+    // Per-animation pivot (sit_edge seat) and authored facing (ADR 010); the renderer ignores both until M1.
+    ...(a.anchor ? { anchor: a.anchor } : {}),
+    ...(a.facing ? { facing: a.facing } : {}),
+  };
+}
 
 export type LayerMode = 'on-top' | 'desktop';
 
@@ -156,17 +170,7 @@ export class StageController {
     const entries = this.#characters().map(({ key, label, pack }, index) => {
       const { manifest } = pack;
       const animations = Object.fromEntries(
-        Object.entries(manifest.animations).map(([name, a]) => [
-          name,
-          {
-            frames: a.frames,
-            fps: a.fps,
-            loop: a.loop,
-            origin: a.origin ?? { x: 0, y: 0 },
-            // Per-animation pivot (sit_edge seat); the renderer ignores it until M1.
-            ...(a.anchor ? { anchor: a.anchor } : {}),
-          },
-        ]),
+        Object.entries(manifest.animations).map(([name, a]) => [name, stageAnimation(a)]),
       );
       return {
         key,

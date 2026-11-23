@@ -4,7 +4,7 @@
 // IPC is keyed by them, so every name has exactly one contract.
 import { z } from 'zod';
 import { CHANNEL } from './ipc-channels.ts';
-import { ANIM_NAME, PACK_LIMITS, unitPoint } from './pack.ts';
+import { ANIM_NAME, PACK_LIMITS, facingSchema, unitPoint } from './pack.ts';
 import type { WindowRole } from './windows.ts';
 
 export { CHANNEL };
@@ -35,6 +35,8 @@ const stageAnimation = z
       .strict(),
     /** Per-animation pivot (manifest `anchor`, e.g. the sit_edge seat); the stage renderer applies it from M1. */
     anchor: unitPoint.optional(),
+    /** Authored facing (manifest `facing`, ADR 010); absent = `front`. The renderer mirrors from M1. */
+    facing: facingSchema.optional(),
   })
   .strict();
 
@@ -124,6 +126,7 @@ export const IPC = {
 >;
 
 export type ChannelName = keyof typeof IPC;
+export type StageAnimation = z.infer<typeof stageAnimation>;
 export type InvokeChannelName = {
   [K in ChannelName]: (typeof IPC)[K]['kind'] extends 'invoke' ? K : never;
 }[ChannelName];

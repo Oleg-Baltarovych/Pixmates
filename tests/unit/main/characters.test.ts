@@ -8,10 +8,12 @@ import { loadRegistry, pngSize } from '../../../src/main/characters/registry.ts'
 import { selectCharacters } from '../../../src/main/characters/selection.ts';
 import { formatKey, parseKey, shuffle } from '../../../src/main/dev/lineup.ts';
 import { handleAppProtocol, readContainedFile, resolveCharacterFile } from '../../../src/main/windows/app-protocol.ts';
+import { stageAnimation } from '../../../src/main/stage/controller.ts';
 import { IPC } from '../../../src/shared/ipc.ts';
 import {
   builtinPackId,
   checkStrips,
+  facingOf,
   fxManifestSchema,
   isBuiltinPackId,
   manifestSchema,
@@ -183,6 +185,20 @@ describe('stage:characters contract (MA-11)', () => {
     ).toBe(false);
     expect(schema.safeParse({ entries: [], placeholderScale: 4, animCycle: false }).success).toBe(true);
   });
+  it('carries the manifest facing from main to the renderer and rejects unknown facings (MA-27a)', () => {
+    const manifest = manifestSchema.parse(
+      makeManifest({ animations: { idle_a: anim(0), walk: { ...anim(16), facing: 'right' } } }),
+    );
+    const animations = Object.fromEntries(
+      Object.entries(manifest.animations).map(([name, a]) => [name, stageAnimation(a)]),
+    );
+    expect(animations.walk?.facing).toBe('right');
+    expect(animations.idle_a && 'facing' in animations.idle_a).toBe(false);
+    const parsed = schema.parse({ entries: [{ ...entry, animations }], placeholderScale: 4, animCycle: false });
+    expect(parsed.entries[0]?.animations.walk?.facing).toBe('right');
+    const bad = { ...entry, animations: { walk: { ...entry.animations.idle_a, facing: 'up' } } };
+    expect(schema.safeParse({ entries: [bad], placeholderScale: 4, animCycle: false }).success).toBe(false);
+  });
   it('rejects foreign atlas URLs, five entries, bad scale and extra fields', () => {
     const bad = (e: object) =>
       schema.safeParse({ entries: [{ ...entry, ...e }], placeholderScale: 4, animCycle: false });
@@ -267,6 +283,19 @@ describe('M-ART phase 2 manifest fields (MA-21)', () => {
     expect(manifestSchema.safeParse(withAnchor({ x: 0.5, y: 0.7 })).success).toBe(true);
     expect(manifestSchema.safeParse(withAnchor({ x: 0.5, y: 1.2 })).success).toBe(false);
     expect(manifestSchema.safeParse(withAnchor({ x: 0.5 })).success).toBe(false);
+  });
+  it('accepts an optional per-animation facing front|right|left, default front (ADR 010)', () => {
+    const withFacing = (facing: unknown) =>
+      makeManifest({ animations: { idle_a: anim(0), walk: { ...anim(16), facing } } });
+    for (const facing of ['front', 'right', 'left']) {
+      const parsed = manifestSchema.safeParse(withFacing(facing));
+      expect(parsed.success).toBe(true);
+      expect(facingOf(parsed.data?.animations.walk ?? {})).toBe(facing);
+    }
+    for (const facing of ['back', 'Right', 1, null])
+      expect(manifestSchema.safeParse(withFacing(facing)).success).toBe(false);
+    const plain = manifestSchema.parse(makeManifest());
+    expect(facingOf(plain.animations.idle_a ?? { facing: 'left' })).toBe('front');
   });
   it('maps roster ids to reserved built-in pack ids', () => {
     expect(builtinPackId('maid')).toBe('pixmates.maid');

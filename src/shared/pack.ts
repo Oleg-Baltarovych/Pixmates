@@ -49,6 +49,11 @@ const point = z.object({
   y: z.int().min(0).max(PACK_LIMITS.textureMax),
 });
 
+/** Screen direction an animation is authored for (ADR 010); `front` never mirrors, M1 mirrors `right`/`left` to travel. */
+export const FACINGS = ['front', 'right', 'left'] as const;
+export type Facing = (typeof FACINGS)[number];
+export const facingSchema = z.enum(FACINGS);
+
 export const animationSchema = z
   .object({
     file: z.string().regex(SPRITE_FILE),
@@ -58,8 +63,13 @@ export const animationSchema = z
     origin: point.strict().optional(),
     /** Pivot of this animation (e.g. `sit_edge` on the seat), overrides the pack `anchor` (SPEC §5.1). */
     anchor: unitPoint.optional(),
+    /** Authored facing (SPEC §5.1, ADR 010); absent = `front`. */
+    facing: facingSchema.optional(),
   })
   .strict();
+
+/** The facing of an animation entry, `front` when the manifest omits it. */
+export const facingOf = (a: { facing?: Facing | undefined }): Facing => a.facing ?? 'front';
 
 export const manifestSchema = z
   .object({
