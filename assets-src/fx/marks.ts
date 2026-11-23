@@ -176,13 +176,13 @@ export const FX_MARKS: readonly FxMark[] = [
     fps: 10,
     loop: false,
     outline: ['shoe', 1],
+    // Short and small (art round 1: ~60 % of the old r 5 puff): it pops beside/above the head (placed off the `fx`
+    // anchor by the caller), never over the eye or cheek, and breaks into two wisps.
     frames: [
-      [at(puff(1), 8, 9)],
-      [at(puff(2), 8, 8)],
-      [at(puff(3), 8, 8)],
-      [at(puff(4, 7), 8, 8)],
-      [at(puff(5, 4), 8, 8)],
-      [at(puff(1), 4, 4), at(puff(1), 11, 10), at(puff(2), 11, 4)],
+      [at(puff(1), 8, 10)],
+      [at(puff(2), 8, 9)],
+      [at(puff(3, 7), 8, 8)],
+      [at(puff(1), 6, 6), at(puff(1), 11, 8)],
     ],
   },
 ];

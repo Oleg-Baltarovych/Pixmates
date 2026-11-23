@@ -56,8 +56,10 @@ export const ARMS: Readonly<Record<ArmVariant, { readonly elbow: Point; readonly
   hug: { elbow: [-0.8, 3.4], hand: [2.6, 4.6] },
   flail: { elbow: [-5.0, -0.6], hand: [-9.6, -2.2] },
   out: { elbow: [-3.4, 1.4], hand: [-6.4, 2.4] },
-  // Fist at the jaw corner (frame x ≈ 34 / 14): stamped after the head so it breaks the cheek outline (compose).
-  chin: { elbow: [-1.8, 4.6], hand: [-4.8, -4.2] },
+  // Thinking fist UNDER the chin, below the mouth (fist centre = hand joint, frame x ≈ 25 / 23, the row under the jaw):
+  // stamped after the head (compose) with its cuff on the forearm side; the forearm runs from the elbow up across the
+  // bow/bib. A body whose head or neck differs nudges the hand with `Body.chinHand` (never per-animation forks).
+  chin: { elbow: [-1.8, 4.6], hand: [4.2, 1.85] },
   chest: { elbow: [-1.0, 3.4], hand: [2.0, 4.2] },
   knees: { elbow: [-1.4, 3.4], hand: [-0.6, 6.8] },
   talk: { elbow: [-2.4, 2.6], hand: [-3.4, 3.6] },
@@ -68,7 +70,7 @@ export const ARMS: Readonly<Record<ArmVariant, { readonly elbow: Point; readonly
 const LEGS: Readonly<Record<Exclude<LegVariant, 'stand'>, Point>> = {
   dangle: [REST.footL[0] - REST.hip[0], REST.footL[1] - REST.hip[1]],
   // Knees forward (hip bend), shins hanging past the edge: the foot sits under the knee (compose draws the knee).
-  sit: [-2.8, 6.4],
+  sit: [-2.8, 5.4],
   curl: [-4.8, 0.6],
 };
 
@@ -94,7 +96,8 @@ export function resolveJoints(body: Body, pose: PoseFrame, frameH: number): Join
   ] as const) {
     const own = pose.joints?.[hand] ?? ZERO;
     const s = out[shoulder];
-    out[hand] = [s[0] + side * ARMS[arm].hand[0] + own.dx, s[1] + ARMS[arm].hand[1] + own.dy];
+    const bt = arm === 'chin' ? (body.chinHand ?? ZERO) : ZERO;
+    out[hand] = [s[0] + side * (ARMS[arm].hand[0] + bt.dx) + own.dx, s[1] + ARMS[arm].hand[1] + bt.dy + own.dy];
   }
   for (const [foot, side] of [
     ['footL', 1],

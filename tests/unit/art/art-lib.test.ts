@@ -121,9 +121,10 @@ describe('verlet chain (MA-06)', () => {
 });
 
 describe('spike packs (MA-07/08)', () => {
+  const SPIKES = PACKS.filter((p) => p.id.startsWith('spike-'));
   it('builds the two anime-soft maid variants with the planned animations, sizes and frame counts', () => {
-    expect(PACKS.map((p) => p.id)).toEqual(['spike-maid-48soft', 'spike-maid-64soft']);
-    for (const def of PACKS) {
+    expect(PACKS.map((p) => p.id)).toEqual(['pixmates.maid', 'spike-maid-48soft', 'spike-maid-64soft']);
+    for (const def of SPIKES) {
       const built = buildPack(def, ctx); // throws on off-palette colours, soft alpha, wrong size or empty frames
       expect(built.frames.get('idle_a')).toHaveLength(8);
       expect(built.frames.get('walk')).toHaveLength(8);
@@ -134,10 +135,10 @@ describe('spike packs (MA-07/08)', () => {
     }
   });
   it('is deterministic: two builds give identical atlas hashes', () => {
-    for (const def of PACKS) expect(buildPack(def, ctx).sha256).toBe(buildPack(def, ctx).sha256);
+    for (const def of SPIKES) expect(buildPack(def, ctx).sha256).toBe(buildPack(def, ctx).sha256);
   });
   it('idle breathes and blinks: frames differ within the loop', () => {
-    const idle = buildPack(PACKS[0] as (typeof PACKS)[number], ctx).frames.get('idle_a') ?? [];
+    const idle = buildPack(SPIKES[0] as (typeof PACKS)[number], ctx).frames.get('idle_a') ?? [];
     const keys = new Set(idle.map((f) => Buffer.from(f.data).toString('base64')));
     expect(keys.size).toBeGreaterThanOrEqual(4);
   });

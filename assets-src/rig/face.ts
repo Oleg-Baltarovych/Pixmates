@@ -35,6 +35,8 @@ export interface Expression {
   readonly eyes: string;
   readonly brows?: string;
   readonly mouth: string;
+  /** Mouth on frames with both arms `up` (happy: the open D-mouth on the jump); default `mouth`. */
+  readonly raisedMouth?: string;
   readonly cheeks: string;
 }
 
@@ -47,13 +49,14 @@ export interface FaceLibrary {
 }
 
 /** The parts of an expression in stamp order (cheeks under everything, then eyes, brows, mouth). */
-export function expressionParts(lib: FaceLibrary, id: ExpressionId): FacePart[] {
+export function expressionParts(lib: FaceLibrary, id: ExpressionId, armsUp = false): FacePart[] {
   const e = lib.expressions[id];
+  const mouth = armsUp && e.raisedMouth !== undefined ? e.raisedMouth : e.mouth;
   const parts = [
     lib.cheeks[e.cheeks],
     lib.eyes[e.eyes],
     e.brows === undefined ? undefined : lib.brows?.[e.brows],
-    lib.mouths[e.mouth],
+    lib.mouths[mouth],
   ];
   return parts.filter((p): p is FacePart => p !== undefined);
 }
@@ -107,6 +110,9 @@ export function validateFace(
     }
     if (!(e.eyes in lib.eyes)) problems.push(`${name}/${id}: unknown eyes "${e.eyes}"`);
     if (!(e.mouth in lib.mouths)) problems.push(`${name}/${id}: unknown mouth "${e.mouth}"`);
+    if (e.raisedMouth !== undefined && !(e.raisedMouth in lib.mouths)) {
+      problems.push(`${name}/${id}: unknown raised mouth "${e.raisedMouth}"`);
+    }
     if (!(e.cheeks in lib.cheeks)) problems.push(`${name}/${id}: unknown cheeks "${e.cheeks}"`);
     if (e.brows !== undefined && !(e.brows in (lib.brows ?? {}))) {
       problems.push(`${name}/${id}: unknown brows "${e.brows}"`);

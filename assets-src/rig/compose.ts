@@ -253,15 +253,15 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     const behind: Part[] = [];
     const front: Part[] = [];
 
-    // Back slot: tails.
+    // Back slot: tails. The spade tail follows the hip one frame late (the tip carries the full previous-frame hip
+    // offset, the root none); its tube tones are set after compose (`tubeTones`).
+    const hipLag: Point = [prev.hip[0] - j.hip[0], prev.hip[1] - j.hip[1]];
     if (v.back === 'spade_tail') {
       const tail = SPADE_TAIL.map(([x, y, r], i): StrokePoint => {
         const t = i / (SPADE_TAIL.length - 1);
-        const lagX = (prev.back[0] - j.back[0]) * t * 1.5;
-        const lagY = (prev.back[1] - j.back[1]) * t;
-        return [j.back[0] + x + lagX, j.back[1] + y + lagY, r];
+        return [j.back[0] + x + hipLag[0] * t, j.back[1] + y + hipLag[1] * t, r];
       });
-      back.push(part(stroke(tail), flat(MAT.shoe, body.ramps.tail, 2.2), 2, 0.1));
+      back.push(part(stroke(tail), flat(MAT.shoe, body.ramps.tail, 2.2), TAIL_ID, 0.1));
     } else if (v.back === 'fox_tail') {
       const pts = ch.tail[frame];
       if (pts) {
@@ -272,7 +272,8 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
 
     // Hair behind the head (+ lag below the temples), side locks.
     const stretch = HAIR_STRETCH[v.hairBack];
-    const lag: Point = [prev.head[0] - j.head[0], prev.head[1] - j.head[1]];
+    // hairLift (jump up-beat): the hair below the temples and the side locks float 1 px up.
+    const lag: Point = [prev.head[0] - j.head[0], p.hairLift === 1 ? -1 : prev.head[1] - j.head[1]];
     const hair = HAIR_BACK.map(([x, y]): [number, number] => {
       if (y <= 7) return [x + j.head[0], y + j.head[1]];
       const t = (y - 7) / 9.6;
@@ -291,6 +292,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     // Legs. Seated (`sit`): the thigh comes forward (a foreshortened knee just below the hem), the shin hangs from
     // the knee past the edge to the foot.
     const legMat = flat(MAT.fur, body.ramps.legs, 3.6);
+    const knees: Point[] = [];
     for (const [side, foot] of [
       [-1, j.footL],
       [1, j.footR],
@@ -300,6 +302,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         // Front view, thighs toward the viewer: the knee is a 1-px bump just under the (lifted) hem.
         const hemBottom = j.hip[1] + 1.1 - (p.parts.hem?.lift ?? 0);
         const knee: StrokePoint = [foot[0], hemBottom + 0.2, 1.3];
+        knees.push([knee[0], knee[1]]);
         back.push(part(stroke([top, knee]), legMat, 3, 0.85));
         back.push(part(ellipse(knee[0], knee[1], 1.4, 1.1, 0.9), flat(MAT.fur, body.ramps.legs, 4), 3, 0.9));
         back.push(
@@ -330,11 +333,12 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         [hip[0] - 10 - flare + hemDx, hip[1] + 0.1 - lift],
       ]);
       back.push(part(curveX(skirt, hip[0], 9), cloth3('skirt', 1), 4, 1));
+      // Seated: the lace is clipped to 1 row so it ends above the knee bumps.
       const pet = rect(
         Math.round(hip[0] - 9.4 - flare + hemDx),
         Math.round(hip[1] + 0.1 - lift),
         Math.round(18.8 + 2 * flare),
-        2,
+        p.parts.legs === 'sit' ? 1 : 2,
       );
       back.push(part(pet, lace(pet, 4), 4, 1.05));
     } else {
@@ -397,6 +401,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       occlusion: { radius: 1, strength: style.occlusion, cast: { length: 1, strength: 0.4 } },
       dither: { spread: style.dither, round: [body.ramps.hair] },
     });
+    if (v.back === 'spade_tail') tubeTones(buf);
     for (const [hx, hy] of hands) {
       const x = Math.round(hx + 0.6);
       const y = Math.round(hy + 0.5);
@@ -415,37 +420,87 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     ): void => {
       stampMask(buf, body, mask, Math.round(x), Math.round(y), depth, fallback, locked, under, partId);
     };
+    if (body.apron) {
+      const ap = body.apron;
+      apronPanel(buf, body, j.hip[0], Math.round(j.hip[1] - 10.1) + 1, ap.panelW, locked);
+      // Bib = torso (part 7), only over bodice px: never over a sleeve or hand in front of it.
+      stampMask(
+        buf,
+        body,
+        ap.bib.mask,
+        Math.round(j.neck[0] + ap.bib.at[0]),
+        Math.round(j.neck[1] + ap.bib.at[1]),
+        1.65,
+        MAT.apron,
+        locked,
+        undefined,
+        7,
+        TORSO_PARTS,
+      );
+    }
     const neckAcc = body.masks.neckAcc;
-    if (neckAcc) stamp(neckAcc.mask, j.neck[0] + neckAcc.at[0], j.neck[1] + neckAcc.at[1], 1.7, MAT.trim);
+    // Collar accessory = torso trim (part 8): the arm-over-torso pass and check cover the shoulder seam against it.
+    if (neckAcc) stamp(neckAcc.mask, j.neck[0] + neckAcc.at[0], j.neck[1] + neckAcc.at[1], 1.7, MAT.trim, undefined, 8);
     const headAcc = body.masks.headAcc;
     const accFirst = v.headAcc === 'fox_ears';
     if (headAcc && accFirst) stamp(headAcc.mask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.4, MAT.hair);
     stamp(headMask, j.head[0] + body.head.at[0], j.head[1] + body.head.at[1], 3.5, MAT.skin);
     if (headAcc && !accFirst) stamp(headAcc.mask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.6, MAT.trim);
-    for (const fp of expressionParts(body.face, p.face)) {
+    const armsUp = p.parts.armL === 'up' && p.parts.armR === 'up';
+    for (const fp of expressionParts(body.face, p.face, armsUp)) {
       stamp(fp.mask, j.face[0] + fp.at[0], j.face[1] + fp.at[1], 3.6, MAT.skin, MAT.hair);
     }
-    // think: the chin fist is stamped over the head so it breaks the cheek outline by 1–2 px at the jaw corner.
+    // think: the fist is stamped over the bow/bib under the chin (after the head), its top row in shadow where it
+    // meets the jaw, the cuff between the fist and the forearm so the hand never melts into the face.
     for (const [side, arm, hand] of [
       ['L', p.parts.armL, j.handL],
       ['R', p.parts.armR, j.handR],
     ] as const) {
       if (arm !== 'chin') continue;
-      // Fist cols 10–13 / 34–37 at rest: over the jaw corner, breaking the cheek and side-lock edge, dark knuckle line on the face side.
-      const mask = v.sleeves === 'long' ? [...FIST, FIST_CUFF] : FIST;
-      const fist = side === 'L' ? mask : mask.map((r) => r.split('').reverse().join(''));
+      const mask = v.sleeves === 'long' ? FIST_LONG : FIST;
+      const fist = side === 'R' ? mask : mask.map((r) => r.split('').reverse().join(''));
       const end = (side === 'L' ? ARM_IDS_L : ARM_IDS_R).end;
-      stamp(fist, side === 'L' ? hand[0] - 4 : hand[0], hand[1] - 1.5, 3.7, MAT.skin, undefined, end);
+      const w = maskSize(mask).w;
+      stamp(
+        fist,
+        side === 'R' ? Math.round(hand[0]) - 2 : Math.round(hand[0]) + 2 - (w - 1),
+        Math.round(hand[1]) - 1,
+        3.7,
+        MAT.skin,
+        undefined,
+        end,
+      );
     }
     if (v.back === 'spade_tail' && body.masks.spade) {
-      const tipT = 1.5;
-      const tip: Point = [j.back[0] + 9.5 + (prev.back[0] - j.back[0]) * tipT, j.back[1] + 5.2];
+      const tip: Point = [j.back[0] + 9.5 + hipLag[0], j.back[1] + 5.2 + hipLag[1]];
       const w = maskSize(body.masks.spade).w >> 1;
-      stamp(body.masks.spade, Math.round(tip[0] - 0.5) - w, Math.round(tip[1] - 0.5), 0.15, MAT.shoe);
+      const sx = Math.round(tip[0] - 0.5) - w;
+      const sy = Math.round(tip[1] - 0.5);
+      stamp(body.masks.spade, sx, sy, 0.15, MAT.shoe);
+      // Below its first (shaft) row the spade's '.' px are cut out and stay transparent through outline and AA, so the
+      // barbs and the base notch never fill in with the tail tube or its outline.
+      body.masks.spade.forEach((row, r) => {
+        if (r === 0) return;
+        for (let c = 0; c < row.length; c++) {
+          if (row.charAt(c) !== '.' || !buf.inBounds(sx + c, sy + r)) continue;
+          buf.clear(sx + c, sy + r);
+          locked.set((sy + r) * RIG_W + sx + c, [-1, 0]);
+        }
+      });
     }
     // Hanging feet (seated, dragged) point their toes down 1 px.
     const shoe = p.parts.legs === 'sit' || p.parts.legs === 'dangle' ? pointToe(body.masks.shoe) : body.masks.shoe;
     for (const foot of [j.footL, j.footR]) stamp(shoe, foot[0] - 2, foot[1] - 0.6, 0.9, MAT.shoe);
+    // Seated: a 1-px darker crease under each knee bump, where the shin folds behind it.
+    for (const [kx, ky] of knees) {
+      const y = Math.round(ky + 1.1);
+      for (let x = Math.round(kx) - 1; x <= Math.round(kx) + 1; x++) {
+        if (!buf.inBounds(x, y) || buf.get(x, y).material !== MAT.fur) continue;
+        const i = y * RIG_W + x;
+        buf.shade[i] = 1;
+        locked.set(i, [buf.ramp[i] ?? -1, 1]);
+      }
+    }
 
     const map = outline(buf, ctx.rampSize, { drop: style.drop, internal: true });
     if (body.hornOutline) recolorHornOutline(buf, map, body.hornOutline);
@@ -536,7 +591,7 @@ export interface LabeledFrame {
 }
 
 /** Part labels exported for the arm-over-torso check (`assets-src/rig/checks.ts`). */
-export const ARM_LABEL = { none: 0, sleeveL: 1, sleeveR: 2, endL: 3, endR: 4, torso: 5 } as const;
+export const ARM_LABEL = { none: 0, sleeveL: 1, sleeveR: 2, endL: 3, endR: 4, torso: 5, trim: 6 } as const;
 /** Part ids per arm: shoulder + upper arm, forearm, end (cuff + hand + chin fist). */
 const ARM_IDS_L = { upper: 9, fore: 10, end: 11 } as const;
 const ARM_IDS_R = { upper: 19, fore: 20, end: 21 } as const;
@@ -548,7 +603,7 @@ const LABEL_OF: Readonly<Partial<Record<number, number>>> = {
   20: ARM_LABEL.sleeveR,
   21: ARM_LABEL.endR,
   7: ARM_LABEL.torso,
-  8: ARM_LABEL.torso,
+  8: ARM_LABEL.trim,
 };
 
 function labelImage(buf: IndexBuffer): RgbaImage {
@@ -567,11 +622,13 @@ function labelImage(buf: IndexBuffer): RgbaImage {
 const clamp1 = (n: number): number => Math.max(-1, Math.min(1, Math.round(n)));
 
 /**
- * Fist + raised finger (screen-left hand; mirrored for the right): the `Z` column faces the cheek so the fist breaks
- * the jaw outline instead of melting into the face. Long sleeves add the bell-cuff row under it (rule iii).
+ * Thinking fist under the chin (screen-right hand; mirrored for the left): a rounded 3 × 3 fist with a warm skin-dark
+ * outline (skin shade, never near-black), its top row in shadow tone where it meets the jaw, lit from the top-left,
+ * and a 1-px dress cuff on the forearm side so the hand separates from the face. Long sleeves end in the cream bell
+ * cuff instead (rule iii).
  */
-const FIST: Mask = ['..eZ', 'sSsZ', 'eSsZ', '.zz.'];
-const FIST_CUFF = 'qaap';
+const FIST: Mask = ['.zzz..', 'ZeSsZd', 'ZSssZd', '.ZZZ..'];
+const FIST_LONG: Mask = ['.zzz..', 'ZeSsZa', 'ZSssZa', '.ZZZq.'];
 
 /** Sleeve part ids (both sides; ends 11 / 21 are hand + cuff) and torso ids (bodice/neck 7, waist band 8). */
 const SLEEVE_PARTS = new Set([9, 10, 19, 20]);
@@ -635,6 +692,71 @@ function armOverTorso(buf: IndexBuffer, palette: Palette, dir: 1 | -1): void {
   for (const i of edge) buf.shade[i] = 0;
 }
 
+/** Part id of the spade tail tube. */
+const TAIL_ID = 2;
+
+/**
+ * Spade tail as a smooth 2-tone tube one ramp step under the spade (so the spade pops): the top px of every tail
+ * column takes the rim tone (it also reads on dark wallpapers), the rest the shade tone; no lighting or dither noise.
+ */
+function tubeTones(buf: IndexBuffer): void {
+  const w = buf.width;
+  const isTail = (x: number, y: number): boolean =>
+    buf.inBounds(x, y) && buf.partId[y * w + x] === TAIL_ID && buf.material[y * w + x] === MAT.shoe;
+  const tone: [number, number][] = [];
+  for (let y = 0; y < buf.height; y++) {
+    for (let x = 0; x < w; x++) if (isTail(x, y)) tone.push([y * w + x, isTail(x, y - 1) ? 1 : 3]);
+  }
+  for (const [i, shade] of tone) buf.shade[i] = shade;
+}
+
+/** Skirt part id (skirt + petticoat lace). */
+const SKIRT_ID = 4;
+
+/**
+ * Apron front panel (Body.apron): `w` px centred on the hip from `top` down to 1 row above the skirt's last row
+ * (flat bottom, follows hem lift and flare), painted only over skirt cloth px (arms and hands in front stay). Lit left edge,
+ * shaded right edge; the 1-px frill is a scallop (every other px) on the bottom row and a light/base ruffle on the
+ * sides. Final tones, locked.
+ */
+function apronPanel(
+  buf: IndexBuffer,
+  body: Body,
+  cx: number,
+  top: number,
+  w: number,
+  locked: Map<number, readonly [number, number]>,
+): void {
+  const W = buf.width;
+  const isSkirt = (x: number, y: number): boolean =>
+    buf.inBounds(x, y) && buf.partId[y * W + x] === SKIRT_ID && buf.material[y * W + x] === MAT.cloth;
+  const x0 = Math.round(cx - w / 2);
+  const x1 = x0 + w - 1;
+  // Hem = the lowest skirt cloth row under the panel (arms or hands in front only hide rows, never add them).
+  let hem = -1;
+  for (let x = x0; x <= x1; x++) for (let y = top; y < buf.height; y++) if (isSkirt(x, y)) hem = Math.max(hem, y);
+  const bottom = hem - 1;
+  const { ramp, tones } = body.outfit.apron;
+  for (let y = top; y <= bottom; y++) {
+    // A-line: the top row sits 1 px in on each side.
+    const inset = y === top ? 1 : 0;
+    for (let x = x0 + inset; x <= x1 - inset; x++) {
+      if (!isSkirt(x, y)) continue;
+      const side = x === x0 + inset || x === x1 - inset;
+      let tone: number;
+      if (y === bottom) {
+        if (((x - x0) & 1) === 1) continue;
+        tone = 5;
+      } else if (side) tone = ((y - top) & 1) === 0 ? 5 : x === x0 ? 4 : 3;
+      else tone = x === x0 + 1 ? 5 : x === x1 - 1 ? 3 : 4;
+      const shade = tones[tone as 0 | 1 | 2 | 3 | 4 | 5];
+      buf.set(x, y, { ramp, shade, material: MAT.apron, depth: 1.2, partId: SKIRT_ID });
+      const i = y * W + x;
+      locked.set(i, [buf.ramp[i] ?? -1, shade]);
+    }
+  }
+}
+
 /** Shoe with a 1-px pointed toe: the sole row again under itself, minus its outer px. */
 function pointToe(mask: Mask): Mask {
   const last = mask[mask.length - 1] ?? '';
@@ -678,6 +800,7 @@ function stampMask(
   locked: Map<number, readonly [number, number]>,
   under?: number,
   partId?: number,
+  onlyParts?: ReadonlySet<number>,
 ): void {
   mask.forEach((row, r) => {
     for (let c = 0; c < row.length; c++) {
@@ -686,6 +809,7 @@ function stampMask(
       const py = y + r;
       if (!entry || !buf.inBounds(px, py)) continue;
       if (under !== undefined && buf.get(px, py).material === under) continue;
+      if (onlyParts && !onlyParts.has(buf.partId[py * buf.width + px] ?? 0)) continue;
       const swatch = body.outfit[entry[0]];
       buf.set(px, py, {
         ramp: swatch.ramp,

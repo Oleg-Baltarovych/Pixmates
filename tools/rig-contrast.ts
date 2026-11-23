@@ -4,13 +4,14 @@ import { armTorsoContrast, armTorsoProblems } from '../assets-src/rig/checks.ts'
 import { createRigRenderer } from '../assets-src/rig/compose.ts';
 import { ANIMS } from '../assets-src/rig/anims/index.ts';
 import { DUMMY_A, DUMMY_B, MAID_PREVIEW } from '../assets-src/rig/dummies.ts';
+import { MAID } from '../assets-src/characters/maid/body.ts';
 import { deepestTones, loadMasterPalette, renderContext } from './lib/sprites.ts';
 
 const palette = loadMasterPalette();
 const ctx = renderContext(palette);
 const deepest = deepestTones(palette);
 const only = process.argv[2];
-for (const body of [DUMMY_A, DUMMY_B, MAID_PREVIEW]) {
+for (const body of [MAID, DUMMY_A, DUMMY_B, MAID_PREVIEW]) {
   if (only && body.id !== only) continue;
   const r = createRigRenderer(body);
   for (const anim of ANIMS) {
@@ -26,9 +27,12 @@ for (const body of [DUMMY_A, DUMMY_B, MAID_PREVIEW]) {
     const p10 = Math.min(...touched.map((x) => x.p10));
     const sep = Math.min(...touched.map((x) => x.separator));
     const tip = Math.min(...touched.flatMap((x) => [x.tipL ?? 99, x.tipR ?? 99]));
+    const trim = touched.filter((x) => x.trimSamples > 0);
+    const shoulder = trim.length ? Math.min(...trim.map((x) => x.trimP10)).toFixed(3) : 'n/a';
     const bad = touched.flatMap((x) => armTorsoProblems(x));
     console.log(
       `${body.id}/${anim.name}: frames ${String(touched.length)}/${String(rows.length)} min p10 ΔL ${p10.toFixed(3)}, ` +
+        `shoulder/trim p10 ΔL ${shoulder} (${String(trim.length)} fr), ` +
         `min separator ${(sep * 100).toFixed(0)} %, min tip ${String(tip)} px${bad.length ? ` FAIL ${bad[0] ?? ''}` : ''}`,
     );
   }

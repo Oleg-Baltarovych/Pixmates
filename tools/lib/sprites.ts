@@ -190,6 +190,7 @@ export function buildPack(def: PackDef, ctx: RenderContext): BuiltPack {
     ...(def.scaleRef === undefined ? {} : { scaleRef: def.scaleRef }),
     animations,
     fallbacks: def.fallbacks,
+    ...(def.emotions === undefined ? {} : { emotions: [...def.emotions] }),
     files: { [ATLAS_FILE]: hash },
   };
   return { manifest, atlas, atlasSize: { width, height }, sha256: hash, frames, fx };

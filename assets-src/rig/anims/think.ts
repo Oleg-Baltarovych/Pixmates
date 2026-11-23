@@ -1,5 +1,5 @@
-// think (8 @ 6): one hand at the jaw — a fist with a raised finger breaking the cheek outline at the jaw corner —
-// its elbow propped on the other forearm folded across the waist; head tilted, eyes up to the side, one blink.
+// think (8 @ 6): one hand under the chin — a rounded fist below the mouth with a cuff on the forearm side — its
+// elbow propped on the other forearm folded across the waist; head tilted, eyes up to the side, one blink.
 import type { RigAnim } from '../types.ts';
 import { frame, o } from './kit.ts';
 

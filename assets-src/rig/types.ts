@@ -105,6 +105,8 @@ export interface PoseFrame {
   readonly order?: DrawOrder;
   /** Chain kick (px) added to secondary-motion anchors in this frame. */
   readonly impulse?: { readonly x: number; readonly y: number };
+  /** Back hair below the temples and the side locks float 1 px up (the up-beat of a jump). */
+  readonly hairLift?: 1;
 }
 
 export interface RigAnim {
@@ -163,8 +165,19 @@ export interface Body {
     /** Spade tip of `spade_tail`, hung by its top-centre px. */
     readonly spade?: Mask;
   };
+  /**
+   * Maid apron (clothAlt ramp): `bib` is an authored mask on the bodice (`at` from the neck joint; torso part, so the
+   * arm-over-torso pass and check treat it as torso; drawn under `neckAcc`); the front panel is `panelW` px wide on
+   * the skirt from the waist band to 1 row above the hem, with a 1-px frill on its sides and bottom.
+   */
+  readonly apron?: { readonly bib: PlacedMask; readonly panelW: number };
   /** Outline ramp for px next to the horns (so ivory never reads as a pale ear). */
   readonly hornOutline?: RampName;
+  /**
+   * Per-body nudge of the shared `chin` hand (think), in px; `dx` points toward the body's centre line for both
+   * sides. Default: none (the shared pose puts the fist under the chin of the standard head).
+   */
+  readonly chinHand?: Offset;
   /** Rest offsets per joint (proportions), never per-animation forks. */
   readonly tweaks?: Partial<Readonly<Record<Joint, Offset>>>;
 }

@@ -25,6 +25,9 @@ export interface ArmTorsoReport {
   /** 10th percentile and mean of the samples (1 when there is no edge). */
   readonly p10: number;
   readonly mean: number;
+  /** Shoulder seam (ART-BIBLE §6): the same |ΔL| samples where the torso px across is trim (collar bow, waist band). */
+  readonly trimSamples: number;
+  readonly trimP10: number;
   /** Visible arm-end px per arm that touches the torso (null = that arm does not cross it). */
   readonly tipL: number | null;
   readonly tipR: number | null;
@@ -51,12 +54,13 @@ export function armTorsoContrast(img: RgbaImage, labels: RgbaImage, deepest: Rea
   const isSleeve = (l: number): boolean => l === ARM_LABEL.sleeveL || l === ARM_LABEL.sleeveR;
   const sideOf = (l: number): 'L' | 'R' => (l === ARM_LABEL.sleeveL || l === ARM_LABEL.endL ? 'L' : 'R');
   const L = (x: number, y: number): number => toOklab(rgb(x, y))[0];
-  const touchesTorso = (x: number, y: number): boolean =>
-    N4.some(([dx, dy]) => label(x + dx, y + dy) === ARM_LABEL.torso);
+  const isTorso = (l: number): boolean => l === ARM_LABEL.torso || l === ARM_LABEL.trim;
+  const touchesTorso = (x: number, y: number): boolean => N4.some(([dx, dy]) => isTorso(label(x + dx, y + dy)));
 
   let edge = 0;
   let sep = 0;
   const dl: number[] = [];
+  const dlTrim: number[] = [];
   const crosses = { L: false, R: false };
   const tips = { L: 0, R: 0 };
   for (let y = 0; y < h; y++) {
@@ -76,21 +80,27 @@ export function armTorsoContrast(img: RgbaImage, labels: RgbaImage, deepest: Rea
       crosses[side] = true;
       if (sepPx) sep++;
       for (const [dx, dy] of N4) {
-        if (label(x + dx, y + dy) !== ARM_LABEL.torso) continue;
+        const across = label(x + dx, y + dy);
+        if (!isTorso(across)) continue;
         const ix = x - dx;
         const iy = y - dy;
         if (!isSleeve(label(ix, iy)) || touchesTorso(ix, iy) || deepest.has(rgb(ix, iy))) continue;
-        dl.push(Math.abs(L(ix, iy) - L(x + dx, y + dy)));
+        const d = Math.abs(L(ix, iy) - L(x + dx, y + dy));
+        dl.push(d);
+        if (across === ARM_LABEL.trim) dlTrim.push(d);
       }
     }
   }
   const sorted = [...dl].sort((a, b) => a - b);
+  const trimSorted = [...dlTrim].sort((a, b) => a - b);
   return {
     edge,
     separator: edge === 0 ? 1 : sep / edge,
     samples: dl.length,
     p10: sorted.length === 0 ? 1 : (sorted[Math.floor(sorted.length * 0.1)] ?? 1),
     mean: sorted.length === 0 ? 1 : sorted.reduce((a, b) => a + b, 0) / sorted.length,
+    trimSamples: dlTrim.length,
+    trimP10: trimSorted.length === 0 ? 1 : (trimSorted[Math.floor(trimSorted.length * 0.1)] ?? 1),
     tipL: crosses.L ? tips.L : null,
     tipR: crosses.R ? tips.R : null,
   };
@@ -101,6 +111,9 @@ export function armTorsoProblems(r: ArmTorsoReport): string[] {
   const out: string[] = [];
   if (r.edge === 0) return out;
   if (r.samples > 0 && r.p10 < ARM_TORSO_RULE.minDeltaL) out.push(`value step p10 ΔL ${r.p10.toFixed(3)}`);
+  if (r.trimSamples > 0 && r.trimP10 < ARM_TORSO_RULE.minDeltaL) {
+    out.push(`shoulder/trim value step p10 ΔL ${r.trimP10.toFixed(3)}`);
+  }
   if (r.separator < ARM_TORSO_RULE.minSeparator) out.push(`separator ${(r.separator * 100).toFixed(0)} %`);
   for (const [side, tip] of [
     ['L', r.tipL],

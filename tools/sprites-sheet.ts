@@ -7,6 +7,8 @@
 //   pnpm sprites:sheet --review   the rig review bodies (dummies + maid preview, never built into resources/)
 //   pnpm sprites:sheet --fx       FX marks sheet on light + dark, and marks composited at the rig fx anchor
 //                                 → reports/sprites/fx-sheet.png, fx-on-<id>.png
+//   pnpm sprites:sheet --real     real M size on the 4 backdrops: first frame of every animation + the walk cycle
+//                                 and its runtime mirror (walking left) → reports/sprites/<id>-real.png
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FX_MARKS } from '../assets-src/fx/marks.ts';
@@ -87,6 +89,18 @@ function backdrop(
   }
 }
 
+/** Horizontal mirror (the runtime flip for walking left). */
+function mirror(img: RgbaImage): RgbaImage {
+  const data = new Uint8Array(img.data.length);
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      const src = (y * img.width + x) * 4;
+      data.set(img.data.subarray(src, src + 4), (y * img.width + (img.width - 1 - x)) * 4);
+    }
+  }
+  return { width: img.width, height: img.height, data };
+}
+
 /** Real M-preset scale at 1080p / 125 % (plan scale table): 48 → ×4, 64 → ×3. */
 const realScale = (frameH: number, scaleRef = frameH): number => Math.max(2, Math.round((136 * 1.25) / scaleRef));
 
@@ -95,7 +109,7 @@ const args = process.argv.slice(2);
 const ids = args.filter((a) => !a.startsWith('--'));
 const ctx = renderContext(loadMasterPalette());
 const review = args.includes('--review') || args.includes('--fx');
-const sources = review ? reviewPacks() : PACKS;
+const sources = args.includes('--fx') ? [...reviewPacks(), ...PACKS] : review ? reviewPacks() : PACKS;
 const packs = sources
   .filter((p) => ids.length === 0 || ids.includes(p.id))
   .map((def) => ({
@@ -142,10 +156,12 @@ if (args.includes('--fx')) {
     ['think', 3, 'question', 2, [[1, -2]]],
     ['startle', 1, 'exclaim', 2, [[0, -2]]],
     ['sleep', 2, 'zzz', 2, [[2, -3]]],
-    ['idle_a', 0, 'smoke', 3, [[-9, 14]]],
+    // Smoke (switch puff) sits above and beside the head, clear of the eye and cheek.
+    ['idle_a', 0, 'smoke', 2, [[9, -5]]],
   ];
   const r = 4;
-  for (const { def, built } of packs.filter((p) => p.def.id === MAID_PREVIEW.id || p.def.id === 'rig-dummy-b')) {
+  const onFx = new Set([MAID_PREVIEW.id, 'rig-dummy-b', 'pixmates.maid']);
+  for (const { def, built } of packs.filter((p) => onFx.has(p.def.id))) {
     const pw = def.frameSize.w * r + 16;
     const ph = def.frameSize.h * r + 16;
     const c = new Canvas(cases.length * pw, ph * 2);
@@ -168,6 +184,33 @@ if (args.includes('--fx')) {
     const file = join(reports, 'sprites', `fx-on-${def.id}.png`);
     writeFileSync(file, encodePng(c.image()));
     console.log(`${file}  (${cases.map(([a, , m]) => `${a}+${m}`).join(', ')})`);
+  }
+} else if (args.includes('--real')) {
+  const kinds = ['light', 'dark', 'browser', 'ide'] as const;
+  mkdirSync(join(reports, 'sprites'), { recursive: true });
+  for (const { def, built } of packs.filter((p) => p.def.headroom === true)) {
+    const { w, h } = def.frameSize;
+    const s = realScale(h, def.scaleRef);
+    const walk = built.frames.get('walk') ?? [];
+    const firsts = [...built.frames.values()].map((f) => f[0]).filter((f): f is RgbaImage => f !== undefined);
+    const cellW = w * s + 4;
+    const cols = Math.max(firsts.length, walk.length * 2 + 1);
+    const bandH = h * s * 2 + 24;
+    const c = new Canvas(cols * cellW + 16, kinds.length * bandH);
+    kinds.forEach((kind, k) => {
+      const y0 = k * bandH;
+      backdrop(c, 0, y0, c.width, bandH, kind);
+      firsts.forEach((f, i) => {
+        c.blit(f, 8 + i * cellW, y0 + 8, s);
+      });
+      walk.forEach((f, i) => {
+        c.blit(f, 8 + i * cellW, y0 + 16 + h * s, s);
+        c.blit(mirror(f), 8 + (walk.length + 1 + i) * cellW, y0 + 16 + h * s, s);
+      });
+    });
+    const file = join(reports, 'sprites', `${def.id}-real.png`);
+    writeFileSync(file, encodePng(c.image()));
+    console.log(`${file}  (×${String(s)}; row 1: ${[...built.frames.keys()].join(', ')}; row 2: walk | mirrored walk)`);
   }
 } else if (args.includes('--swatch')) {
   const palette = ctx.palette;

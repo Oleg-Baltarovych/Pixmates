@@ -19,6 +19,7 @@ export interface FrameInput {
   readonly breath?: 0 | 1;
   readonly order?: DrawOrder;
   readonly impulse?: { readonly x: number; readonly y: number };
+  readonly hairLift?: 1;
 }
 
 export function frame(p: FrameInput): PoseFrame {
@@ -36,5 +37,6 @@ export function frame(p: FrameInput): PoseFrame {
     breath: p.breath ?? 0,
     ...(p.order ? { order: p.order } : {}),
     ...(p.impulse ? { impulse: p.impulse } : {}),
+    ...(p.hairLift ? { hairLift: p.hairLift } : {}),
   };
 }

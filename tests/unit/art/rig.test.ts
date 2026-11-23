@@ -15,6 +15,7 @@ import { EXPRESSIONS, validateFace, type FaceLibrary } from '../../../assets-src
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
 import { frame } from '../../../assets-src/rig/anims/kit.ts';
 import { DUMMY_A, DUMMY_B, DUMMY_FACE, DUMMY_HEAD, MAID_PREVIEW } from '../../../assets-src/rig/dummies.ts';
+import { MAID } from '../../../assets-src/characters/maid/body.ts';
 import { ARM_TORSO_RULE, armTorsoContrast, armTorsoProblems } from '../../../assets-src/rig/checks.ts';
 import { JOINTS, type RigAnim } from '../../../assets-src/rig/types.ts';
 import type { RgbaImage } from '../../../tools/lib/png.ts';
@@ -218,7 +219,7 @@ describe('the 15 shared poses (MA-25)', () => {
   });
   const walk = ANIMS.find((a) => a.name === 'walk')?.frames ?? [];
   const at = (i: number) => resolveJoints(DUMMY_A, walk[(i + walk.length) % walk.length] ?? frame({}), RIG_H);
-  it('walk: 1-px bob, 3–4 px stride on contact, 1-px head drop on passing, head and hem lag by one frame', () => {
+  it('walk: 1-px bob, 3–4 px stride on contact, 1-px head drop on passing, no sideways head/body sway', () => {
     const hipY = walk.map((_, i) => at(i).hip[1]);
     expect(Math.max(...hipY) - Math.min(...hipY)).toBe(1);
     const gap = (i: number): number => at(i).footR[0] - at(i).footL[0];
@@ -232,13 +233,16 @@ describe('the 15 shared poses (MA-25)', () => {
       const planted = walk.filter((_, i) => at(i)[foot][1] === at(0)[foot][1]);
       expect(planted.length).toBeGreaterThanOrEqual(4);
     }
-    const sway = (k: number): number => walk[(k + walk.length) % walk.length]?.root.dx ?? 0;
     const passing = new Set([2, 6]);
     walk.forEach((f, i) => {
       // The head sits where the body was one frame earlier (1-frame lag) and dips 1 px on the passing frames.
       const drop = passing.has(i) ? 1 : 0;
       expect(at(i).head[1] - at(i).hip[1]).toBe(REST.head[1] - REST.hip[1] + at(i - 1).hip[1] - at(i).hip[1] + drop);
-      expect((f.parts.hem?.dx ?? 0) + sway(i)).toBe(sway(i - 1));
+      // Owner feedback: the head must not rock side to side — no lateral root or head offset in any frame.
+      expect(f.root.dx).toBe(0);
+      expect(at(i).head[0] - at(i).hip[0]).toBe(REST.head[0] - REST.hip[0]);
+      // The hip shift is carried by the hem alone: 1 px, only on the passing frames.
+      expect(Math.abs(f.parts.hem?.dx ?? 0)).toBe(passing.has(i) ? 1 : 0);
       expect([f.parts.armL, f.parts.armR]).not.toContain('chest');
     });
   });
@@ -352,7 +356,7 @@ describe('review round 4: seams, lag, frame checks, face placement (S5–S7)', (
 
 describe('arm over torso (RIG.md rule, art round 5 c1/c2)', () => {
   const deepest = deepestTones(loadMasterPalette());
-  const bodies = [DUMMY_A, DUMMY_B, MAID_PREVIEW];
+  const bodies = [MAID, DUMMY_A, DUMMY_B, MAID_PREVIEW];
 
   it('every frame of every pose: value step, 1-px deepest-tone separator, ≥ 2 px arm end on each crossing arm', () => {
     const problems: string[] = [];
@@ -403,15 +407,26 @@ describe('arm over torso (RIG.md rule, art round 5 c1/c2)', () => {
     expect(() => createRigRenderer({ ...DUMMY_B, sleeve: { shade: 3 } })).toThrow(/arm-over-torso/);
   });
 
-  it('think on long sleeves: cuff row + ≥ 2 px of fist at the jaw, past the cheek edge', () => {
+  it.each([
+    ['dummy-b (long sleeves)', DUMMY_B],
+    ['dummy-a', DUMMY_A],
+    ['maid', MAID],
+  ] as const)('think on %s: fist + cuff under the chin, nothing of the hand on the face', (_, body) => {
     const anim = ANIMS.find((a) => a.name === 'think');
     if (!anim) throw new Error('think');
-    const { labels } = createRigRenderer(DUMMY_B).renderLabeled(anim, 0, ctx);
-    const head = resolveJoints(DUMMY_B, anim.frames[0] ?? frame({}), RIG_H).head;
+    const { labels } = createRigRenderer(body).renderLabeled(anim, 0, ctx);
+    const j = resolveJoints(body, anim.frames[0] ?? frame({}), RIG_H);
+    const at = (x: number, y: number): number => labels.data[(y * labels.width + x) * 4] ?? 0;
+    const hx = Math.round(j.handR[0]);
+    const hy = Math.round(j.handR[1]);
+    // Under the mouth: the fist centre sits within 2 px of the head's centre line, below the face.
+    expect(Math.abs(hx - j.head[0])).toBeLessThanOrEqual(2);
+    expect(hy).toBeGreaterThan(j.face[1] + 11);
     let fist = 0;
-    for (let y = Math.round(head[1]) + 4; y < Math.round(head[1]) + 10; y++) {
-      for (let x = 34; x < 40; x++) if (labels.data[(y * labels.width + x) * 4] === ARM_LABEL.endR) fist++;
-    }
-    expect(fist).toBeGreaterThanOrEqual(6);
+    for (let y = hy - 1; y <= hy + 2; y++)
+      for (let x = hx - 2; x <= hx + 3; x++) if (at(x, y) === ARM_LABEL.endR) fist++;
+    expect(fist).toBeGreaterThanOrEqual(12);
+    // No arm px above the fist's top row (the old cheek fist read as a scar).
+    for (let y = 0; y < hy - 1; y++) for (let x = 0; x < labels.width; x++) expect(at(x, y)).not.toBe(ARM_LABEL.endR);
   });
 });

@@ -11,7 +11,7 @@ export const HAPPY: RigAnim = {
   frames: [
     frame({ root: o(0, 1), squash: 1, face: 'happy', hem: { flare: 1 } }),
     frame({ ...air, root: o(0, -2), squash: -1, impulse: { x: 0, y: 1 } }),
-    frame({ ...air, root: o(0, -4), joints: { head: o(0, 1) }, breath: 1, hem: { lift: 1 } }),
+    frame({ ...air, root: o(0, -4), joints: { head: o(0, 1) }, breath: 1, hem: { lift: 1 }, hairLift: 1 }),
     frame({ ...air, root: o(0, -2), joints: { head: o(0, -1) } }),
     frame({
       root: o(0, 1),

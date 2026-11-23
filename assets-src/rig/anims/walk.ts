@@ -6,7 +6,11 @@ import type { RigAnim } from '../types.ts';
 import { frame, o } from './kit.ts';
 
 const BOB = [1, 1, 0, 0, 1, 1, 0, 0] as const;
-const SWAY = [0, 1, 1, 1, 0, -1, -1, -1] as const;
+// No sideways body/head sway (owner: a ±1 px root sway plus the 1-frame head lag made the head rock 2 px side to
+// side, too much at 48 px while the character also travels across the screen). The head stays the steadiest part:
+// vertical bob and passing-frame dip only. The hip shift is carried by the hem alone (1 px on the passing frames).
+const SWAY = [0, 0, 0, 0, 0, 0, 0, 0] as const;
+const HIP = [0, 0, 1, 0, 0, 0, -1, 0] as const;
 /** Half the extra foot spread (each foot moves out by this much). */
 const SPREAD = [2, 1, 0, 1, 2, 1, 0, 1] as const;
 const LIFT_L = [0, -1, -2, -1, 0, 0, 0, 0] as const;
@@ -49,7 +53,7 @@ export const WALK: RigAnim = {
       },
       armL: at(ARM_L, i),
       armR: at(ARM_R, i),
-      hem: { dx: at(SWAY, i - 1) - at(SWAY, i) },
+      hem: { dx: at(HIP, i) },
     }),
   ),
 };
