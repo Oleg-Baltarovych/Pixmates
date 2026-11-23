@@ -14,6 +14,7 @@ import { initialState, step } from '../../core/step.ts';
 import type { CoreEvent, CoreState, Effect } from '../../core/types.ts';
 import { CHANNEL } from '../../shared/ipc.ts';
 import { sendEvent, type IpcRouter } from '../ipc/handle.ts';
+import type { StageCharacter } from '../characters/selection.ts';
 
 export type LayerMode = 'on-top' | 'desktop';
 
@@ -44,6 +45,10 @@ export interface StageControllerDeps {
   readonly display: () => Pick<Display, 'workArea' | 'scaleFactor'>;
   readonly now: () => number;
   readonly seed: number;
+  /** Packs on stage (1 in product; ≤ 4 in the dev lineup). Empty = placeholder. */
+  readonly characters?: () => readonly StageCharacter[];
+  /** Dev: cycle idle → walk → happy. */
+  readonly animCycle?: boolean;
 }
 
 export class StageController {
@@ -84,20 +89,20 @@ export class StageController {
     win.setIgnoreMouseEvents(this.#core.hitThrough, { forward: true });
     this.#applyLayer(win);
     win.webContents.on('did-finish-load', () => {
-      this.#pushScale();
+      this.#pushCharacters();
     });
   }
 
   setPreset(preset: SizePreset): void {
     this.#preset = preset;
     this.#scale = this.#presetScale(preset);
-    this.#pushScale();
+    this.#pushCharacters();
   }
 
   /** «Більше» / «Менше»: one integer step within [MIN_SCALE, clamp]. */
   nudge(delta: 1 | -1): void {
-    this.#scale = stepScale(this.#scale, delta, MIN_SCALE, maxScale(this.#scaleInput(0)));
-    this.#pushScale();
+    this.#scale = stepScale(this.#scale, delta, MIN_SCALE, maxScale(this.#scaleInput(0, this.#frameH())));
+    this.#pushCharacters();
   }
 
   setLayer(layer: LayerMode): void {
@@ -111,28 +116,61 @@ export class StageController {
     const win = this.#deps.stage();
     if (win) win.setBounds(this.#deps.display().workArea);
     this.#scale = this.#presetScale(this.#preset);
-    this.#pushScale();
+    this.#pushCharacters();
   }
 
-  #scaleInput(targetDip: number): ScaleInput {
+  #characters(): readonly StageCharacter[] {
+    return this.#deps.characters?.() ?? [];
+  }
+
+  /** Frame height of the primary character (the placeholder's when no pack is on stage). */
+  #frameH(): number {
+    return this.#characters()[0]?.pack.manifest.frameSize.h ?? FRAME_HEIGHT_PX;
+  }
+
+  #scaleInput(targetDip: number, frameH: number): ScaleInput {
     const display = this.#deps.display();
     return {
       targetDip,
       scaleFactor: display.scaleFactor,
-      frameH: FRAME_HEIGHT_PX,
+      frameH,
       workAreaHeightDip: display.workArea.height,
       maxFraction: MAX_HEIGHT_FRACTION,
       minScale: MIN_SCALE,
     };
   }
 
-  #presetScale(preset: SizePreset): number {
-    return presetScales(SIZE_PRESETS_DIP, this.#scaleInput(0))[preset];
+  #presetScale(preset: SizePreset, frameH = this.#frameH()): number {
+    return presetScales(SIZE_PRESETS_DIP, this.#scaleInput(0, frameH))[preset];
   }
 
-  #pushScale(): void {
+  #pushCharacters(): void {
     const win = this.#deps.stage();
-    if (win) sendEvent(win.webContents, CHANNEL.stageScale, { scale: this.#scale });
+    if (!win) return;
+    const entries = this.#characters().map(({ key, label, pack }, index) => {
+      const { manifest } = pack;
+      const animations = Object.fromEntries(
+        Object.entries(manifest.animations).map(([name, a]) => [
+          name,
+          { frames: a.frames, fps: a.fps, loop: a.loop, origin: a.origin ?? { x: 0, y: 0 } },
+        ]),
+      );
+      return {
+        key,
+        ...(label === undefined ? {} : { label }),
+        frameSize: manifest.frameSize,
+        anchor: manifest.anchor,
+        animations,
+        fallbacks: manifest.fallbacks,
+        atlasUrl: `app://characters/${pack.id}/${pack.atlas}`,
+        // The primary character follows the fine steps; lineup entries use the preset for their own frame size.
+        scale: index === 0 ? this.#scale : this.#presetScale(this.#preset, manifest.frameSize.h),
+      };
+    });
+    const payload = { entries, placeholderScale: this.#scale, animCycle: this.#deps.animCycle ?? false };
+    if (!sendEvent(win.webContents, CHANNEL.stageCharacters, payload)) {
+      console.error('[stage] stage:characters payload failed its contract');
+    }
   }
 
   #applyLayer(win: BrowserWindow): void {
