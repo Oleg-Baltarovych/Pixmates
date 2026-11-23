@@ -74,6 +74,7 @@ function main(): void {
     : join(import.meta.dirname, '..', '..', 'resources', 'characters');
   const registry = loadRegistry(charactersRoot, {
     includeSpike: !app.isPackaged || process.argv.includes('--perf-spike'),
+    builtinOnly: app.isPackaged,
   });
   for (const error of registry.errors) console.warn(`[characters] ${error}`);
   // Dev-only art lineup (M-ART phase 1): every spike pack, blind-labelled A–D (key in reports/art-spike/key.txt).

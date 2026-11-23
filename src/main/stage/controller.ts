@@ -101,7 +101,7 @@ export class StageController {
 
   /** «Більше» / «Менше»: one integer step within [MIN_SCALE, clamp]. */
   nudge(delta: 1 | -1): void {
-    this.#scale = stepScale(this.#scale, delta, MIN_SCALE, maxScale(this.#scaleInput(0, this.#frameH())));
+    this.#scale = stepScale(this.#scale, delta, MIN_SCALE, maxScale(this.#scaleInput(0, this.#frameH(), this.#refH())));
     this.#pushCharacters();
   }
 
@@ -128,20 +128,26 @@ export class StageController {
     return this.#characters()[0]?.pack.manifest.frameSize.h ?? FRAME_HEIGHT_PX;
   }
 
-  #scaleInput(targetDip: number, frameH: number): ScaleInput {
+  /** Sizing height of the primary character (manifest `scaleRef`, ADR 009); undefined = its frame height. */
+  #refH(): number | undefined {
+    return this.#characters()[0]?.pack.manifest.scaleRef;
+  }
+
+  #scaleInput(targetDip: number, frameH: number, refH?: number): ScaleInput {
     const display = this.#deps.display();
     return {
       targetDip,
       scaleFactor: display.scaleFactor,
       frameH,
+      refH,
       workAreaHeightDip: display.workArea.height,
       maxFraction: MAX_HEIGHT_FRACTION,
       minScale: MIN_SCALE,
     };
   }
 
-  #presetScale(preset: SizePreset, frameH = this.#frameH()): number {
-    return presetScales(SIZE_PRESETS_DIP, this.#scaleInput(0, frameH))[preset];
+  #presetScale(preset: SizePreset, frameH = this.#frameH(), refH = this.#refH()): number {
+    return presetScales(SIZE_PRESETS_DIP, this.#scaleInput(0, frameH, refH))[preset];
   }
 
   #pushCharacters(): void {
@@ -152,7 +158,14 @@ export class StageController {
       const animations = Object.fromEntries(
         Object.entries(manifest.animations).map(([name, a]) => [
           name,
-          { frames: a.frames, fps: a.fps, loop: a.loop, origin: a.origin ?? { x: 0, y: 0 } },
+          {
+            frames: a.frames,
+            fps: a.fps,
+            loop: a.loop,
+            origin: a.origin ?? { x: 0, y: 0 },
+            // Per-animation pivot (sit_edge seat); the renderer ignores it until M1.
+            ...(a.anchor ? { anchor: a.anchor } : {}),
+          },
         ]),
       );
       return {
@@ -164,7 +177,7 @@ export class StageController {
         fallbacks: manifest.fallbacks,
         atlasUrl: `app://characters/${pack.id}/${pack.atlas}`,
         // The primary character follows the fine steps; lineup entries use the preset for their own frame size.
-        scale: index === 0 ? this.#scale : this.#presetScale(this.#preset, manifest.frameSize.h),
+        scale: index === 0 ? this.#scale : this.#presetScale(this.#preset, manifest.frameSize.h, manifest.scaleRef),
       };
     });
     const payload = { entries, placeholderScale: this.#scale, animCycle: this.#deps.animCycle ?? false };

@@ -111,3 +111,31 @@ describe('broken display metrics', () => {
     expect(Object.values(presetScales(PRESETS, input)).every(Number.isInteger)).toBe(true);
   });
 });
+
+describe('scaleRef sizing with headroom (ADR 009, plan MA-21)', () => {
+  // Frame 48 × 56 (8 rows of headroom), sized by the 48-px standing figure.
+  const headroom = (scaleFactor: number, workAreaHeightDip = 816): Omit<ScaleInput, 'targetDip'> => ({
+    scaleFactor,
+    frameH: 56,
+    refH: 48,
+    workAreaHeightDip,
+    maxFraction: 0.25,
+    minScale: 2,
+  });
+  it('keeps S/M/L at ×3/×4/×5 at 1080p / 125 % although the frame is 56 tall', () => {
+    expect(presetScales(PRESETS, headroom(1.25, 816))).toEqual({ s: 3, m: 4, l: 5 });
+  });
+  it('would shrink M to ×3 without refH (the reason for scaleRef)', () => {
+    expect(computeScale({ ...headroom(1.25), refH: undefined, targetDip: PRESETS.m })).toBe(3);
+  });
+  it('clamps on the visible figure height (headroom rows are transparent)', () => {
+    // 0.25 × 600 = 150 DIP → 150 / 48 = ×3 (the full 56-px frame would give ×2).
+    const input = { ...headroom(1, 600), targetDip: 400 };
+    expect(maxScale(input)).toBe(3);
+    expect(computeScale(input)).toBe(3);
+    expect(maxScale({ ...input, refH: undefined })).toBe(2);
+  });
+  it('treats a broken refH like a missing one', () => {
+    expect(computeScale({ ...headroom(1.25), refH: Number.NaN, targetDip: PRESETS.m })).toBe(3);
+  });
+});

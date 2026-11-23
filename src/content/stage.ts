@@ -1,4 +1,6 @@
 // Stage numbers (SPEC v1.4 §3.3, owner decision D-10). Tuned by the owner by eye; logic never hard-codes them.
+import { builtinPackId } from '../shared/pack.ts';
+
 /** Height of the placeholder frame in art pixels; real packs bring their own `frameSize` in the manifest. */
 export const FRAME_HEIGHT_PX = 32;
 
@@ -20,4 +22,4 @@ export const CLICK_SLOP_DIP = 4;
 export const DRAG_FPS = 60;
 
 /** The character shown when none is chosen (M-ART: `maid`; until phase 2 builds it, the placeholder stays). */
-export const DEFAULT_CHARACTER = 'maid';
+export const DEFAULT_CHARACTER = builtinPackId('maid');

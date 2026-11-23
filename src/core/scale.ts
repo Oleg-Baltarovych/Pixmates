@@ -6,8 +6,10 @@ export interface ScaleInput {
   readonly targetDip: number;
   /** Display scale factor (1, 1.25, 1.5, 2, ...). */
   readonly scaleFactor: number;
-  /** Art frame height in pixels. */
+  /** Art frame height in pixels (clamps the on-screen height). */
   readonly frameH: number;
+  /** Standing-figure height used for sizing (manifest `scaleRef`, ADR 009 headroom); default `frameH`. */
+  readonly refH?: number | undefined;
   readonly workAreaHeightDip: number;
   readonly maxFraction: number;
   /** Smallest allowed scale. */
@@ -16,18 +18,27 @@ export interface ScaleInput {
 
 const positive = (value: number): boolean => Number.isFinite(value) && value > 0;
 
-/** Largest scale whose height stays within `maxFraction` of the work area (never below `minScale`).
+/** Sizing height: the visible standing figure (`refH`, never taller than the frame), else the frame height. */
+const refHeight = (frameH: number, refH: number | undefined): number =>
+  refH !== undefined && positive(refH) ? Math.min(refH, frameH) : frameH;
+
+/** Largest scale whose visible-figure height (`refH`, ADR 009; the frame box may be ~17 % taller because the
+ * headroom rows are transparent) stays within `maxFraction` of the work area (never below `minScale`).
  * Broken metrics (NaN, 0, negative scale factor or frame height) give `minScale`. */
-export function maxScale({ scaleFactor, frameH, workAreaHeightDip, maxFraction, minScale }: ScaleInput): number {
+export function maxScale({ scaleFactor, frameH, refH, workAreaHeightDip, maxFraction, minScale }: ScaleInput): number {
   if (!positive(scaleFactor) || !positive(frameH)) return minScale;
-  const limit = Math.floor((maxFraction * workAreaHeightDip * scaleFactor) / frameH);
+  // The clamp measures the visible figure (refH): headroom rows are transparent. With the full 56-px frame the
+  // L preset would drop to ×4 at 1080p / 125 % (plan MA-21 deviation, reported).
+  const ref = refHeight(frameH, refH);
+  const limit = Math.floor((maxFraction * workAreaHeightDip * scaleFactor) / ref);
   return Number.isFinite(limit) ? Math.max(minScale, limit) : minScale;
 }
 
-/** round(target × scaleFactor / frameH), at least `minScale`, clamped to `maxScale`. Broken input gives `minScale`. */
+/** round(target × scaleFactor / (refH ?? frameH)), at least `minScale`, clamped to `maxScale`. Broken input gives `minScale`. */
 export function computeScale(input: ScaleInput): number {
   if (!positive(input.scaleFactor) || !positive(input.frameH)) return input.minScale;
-  const wanted = Math.round((input.targetDip * input.scaleFactor) / input.frameH);
+  const ref = refHeight(input.frameH, input.refH);
+  const wanted = Math.round((input.targetDip * input.scaleFactor) / ref);
   if (!Number.isFinite(wanted)) return input.minScale;
   return Math.min(Math.max(input.minScale, wanted), maxScale(input));
 }

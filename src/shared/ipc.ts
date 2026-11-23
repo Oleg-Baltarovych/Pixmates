@@ -4,7 +4,7 @@
 // IPC is keyed by them, so every name has exactly one contract.
 import { z } from 'zod';
 import { CHANNEL } from './ipc-channels.ts';
-import { ANIM_NAME, PACK_LIMITS } from './pack.ts';
+import { ANIM_NAME, PACK_LIMITS, unitPoint } from './pack.ts';
 import type { WindowRole } from './windows.ts';
 
 export { CHANNEL };
@@ -33,6 +33,8 @@ const stageAnimation = z
     origin: z
       .object({ x: z.int().min(0).max(PACK_LIMITS.textureMax), y: z.int().min(0).max(PACK_LIMITS.textureMax) })
       .strict(),
+    /** Per-animation pivot (manifest `anchor`, e.g. the sit_edge seat); the stage renderer applies it from M1. */
+    anchor: unitPoint.optional(),
   })
   .strict();
 

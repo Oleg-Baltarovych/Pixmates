@@ -9,7 +9,14 @@ import { selectCharacters } from '../../../src/main/characters/selection.ts';
 import { formatKey, parseKey, shuffle } from '../../../src/main/dev/lineup.ts';
 import { handleAppProtocol, readContainedFile, resolveCharacterFile } from '../../../src/main/windows/app-protocol.ts';
 import { IPC } from '../../../src/shared/ipc.ts';
-import { checkStrips, manifestSchema, resolveAnim } from '../../../src/shared/pack.ts';
+import {
+  builtinPackId,
+  checkStrips,
+  fxManifestSchema,
+  isBuiltinPackId,
+  manifestSchema,
+  resolveAnim,
+} from '../../../src/shared/pack.ts';
 
 const anim = (y: number, frames = 2) => ({
   file: 'sprites/atlas.png',
@@ -74,16 +81,16 @@ function packDir(root: string, id: string, manifest: object, atlas = { width: 32
 describe('character registry (MA-10)', () => {
   const root = mkdtempSync(join(tmpdir(), 'pixmates-chars-'));
   packDir(root, 'spike-test', makeManifest());
-  packDir(root, 'maid', makeManifest({ id: 'maid' }));
+  packDir(root, 'pixmates.maid', makeManifest({ id: 'pixmates.maid' }));
   packDir(root, 'wrong-id', makeManifest({ id: 'other' }));
   packDir(root, 'tiny', makeManifest({ id: 'tiny' }), { width: 8, height: 8 });
 
   it('keeps valid packs, reports broken ones, hides spike packs when packaged', () => {
     const dev = loadRegistry(root, { includeSpike: true });
-    expect([...dev.packs.keys()].sort()).toEqual(['maid', 'spike-test']);
+    expect([...dev.packs.keys()].sort()).toEqual(['pixmates.maid', 'spike-test']);
     expect(dev.errors.join('\n')).toMatch(/wrong-id: manifest id/);
     expect(dev.errors.join('\n')).toMatch(/tiny: .*leaves/);
-    expect([...loadRegistry(root, { includeSpike: false }).packs.keys()]).toEqual(['maid']);
+    expect([...loadRegistry(root, { includeSpike: false }).packs.keys()]).toEqual(['pixmates.maid']);
     expect(loadRegistry(join(root, 'missing'), { includeSpike: true }).packs.size).toBe(0);
   });
   it('reads PNG sizes from the header only', () => {
@@ -93,8 +100,11 @@ describe('character registry (MA-10)', () => {
   it('selects the requested pack, else the default, and labels the lineup A–D', () => {
     const { packs } = loadRegistry(root, { includeSpike: true });
     expect(selectCharacters({ packs, requested: 'spike-test' }).map((c) => c.key)).toEqual(['spike-test']);
-    expect(selectCharacters({ packs, requested: 'nope' }).map((c) => c.key)).toEqual(['maid']);
-    expect(selectCharacters({ packs, lineup: ['spike-test', 'maid'] }).map((c) => c.label)).toEqual(['A', 'B']);
+    expect(selectCharacters({ packs, requested: 'nope' }).map((c) => c.key)).toEqual(['pixmates.maid']);
+    expect(selectCharacters({ packs, lineup: ['spike-test', 'pixmates.maid'] }).map((c) => c.label)).toEqual([
+      'A',
+      'B',
+    ]);
   });
 });
 
@@ -158,6 +168,19 @@ describe('stage:characters contract (MA-11)', () => {
   };
   it('accepts up to four entries from app://characters', () => {
     expect(schema.safeParse({ entries: [entry], placeholderScale: 4, animCycle: true }).success).toBe(true);
+    const seat = (anchor: unknown) => ({
+      ...entry,
+      animations: { ...entry.animations, sit_edge: { frames: 6, fps: 6, loop: true, origin: { x: 0, y: 56 }, anchor } },
+    });
+    expect(
+      schema.safeParse({ entries: [seat({ x: 0.5, y: 0.8 })], placeholderScale: 4, animCycle: false }).success,
+    ).toBe(true);
+    expect(
+      schema.safeParse({ entries: [seat({ x: 0.5, y: 1.1 })], placeholderScale: 4, animCycle: false }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({ entries: [seat({ x: -0.1, y: 0.5 })], placeholderScale: 4, animCycle: false }).success,
+    ).toBe(false);
     expect(schema.safeParse({ entries: [], placeholderScale: 4, animCycle: false }).success).toBe(true);
   });
   it('rejects foreign atlas URLs, five entries, bad scale and extra fields', () => {
@@ -221,5 +244,75 @@ describe('links and junctions (security review L3)', () => {
   it('the host refuses files over the size cap and missing files', async () => {
     expect(await readContainedFile(root, join(root, 'maid', 'sprites', 'atlas.png'), 10)).toBeUndefined();
     expect(await readContainedFile(root, join(root, 'maid', 'sprites', 'none.png'), 1 << 20)).toBeUndefined();
+  });
+});
+
+describe('M-ART phase 2 manifest fields (MA-21)', () => {
+  it('accepts scaleRef within 8…frameSize.h and rejects it outside', () => {
+    expect(manifestSchema.safeParse(makeManifest({ scaleRef: 12 })).success).toBe(true);
+    expect(manifestSchema.safeParse(makeManifest({ scaleRef: 16 })).success).toBe(true);
+    expect(manifestSchema.safeParse(makeManifest({ scaleRef: 17 })).success).toBe(false);
+    expect(manifestSchema.safeParse(makeManifest({ scaleRef: 7 })).success).toBe(false);
+    expect(manifestSchema.safeParse(makeManifest({ scaleRef: 12.5 })).success).toBe(false);
+  });
+  it('rejects scaleRef below 3/4 of the frame height (S3)', () => {
+    const tall = (scaleRef: number) =>
+      makeManifest({ frameSize: { w: 16, h: 56 }, scaleRef, animations: { idle_a: anim(0), walk: anim(56) } });
+    expect(manifestSchema.safeParse(tall(42)).success).toBe(true);
+    expect(manifestSchema.safeParse(tall(41)).success).toBe(false);
+  });
+  it('accepts a per-animation anchor in 0…1 only', () => {
+    const withAnchor = (anchor: unknown) =>
+      makeManifest({ animations: { idle_a: anim(0), walk: anim(16), sit_edge: { ...anim(0), anchor } } });
+    expect(manifestSchema.safeParse(withAnchor({ x: 0.5, y: 0.7 })).success).toBe(true);
+    expect(manifestSchema.safeParse(withAnchor({ x: 0.5, y: 1.2 })).success).toBe(false);
+    expect(manifestSchema.safeParse(withAnchor({ x: 0.5 })).success).toBe(false);
+  });
+  it('maps roster ids to reserved built-in pack ids', () => {
+    expect(builtinPackId('maid')).toBe('pixmates.maid');
+    expect(isBuiltinPackId('pixmates.maid')).toBe(true);
+    expect(isBuiltinPackId('maid')).toBe(false);
+    expect(isBuiltinPackId('com.example.pixmates.maid')).toBe(false);
+    expect(() => builtinPackId('Bad Id')).toThrow();
+  });
+  it('validates the FX manifest (marks ≤ 16², ≤ 6 frames, one atlas)', () => {
+    const fx = {
+      version: '0.0.1',
+      frameSize: { w: 16, h: 16 },
+      marks: { sweat: { frames: 4, fps: 8, loop: false, origin: { x: 0, y: 0 } } },
+      files: { 'sprites/fx.png': 'a'.repeat(64) },
+    };
+    expect(fxManifestSchema.safeParse(fx).success).toBe(true);
+    expect(fxManifestSchema.safeParse({ ...fx, frameSize: { w: 17, h: 16 } }).success).toBe(false);
+    const long = { ...fx, marks: { sweat: { frames: 7, fps: 8, loop: false, origin: { x: 0, y: 0 } } } };
+    expect(fxManifestSchema.safeParse(long).success).toBe(false);
+    expect(fxManifestSchema.safeParse({ ...fx, script: 'x' }).success).toBe(false);
+  });
+});
+
+describe('registry: packaged builds accept built-ins only (MA-21)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'pixmates-builtin-'));
+  packDir(root, 'pixmates.maid', makeManifest({ id: 'pixmates.maid' }));
+  packDir(root, 'maid', makeManifest({ id: 'maid' }));
+  packDir(root, 'spike-test', makeManifest());
+  it('lists only pixmates.* when builtinOnly, everything valid otherwise', () => {
+    expect([...loadRegistry(root, { includeSpike: false, builtinOnly: true }).packs.keys()]).toEqual(['pixmates.maid']);
+    expect([...loadRegistry(root, { includeSpike: true, builtinOnly: true }).packs.keys()].sort()).toEqual([
+      'pixmates.maid',
+      'spike-test',
+    ]);
+    expect([...loadRegistry(root, { includeSpike: false, builtinOnly: false }).packs.keys()].sort()).toEqual([
+      'maid',
+      'pixmates.maid',
+    ]);
+  });
+  it('drops a pixmates.* folder whose manifest id differs, and spike packs when includeSpike is false', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pixmates-builtin-'));
+    packDir(dir, 'pixmates.maid', makeManifest({ id: 'pixmates.maid' }));
+    packDir(dir, 'pixmates.x', makeManifest({ id: 'pixmates.y' }));
+    packDir(dir, 'spike-test', makeManifest());
+    const result = loadRegistry(dir, { includeSpike: false, builtinOnly: true });
+    expect([...result.packs.keys()]).toEqual(['pixmates.maid']);
+    expect(result.errors.join(' | ')).toMatch(/pixmates\.x: manifest id/);
   });
 });
