@@ -1,13 +1,8 @@
-// Every pack `pnpm sprites` builds, in build order. M-ART phase 1: the four `maid` spike variants (pixel anime, D-13: 48/64 × anime cel / anime soft) (A–D are assigned
-// blind by the lineup, not here). Phase 2 replaces these with the rigged built-ins.
+// Every pack `pnpm sprites` builds, in build order. M-ART phase 2: the two anime-soft `maid` spike packs (ADR 009
+// picked 48 soft; the cel packs were deleted in MA-22) stay dev-only until MA-31; the rigged built-ins join from MA-27.
 import { RIG_48 } from './spike/maid-48/rig.ts';
 import { RIG_64 } from './spike/maid-64/rig.ts';
-import { createMaidPack, STYLES } from './spike/maid.ts';
+import { createMaidPack } from './spike/maid.ts';
 import type { PackDef } from './lib/types.ts';
 
-export const PACKS: readonly PackDef[] = [
-  createMaidPack(RIG_48, STYLES.cel),
-  createMaidPack(RIG_48, STYLES.soft),
-  createMaidPack(RIG_64, STYLES.cel),
-  createMaidPack(RIG_64, STYLES.soft),
-];
+export const PACKS: readonly PackDef[] = [createMaidPack(RIG_48), createMaidPack(RIG_64)];

@@ -10,6 +10,8 @@ export interface AnimDef {
   readonly frames: number;
   readonly fps: number;
   readonly loop: boolean;
+  /** Per-animation pivot (e.g. `sit_edge` on the seat), emitted into the manifest. */
+  readonly anchor?: { readonly x: number; readonly y: number };
 }
 
 export interface RenderContext {
@@ -28,6 +30,14 @@ export interface PackDef {
   /** In atlas row order. */
   readonly animations: Readonly<Record<string, AnimDef>>;
   readonly fallbacks: Readonly<Record<string, string>>;
+  /** Standing-figure height for sizing (manifest `scaleRef`); omitted = frame height. */
+  readonly scaleRef?: number;
+  /** `rows` (default; spike packs): one atlas row per animation. `shelf`: strips packed into shelves ≤ 1024 wide. */
+  readonly layout?: 'rows' | 'shelf';
+  /** Built-ins with headroom (ADR 009): the builder fails when a frame has an opaque px on row 0. */
+  readonly headroom?: boolean;
+  /** FX mark anchor per frame (frame px), for previews; reaches the manifest/IPC in M1. */
+  fxAnchor?(anim: string, frame: number): readonly [number, number];
   /** Renders frame `frame` of `anim` as RGBA (palette colours, alpha 0 or 255). */
   render(anim: string, frame: number, ctx: RenderContext): RgbaImage;
 }

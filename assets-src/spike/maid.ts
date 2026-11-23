@@ -1,93 +1,23 @@
 // M-ART art spike (plan MA-07, Amendment D-13): the `maid` — an original horned demoness housekeeper in pixel-anime
 // style (ADR 005: own design — chibi proportions, lilac hair in pointed clumps with an angel-ring shine, thin ivory
 // hook horns shading to plum, teal dress, cream apron, rose bow, plum stockings and a thin spade-tipped tail). One
-// generator renders every variant: the rig (48 or 64 px, authored per size in maid-48/maid-64) gives geometry and
-// masks, the style preset (anime cel / anime soft) gives the pass settings and the mask tone remap. Pipeline per
-// frame: procedural parts (hair back, locks, cloth, limbs) → compose (light, material texture, occlusion, dither;
-// hair never dithered) → authored masks (head, face layer per emotion, bow, shoes, spade; cel remaps their tones) →
-// coloured outline + internal lines (horns outlined in plum) → selective outline → AA (soft) → masks restored →
-// rim light (soft) → cel snap to ramp stops (cel; masks excluded) → quantize. Outline and rim run on the composite.
+// generator renders both sizes: the rig (48 or 64 px, authored per size in maid-48/maid-64) gives geometry and
+// masks; the one preset is anime soft (ADR 009, `rig/style.ts`). Pipeline per frame: procedural parts (hair back,
+// locks, cloth, limbs) → compose (light, material texture, occlusion, dither; hair never dithered) → authored masks
+// (head, face layer per emotion, bow, shoes, spade) → coloured outline + internal lines (horns outlined in plum) →
+// selective outline → AA → masks restored → rim light → quantize. Outline and rim run on the composite.
+// Phase 2 generalizes this into assets-src/rig/ (MA-23); the spike stays until MA-31.
 import type { RgbaImage } from '../../tools/lib/png.ts';
-import { createIndexBuffer, quantize, type IndexBuffer, type RampName } from '../lib/buffer.ts';
+import { createIndexBuffer, quantize, type IndexBuffer } from '../lib/buffer.ts';
 import { simulateChain, type Point } from '../lib/chain.ts';
-import { checkMask, LEGEND, maskSize, type Mask, type Outfit, type Slot, type Tone } from '../lib/mask.ts';
+import { checkMask, LEGEND, maskSize, type Mask, type Outfit } from '../lib/mask.ts';
 import { cloth, flat, MAT } from '../lib/materials.ts';
 import { compose, outline, selectiveOutline, type Material, type Part } from '../lib/passes.ts';
-import { antiAlias, celSnap, rimLight } from '../lib/polish.ts';
+import { antiAlias, rimLight } from '../lib/polish.ts';
+import { withBand } from '../rig/body.ts';
+import { SOFT as style } from '../rig/style.ts';
 import { curveX, ellipse, poly, rect, stroke, type Shape, type StrokePoint } from '../lib/shapes.ts';
 import type { AnimDef, PackDef, RenderContext } from '../lib/types.ts';
-
-// ── style presets (the spike's second axis, D-13: anime cel vs anime soft) ──────────────────────────────────────
-
-export type ToneMap = readonly [Tone, Tone, Tone, Tone, Tone, Tone];
-
-export interface StylePreset {
-  readonly key: 'cel' | 'soft';
-  readonly name: string;
-  /** Light pass strength (shade steps). */
-  readonly light: number;
-  /** Bayer spread: dithering only as texture near ½ steps (0 = round). */
-  readonly dither: number;
-  /** Outline: steps below the neighbour. */
-  readonly drop: number;
-  readonly aa: boolean;
-  /** Rim light strength (0 = off). */
-  readonly rim: number;
-  /** Cel: snap every procedural px to these ramp stops (hard terminators); null = keep the full ramp. */
-  readonly stops: ((ramp: RampName, top: number) => readonly number[]) | null;
-  readonly occlusion: number;
-  /** Cel: authored mask tones remapped per slot (6 tones → 2–3 + accent); slots not listed keep their tones. */
-  readonly maskTones: Partial<Readonly<Record<Slot, ToneMap>>>;
-}
-
-const CEL3: ToneMap = [0, 1, 1, 3, 3, 5];
-
-/** Cel stops: shadow / base / light 2 steps apart, under the ramp's top; skin and cream get 2 + highlight. */
-const celStops = (ramp: RampName, top: number): readonly number[] => {
-  if (ramp === 'skin') return [2, 4];
-  if (ramp === 'cloth_cream') return [2, 4, 5];
-  return [Math.max(0, top - 5), Math.max(0, top - 3), top - 1];
-};
-
-export const STYLES: Readonly<Record<'cel' | 'soft', StylePreset>> = {
-  // Anime cel: 2–3 tones per material with hard terminators, crisp 3-step coloured outline (lighter on the lit
-  // side), no AA, no rim, no dither, almost no AO; head masks collapse to shade / base / light.
-  cel: {
-    key: 'cel',
-    name: 'Anime cel',
-    light: 3.6,
-    dither: 0,
-    drop: 3,
-    aa: false,
-    rim: 0,
-    stops: celStops,
-    occlusion: 0.2,
-    // Eyes: 2-tone iris in cel (dark top `c`, flat `I` below); soft keeps the 3-step c → i → I gradient.
-    maskTones: {
-      hair: CEL3,
-      horn: CEL3,
-      skin: [0, 2, 2, 3, 3, 3],
-      dress: CEL3,
-      trim: CEL3,
-      shoe: CEL3,
-      eye: [0, 1, 3, 3, 3, 3],
-    },
-  },
-  // Anime soft: the full 6–7-tone ramps, gentle light, texture dither, soft AO, manual AA and a 2-step rim on the
-  // side away from the light; authored masks keep every tone (gradient hair, cheek light).
-  soft: {
-    key: 'soft',
-    name: 'Anime soft',
-    light: 2,
-    dither: 0.35,
-    drop: 2,
-    aa: true,
-    rim: 2,
-    stops: null,
-    occlusion: 1,
-    maskTones: {},
-  },
-};
 
 // ── rig (authored per frame size) ──────────────────────────────────────────────────────────────────────────────
 
@@ -97,8 +27,8 @@ export interface FaceLayers {
   readonly neutral: Mask;
   readonly blink: Mask;
   readonly happy: Mask;
-  /** Blush per style, stamped under every emotion layer: cel = hard 2×1 block, soft = AA / dithered edges. */
-  readonly cheeks: Readonly<Record<StylePreset['key'], Mask>>;
+  /** Blush (AA / dithered edges), stamped under every emotion layer. */
+  readonly cheeks: Mask;
 }
 
 export interface MaidRig {
@@ -348,14 +278,13 @@ const SLOT_MATERIAL: Readonly<Partial<Record<string, number>>> = {
   trim: MAT.trim,
 };
 
-export function createMaidPack(rig: MaidRig, style: StylePreset): PackDef {
+export function createMaidPack(rig: MaidRig): PackDef {
   for (const [name, mask] of [
     ['head', rig.head.mask],
     ['face.neutral', rig.face.neutral],
     ['face.blink', rig.face.blink],
     ['face.happy', rig.face.happy],
-    ['face.cheeks.cel', rig.face.cheeks.cel],
-    ['face.cheeks.soft', rig.face.cheeks.soft],
+    ['face.cheeks', rig.face.cheeks],
     ['bow', rig.bow.mask],
     ['spade', rig.spade],
     ['shoe', rig.shoe.mask],
@@ -363,8 +292,7 @@ export function createMaidPack(rig: MaidRig, style: StylePreset): PackDef {
     checkMask(mask, `maid-${String(rig.size)}/${name}`);
   }
   const { k, size } = rig;
-  const { key: variant } = style;
-  const headMask = withBand(rig.head.mask, rig.band, variant === 'soft');
+  const headMask = withBand(rig.head.mask, rig.band);
   const S = (v: number): number => v * k;
   /** Motion in 48-px px → this size, whole px (rounded away from 0, so −1.5 mirrors 1.5). */
   const M = (v: number): number => Math.sign(v) * Math.round(Math.abs(v) * k);
@@ -712,16 +640,16 @@ export function createMaidPack(rig: MaidRig, style: StylePreset): PackDef {
       if (buf.inBounds(x, y) && buf.get(x, y).material === MAT.skin) buf.shade[y * size + x] = 2;
     }
 
-    // Authored masks; their px are locked (restored after outline / AA, skipped by posterize).
+    // Authored masks; their px are locked (restored after outline / AA).
     const locked = new Map<number, readonly [number, number]>();
     const stamp = (mask: Mask, x: number, y: number, depth: number, fallback: number, under?: number): void => {
-      stampMask(buf, mask, x, y, depth, fallback, locked, style.maskTones, under);
+      stampMask(buf, mask, x, y, depth, fallback, locked, under);
     };
     stamp(rig.bow.mask, Math.round(rig.bow.at[0] + sx), Math.round(rig.bow.at[1] + ty), 1.7, MAT.trim);
     stamp(headMask, Math.round(rig.head.at[0] + sx), Math.round(rig.head.at[1] + hy), 3.5, MAT.skin);
     const faceX = Math.round(rig.face.at[0] + sx);
     const faceY = Math.round(rig.face.at[1] + hy);
-    stamp(rig.face.cheeks[variant], faceX, faceY, 3.6, MAT.skin, MAT.hair);
+    stamp(rig.face.cheeks, faceX, faceY, 3.6, MAT.skin, MAT.hair);
     stamp(rig.face[p.face], faceX, faceY, 3.6, MAT.skin, MAT.hair);
     const tip = tail[tail.length - 1];
     if (tip) {
@@ -766,12 +694,11 @@ export function createMaidPack(rig: MaidRig, style: StylePreset): PackDef {
       buf.shade[i] = shade;
     }
     rimLight(buf, map, ctx.rampSize, { strength: style.rim });
-    if (style.stops !== null) celSnap(buf, ctx.rampSize, style.stops, { skip: (i) => locked.has(i) });
     return quantize(buf, ctx.palette);
   };
 
   return {
-    id: `spike-maid-${String(size)}${variant}`,
+    id: `spike-maid-${String(size)}soft`,
     name: `maid spike ${String(size)} ${style.name}`,
     version: '0.0.1',
     author: 'Pixmates (generated by code)',
@@ -790,44 +717,6 @@ export function createMaidPack(rig: MaidRig, style: StylePreset): PackDef {
   };
 }
 
-const HAIR_CHARS = new Set(['j', 'J', 'h', 'H', 'y', 'Y']);
-const SKIN_CHARS = new Set(['s', 'S', 'e', 'E']);
-
-/**
- * Forehead hair-shadow band (ART-BIBLE §11.3): in every column, the first skin px under the fringe (row ≤ `last`)
- * becomes `z` — one hard tone in cel. Soft adds a 1-px AA step: the skin px under a band px whose neighbour column's
- * band sits one row lower (a staircase corner) becomes `s`.
- */
-export function withBand(mask: Mask, last: number, soft: boolean): Mask {
-  const rows = mask.map((r) => r.split(''));
-  const width = Math.max(0, ...rows.map((r) => r.length));
-  const bandRow: number[] = [];
-  for (let x = 0; x < width; x++) {
-    bandRow[x] = -1;
-    let hair = false;
-    for (let y = 0; y <= Math.min(last, rows.length - 1); y++) {
-      const row = rows[y];
-      const ch = row?.[x] ?? '.';
-      if (HAIR_CHARS.has(ch)) hair = true;
-      else if (row && hair && SKIN_CHARS.has(ch)) {
-        row[x] = 'z';
-        bandRow[x] = y;
-        break;
-      }
-    }
-  }
-  if (soft) {
-    for (let x = 0; x < width; x++) {
-      const y = bandRow[x] ?? -1;
-      if (y < 0) continue;
-      const step = [x - 1, x + 1].some((n) => (bandRow[n] ?? -1) === y + 1);
-      const below = rows[y + 1];
-      if (step && below && SKIN_CHARS.has(below[x] ?? '.')) below[x] = 's';
-    }
-  }
-  return rows.map((r) => r.join(''));
-}
-
 /**
  * Paints an authored mask straight into the composite (after light, before outline): its tones are final. Each px
  * is recorded in `locked` (ramp index + shade). With `under`, px whose current material is `under` are left alone
@@ -841,7 +730,6 @@ function stampMask(
   depth: number,
   fallback: number,
   locked: Map<number, readonly [number, number]>,
-  tones: StylePreset['maskTones'],
   under?: number,
 ): void {
   mask.forEach((row, r) => {
@@ -855,7 +743,7 @@ function stampMask(
       const material = SLOT_MATERIAL[entry[0]] ?? fallback;
       buf.set(px, py, {
         ramp: swatch.ramp,
-        shade: swatch.tones[tones[entry[0]]?.[entry[1]] ?? entry[1]],
+        shade: swatch.tones[entry[1]],
         depth,
         material,
       });
@@ -864,3 +752,6 @@ function stampMask(
     }
   });
 }
+
+// One forehead-band implementation for the spike and the rig (code review nit).
+export { withBand };

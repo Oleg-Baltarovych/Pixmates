@@ -6,9 +6,9 @@ import { simulateChain, type Point } from '../../../assets-src/lib/chain.ts';
 import { checkMask, LEGEND, plotMasks, SLOTS, type Outfit } from '../../../assets-src/lib/mask.ts';
 import { toOklab } from '../../../assets-src/lib/palette.ts';
 import { dither, outline } from '../../../assets-src/lib/passes.ts';
-import { antiAlias, posterize, rimLight } from '../../../assets-src/lib/polish.ts';
+import { antiAlias, rimLight } from '../../../assets-src/lib/polish.ts';
 import { stroke } from '../../../assets-src/lib/shapes.ts';
-import { withBand } from '../../../assets-src/spike/maid.ts';
+import { withBand } from '../../../assets-src/rig/body.ts';
 import { buildPack, loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
 
 const palette = loadMasterPalette();
@@ -67,12 +67,11 @@ describe('passes (MA-02)', () => {
     for (const f of stroke([[6, 6, 3.5]]).fragments) buf.set(f.x, f.y, { ramp: 'cloth_teal', shade: 3 });
     return buf;
   };
-  it('outline, AA, rim and posterize keep every px on its ramp and inside its range', () => {
+  it('outline, AA and rim keep every px on its ramp and inside its range', () => {
     const buf = blob();
     const map = outline(buf, ctx.rampSize, { drop: 2 });
     antiAlias(buf, map);
     rimLight(buf, map, ctx.rampSize, { strength: 1 });
-    posterize(buf, ctx.rampSize, 4);
     for (let i = 0; i < buf.ramp.length; i++) {
       if ((buf.ramp[i] ?? -1) < 0) continue;
       expect(Number.isInteger(buf.shade[i])).toBe(true);
@@ -88,21 +87,6 @@ describe('passes (MA-02)', () => {
     const xs = [...Array(12).keys()].filter((x) => buf.get(x, row).ramp !== null && map.kind[row * 12 + x] === 0);
     expect(buf.get(xs[xs.length - 1] ?? 0, row).shade).toBe(4);
     expect(buf.get(xs[0] ?? 0, row).shade).toBe(3);
-  });
-  it('posterize snaps a 7-tone ramp to 4 levels', () => {
-    const buf = createIndexBuffer(7, 1, palette);
-    for (let x = 0; x < 7; x++) buf.set(x, 0, { ramp: 'cloth_teal', shade: x });
-    posterize(buf, ctx.rampSize, 4);
-    expect([...buf.shade]).toEqual([0, 2, 2, 4, 4, 6, 6]);
-  });
-  it('posterize leaves excluded ramps and skipped px alone (skin, cream, authored masks)', () => {
-    const buf = createIndexBuffer(4, 1, palette);
-    buf.set(0, 0, { ramp: 'skin', shade: 5 });
-    buf.set(1, 0, { ramp: 'cloth_cream', shade: 3 });
-    buf.set(2, 0, { ramp: 'cloth_teal', shade: 3 });
-    buf.set(3, 0, { ramp: 'cloth_teal', shade: 3 });
-    posterize(buf, ctx.rampSize, 4, { exclude: ['skin', 'cloth_cream'], skip: (i) => i === 3 });
-    expect([...buf.shade]).toEqual([5, 3, 4, 3]);
   });
   it('dither rounds the listed ramps instead of dithering them', () => {
     const buf = createIndexBuffer(8, 1, palette);
@@ -137,13 +121,8 @@ describe('verlet chain (MA-06)', () => {
 });
 
 describe('spike packs (MA-07/08)', () => {
-  it('builds four maid variants with the planned animations, sizes and frame counts', () => {
-    expect(PACKS.map((p) => p.id)).toEqual([
-      'spike-maid-48cel',
-      'spike-maid-48soft',
-      'spike-maid-64cel',
-      'spike-maid-64soft',
-    ]);
+  it('builds the two anime-soft maid variants with the planned animations, sizes and frame counts', () => {
+    expect(PACKS.map((p) => p.id)).toEqual(['spike-maid-48soft', 'spike-maid-64soft']);
     for (const def of PACKS) {
       const built = buildPack(def, ctx); // throws on off-palette colours, soft alpha, wrong size or empty frames
       expect(built.frames.get('idle_a')).toHaveLength(8);
@@ -166,13 +145,28 @@ describe('spike packs (MA-07/08)', () => {
 
 describe('forehead hair-shadow band (ART-BIBLE §11.3)', () => {
   const fringe = ['HHHH', 'HHSH', 'SSSS', 'SSSS'];
-  it('cel: the first skin px under the fringe becomes z, nothing else changes', () => {
-    expect(withBand(fringe, 3, false)).toEqual(['HHHH', 'HHzH', 'zzSz', 'SSSS']);
-  });
-  it('soft: adds a 1-px AA step under the band at staircase corners', () => {
-    expect(withBand(fringe, 3, true)).toEqual(['HHHH', 'HHzH', 'zzsz', 'SSSS']);
+  it('turns the first skin px under the fringe into z and adds a 1-px AA step at staircase corners', () => {
+    expect(withBand(fringe, 3)).toEqual(['HHHH', 'HHzH', 'zzsz', 'SSSS']);
   });
   it('never places the band below the given row (keeps it off the lash line)', () => {
-    expect(withBand(['HH', 'HS', 'SS'], 1, false)).toEqual(['HH', 'Hz', 'SS']);
+    expect(withBand(['HH', 'HS', 'SS'], 1)).toEqual(['HH', 'Hz', 'SS']);
+  });
+});
+
+describe('chain one-shot clips (S5)', () => {
+  it('a non-loop chain starts at rest and spreads no seam residual', () => {
+    const anchors: Point[] = [
+      [5, 5],
+      [8, 5],
+      [8, 5],
+    ];
+    const r = simulateChain(anchors, { segments: 3, length: 2, gravity: [0, 0.1], loop: false });
+    expect(r.residual).toBe(0);
+    expect(r.frames[0]).toEqual([
+      [5, 5],
+      [5, 7],
+      [5, 9],
+      [5, 11],
+    ]);
   });
 });

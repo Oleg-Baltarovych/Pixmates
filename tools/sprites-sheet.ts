@@ -4,11 +4,16 @@
 //                                 "browser", dark "IDE") → reports/sprites/<id>-<anim>.apng.png
 //   pnpm sprites:sheet --lineup   all packs side by side (idle, walk, happy frame strips) → reports/art-spike/
 //   pnpm sprites:sheet --swatch   master palette swatch → docs/art/palette.png
+//   pnpm sprites:sheet --review   the rig review bodies (dummies + maid preview, never built into resources/)
+//   pnpm sprites:sheet --fx       FX marks sheet on light + dark, and marks composited at the rig fx anchor
+//                                 → reports/sprites/fx-sheet.png, fx-on-<id>.png
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { FX_MARKS } from '../assets-src/fx/marks.ts';
 import { PACKS } from '../assets-src/packs.ts';
+import { MAID_PREVIEW, reviewPacks } from '../assets-src/rig/dummies.ts';
 import { encodeApng, encodePng, type RgbaImage } from './lib/png.ts';
-import { buildPack, loadMasterPalette, renderContext, ROOT } from './lib/sprites.ts';
+import { buildFx, buildPack, loadMasterPalette, renderContext, ROOT } from './lib/sprites.ts';
 
 type Rgb = readonly [number, number, number];
 const LIGHT: Rgb = [236, 240, 244];
@@ -83,18 +88,88 @@ function backdrop(
 }
 
 /** Real M-preset scale at 1080p / 125 % (plan scale table): 48 → ×4, 64 → ×3. */
-const realScale = (frameH: number): number => Math.max(2, Math.round((136 * 1.25) / frameH));
+const realScale = (frameH: number, scaleRef = frameH): number => Math.max(2, Math.round((136 * 1.25) / scaleRef));
 
 const reports = join(ROOT, 'reports');
 const args = process.argv.slice(2);
 const ids = args.filter((a) => !a.startsWith('--'));
 const ctx = renderContext(loadMasterPalette());
-const packs = PACKS.filter((p) => ids.length === 0 || ids.includes(p.id)).map((def) => ({
-  def,
-  built: buildPack(def, ctx),
-}));
+const review = args.includes('--review') || args.includes('--fx');
+const sources = review ? reviewPacks() : PACKS;
+const packs = sources
+  .filter((p) => ids.length === 0 || ids.includes(p.id))
+  .map((def) => ({
+    def,
+    built: buildPack(def, ctx),
+  }));
 
-if (args.includes('--swatch')) {
+if (args.includes('--fx')) {
+  // FX sheet: every mark frame ×6 on light and dark; then marks composited on the review bodies at the fx anchor.
+  const fx = buildFx(ctx);
+  const s = 6;
+  const cols = Math.max(...FX_MARKS.map((m) => m.frames.length));
+  const cell = 16 * s + 8;
+  const half = FX_MARKS.length * cell + 8;
+  const sheet = new Canvas(cols * cell + 8, half * 2);
+  sheet.fill(0, 0, sheet.width, half, LIGHT);
+  sheet.fill(0, half, sheet.width, half, DARK);
+  for (const y0 of [0, half]) {
+    FX_MARKS.forEach((m, row) => {
+      (fx.frames.get(m.name) ?? []).forEach((img, col) => {
+        sheet.blit(img, 8 + col * cell, y0 + 8 + row * cell, s);
+      });
+    });
+  }
+  mkdirSync(join(reports, 'sprites'), { recursive: true });
+  const sheetFile = join(reports, 'sprites', 'fx-sheet.png');
+  writeFileSync(sheetFile, encodePng(sheet.image()));
+  console.log(`${sheetFile}  (rows: ${FX_MARKS.map((m) => m.name).join(', ')})`);
+  // [anim, frame, mark, mark frame, offsets of the 16² mark frame centre from the fx anchor]
+  const cases: readonly (readonly [string, number, string, number, readonly (readonly [number, number])[]])[] = [
+    ['worried', 2, 'sweat', 2, [[0, 2]]],
+    ['idle_a', 0, 'vein', 1, [[1, 5]]],
+    [
+      'petted',
+      1,
+      'blush',
+      0,
+      [
+        [-15, 16],
+        [-3, 16],
+      ],
+    ],
+    ['happy', 5, 'heart', 2, [[1, -1]]],
+    ['think', 3, 'question', 2, [[1, -2]]],
+    ['startle', 1, 'exclaim', 2, [[0, -2]]],
+    ['sleep', 2, 'zzz', 2, [[2, -3]]],
+    ['idle_a', 0, 'smoke', 3, [[-9, 14]]],
+  ];
+  const r = 4;
+  for (const { def, built } of packs.filter((p) => p.def.id === MAID_PREVIEW.id || p.def.id === 'rig-dummy-b')) {
+    const pw = def.frameSize.w * r + 16;
+    const ph = def.frameSize.h * r + 16;
+    const c = new Canvas(cases.length * pw, ph * 2);
+    cases.forEach(([anim, f, mark, mf, offsets], i) => {
+      for (const [row, kind] of [
+        [0, 'light'],
+        [1, 'dark'],
+      ] as const) {
+        backdrop(c, i * pw, row * ph, pw, ph, kind);
+        const frame = built.frames.get(anim)?.[f];
+        const anchor = built.fx.get(anim)?.[f];
+        const markImg = fx.frames.get(mark)?.[mf];
+        if (!frame || !anchor || !markImg) continue;
+        c.blit(frame, i * pw + 8, row * ph + 8, r);
+        for (const [dx, dy] of offsets) {
+          c.blit(markImg, i * pw + 8 + (anchor[0] + dx - 8) * r, row * ph + 8 + (anchor[1] + dy - 8) * r, r);
+        }
+      }
+    });
+    const file = join(reports, 'sprites', `fx-on-${def.id}.png`);
+    writeFileSync(file, encodePng(c.image()));
+    console.log(`${file}  (${cases.map(([a, , m]) => `${a}+${m}`).join(', ')})`);
+  }
+} else if (args.includes('--swatch')) {
   const palette = ctx.palette;
   const cell = 16;
   const longest = Math.max(...[...palette.ramps.values()].map((r) => r.length));
@@ -159,7 +234,7 @@ if (args.includes('--swatch')) {
       console.log(file);
       continue;
     }
-    const s = realScale(h);
+    const s = realScale(h, def.scaleRef);
     const panelW = w * s + 32;
     const panelH = h * s + 28;
     const kinds = ['light', 'dark', 'browser', 'ide'] as const;

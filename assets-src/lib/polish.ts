@@ -1,6 +1,6 @@
 // Post-composite polish passes (plan M-ART MA-02, SPEC §5.2 «Якість»): manual AA on outline steps, a rim light on
-// the side away from the light (holds the sprite on dark wallpapers) and a tone remap for the crisp style. They run
-// after `compose` + `outline`, on the whole composite, so part seams never show. Ramp indices only.
+// the side away from the light (holds the sprite on dark wallpapers); the crisp-style posterize went with the cel
+// preset (MA-22). They run after `compose` + `outline`, on the whole composite, so part seams never show. Ramp indices only.
 import type { IndexBuffer, RampName } from './buffer.ts';
 import type { OutlineMap, RampSize } from './passes.ts';
 
@@ -75,60 +75,5 @@ export function rimLight(buf: IndexBuffer, map: OutlineMap, rampSize: RampSize, 
     if (ramp === null || ramp === 'ink') continue;
     lifted.add(j);
     buf.shade[j] = Math.min(rampSize(ramp) - 1, (buf.shade[j] ?? 0) + strength);
-  }
-}
-
-export interface PosterizeOptions {
-  /** Ramps left as they are (skin and light cloth lose their base tone when snapped to even levels). */
-  readonly exclude?: readonly RampName[];
-  /** Px left as they are (authored masks whose tones are final). */
-  readonly skip?: (i: number) => boolean;
-}
-
-/**
- * Crisp style: snap every shade to `levels` evenly spaced indices of its ramp (always keeping the darkest and the
- * brightest), so a 7-tone ramp reads as 4–5 bold bands.
- */
-export function posterize(buf: IndexBuffer, rampSize: RampSize, levels: number, options: PosterizeOptions = {}): void {
-  const exclude = new Set<RampName>(['ink', ...(options.exclude ?? [])]);
-  for (let i = 0; i < buf.ramp.length; i++) {
-    if ((buf.ramp[i] ?? -1) < 0 || options.skip?.(i) === true) continue;
-    const ramp = rampAt(buf, i);
-    if (ramp === null || exclude.has(ramp)) continue;
-    const top = rampSize(ramp) - 1;
-    if (top + 1 <= levels) continue;
-    const step = top / (levels - 1);
-    const s = Math.min(top, Math.max(0, buf.shade[i] ?? 0));
-    buf.shade[i] = Math.round(Math.round(s / step) * step);
-  }
-}
-
-/**
- * Anime cel: snap every shade to the nearest of the ramp's `stops` (2–3 indices), so light and AO become hard
- * terminators between flat bands. Ties go to the lighter stop. Ink and skipped px (final mask tones) stay.
- */
-export function celSnap(
-  buf: IndexBuffer,
-  rampSize: RampSize,
-  stops: (ramp: RampName, top: number) => readonly number[],
-  options: PosterizeOptions = {},
-): void {
-  const exclude = new Set<RampName>(['ink', ...(options.exclude ?? [])]);
-  for (let i = 0; i < buf.ramp.length; i++) {
-    if ((buf.ramp[i] ?? -1) < 0 || options.skip?.(i) === true) continue;
-    const ramp = rampAt(buf, i);
-    if (ramp === null || exclude.has(ramp)) continue;
-    const top = rampSize(ramp) - 1;
-    const s = Math.min(top, Math.max(0, buf.shade[i] ?? 0));
-    let best = s;
-    let gap = Infinity;
-    for (const stop of stops(ramp, top)) {
-      const d = Math.abs(stop - s);
-      if (d < gap || (d === gap && stop > best)) {
-        best = stop;
-        gap = d;
-      }
-    }
-    buf.shade[i] = best;
   }
 }

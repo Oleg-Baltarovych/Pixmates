@@ -4,7 +4,7 @@
 // clumps with an off-centre parting, and pointed side locks framing a 20-px face (right 2 columns shaded). Face
 // layers: the largest anime eye that reads at 48 — arched lash (4-px top, corner and inner end 1 row lower) with a
 // 1-px flick going up-out, 4×5 iris c → i → I (cel: 2 tones), round 2×2 pupil, big upper highlight (1×2) and a small
-// lower one (both top-left: not mirrored); blush per style (`cheeks`); calm symmetric 4-px smile (round-2 lesson).
+// lower one (both top-left: not mirrored); soft blush (`cheeks`); calm symmetric 4-px smile (round-2 lesson).
 // The forehead band comes from `withBand` (rows ≤ `band`). A face px never covers hair. Body
 // geometry lives in ../maid.ts (48-px units). Legend: assets-src/lib/mask.ts.
 import type { MaidRig } from '../maid.ts';
@@ -93,10 +93,7 @@ export const RIG_48: MaidRig = {
       '........XXXX........',
       '.........gT.........',
     ],
-    cheeks: {
-      cel: ['', '', '', '', '', '', '', '', '', '...FF..........FF...'],
-      soft: ['', '', '', '', '', '', '', '', '', '..fFFf........fFFf..', '...f.f........f.f...'],
-    },
+    cheeks: ['', '', '', '', '', '', '', '', '', '..fFFf........fFFf..', '...f.f........f.f...'],
   },
   bow: { at: [21, 26], mask: ['Rr..rg', 'tRTTtG', 'r.gg.G'] },
   spade: ['l.b.m', 'lbbbm', '.lbm.', '..m..'],

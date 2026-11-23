@@ -1,7 +1,7 @@
 // Deterministic verlet chain for secondary motion (plan M-ART MA-06): ribbons, hair locks, apron tails, later tails
 // and cloaks. The anchor follows the body per frame; the chain lags behind (follow-through). Only + − × ÷ and sqrt.
-// Two loops run as warm-up, then the residual between the end of the recorded loop and its start is spread over
-// the loop, so the quantized loop is seamless by construction.
+// Looping clips: two loops run as warm-up, then the residual between the end of the recorded loop and its start is
+// spread over the loop, so the quantized loop is seamless by construction. One-shot clips start at rest.
 
 export type Point = readonly [number, number];
 
@@ -20,6 +20,8 @@ export interface ChainSpec {
   readonly substeps?: number;
   /** Warm-up loops before recording (default 2). */
   readonly warmup?: number;
+  /** Looping clip (default true). A one-shot clip (land, startle) starts at rest: no warm-up, no seam spread. */
+  readonly loop?: boolean;
 }
 
 export interface ChainResult {
@@ -84,7 +86,8 @@ export function simulateChain(anchors: readonly Point[], spec: ChainSpec): Chain
     }
   };
 
-  for (let f = 1; f <= warmup * n; f++) stepFrame(f);
+  const loop = spec.loop ?? true;
+  if (loop) for (let f = 1; f <= warmup * n; f++) stepFrame(f);
   const recorded: number[][] = [];
   for (let f = 0; f <= n; f++) {
     if (f > 0) stepFrame(f);
@@ -93,10 +96,12 @@ export function simulateChain(anchors: readonly Point[], spec: ChainSpec): Chain
   const start = recorded[0] ?? [];
   const end = recorded[n] ?? [];
   let residual = 0;
-  for (let i = 0; i < start.length; i++) residual = Math.max(residual, Math.abs((end[i] ?? 0) - (start[i] ?? 0)));
+  if (loop) {
+    for (let i = 0; i < start.length; i++) residual = Math.max(residual, Math.abs((end[i] ?? 0) - (start[i] ?? 0)));
+  }
   const frames = recorded.slice(0, n).map((state, f) =>
     Array.from({ length: count }, (_, i): Point => {
-      const fix = (k: number): number => ((end[k] ?? 0) - (start[k] ?? 0)) * (f / n);
+      const fix = (k: number): number => (loop ? ((end[k] ?? 0) - (start[k] ?? 0)) * (f / n) : 0);
       return [Math.round((state[i] ?? 0) - fix(i)), Math.round((state[count + i] ?? 0) - fix(count + i))];
     }),
   );
