@@ -41,9 +41,19 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
   eye mask > 3 rows, brows on every expression but blink / sleep / happy / petted, a 1–3 px skin nose shadow
   (`FaceLibrary.nose`, stamped after the cheeks), blush only on `petted`, a jaw (chin row ≥ 6 skin px narrower than
   the widest). Glance splits the eye mask at `irisHalf` (adult 6, legacy 10).
-- Sheets: `pnpm sprites:sheet --adult` → `reports/sprites/rig-adult-<build>/sheet-x1.png`, `sheet-x4.png` (idle_a,
-  walk, happy; white + dark). The other 13 shared anims still use the legacy pose offsets on the adult dummies
-  (MA-45).
+- **Adult pose tables (MA-45, `anims/adult.ts`, tests `rig-adult-anims.test.ts`).** `animsFor(body)` → legacy
+  `ANIMS` (byte-identical) or `ANIMS_ADULT` / `ANIMS_ADULT_FEMALE`; same 16 names, fps, loop, anchor, frame counts.
+  Re-posed: **walk** 8 f, 16-px contact stride (feet ±8 about the axis), stance foot planted 5 f sliding 4 px/f
+  (= `WALK_TRAVEL.adult`, 40 native px/s), swing lift 2–3 px, 1-px bob, head 1 frame late, root dx 0, male head x −
+  hip x = −1, female hip sways 1 px under a fixed chest/head; q34 stance knees bend by the two-segment chord
+  (`kneeOf`, thigh = shin = ½ rest leg); far arm one ramp step darker (`RigLayout.farArmStep`). **sit_edge / sleep**:
+  root 0, knees on the seat row (±1), shins ≥ 12 px, hem lift 4; sleep = slumped seated doze (chest +2 / +1 aside,
+  head +1), no curl. **drag**: shoulders −2. Others keep the legacy offsets (1-px moves read at adult size); their
+  arms come from `ARMS_ADULT` (talk / edge / out re-bent, think fold → chin elbow, q34 `edge`, `limp`, `chin`).
+  Adult folded knees (sit, curl) get the crease pass. Female dummy head `ADULT_HEAD_FEMALE` (narrower jaw); the male
+  dummy carries a hip prop. Every adult frame keeps rows 0–1 clear.
+- Sheets: `pnpm sprites:sheet --adult` → `reports/sprites/rig-adult-<build>/sheet-x1.png`, `sheet-x4.png` (all 16
+  anims; white + dark) + `walk`, `turn`, `walk-mirrored` `.apng.png` (×4).
 
 ## Part ids (`rig/part-ids.ts`, written per px by compose and `stampMask`)
 | id | part | id | part |
