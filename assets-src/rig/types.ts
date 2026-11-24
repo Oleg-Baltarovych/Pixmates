@@ -146,7 +146,8 @@ export interface PlacedMask {
 }
 
 export interface BodyVariants {
-  readonly headAcc: 'none' | 'horns' | 'fox_ears' | 'clip';
+  /** `hat`: a crown-covering mask stamped over the head like `clip`, bounded by `HAT_MAX` (validateBody). */
+  readonly headAcc: 'none' | 'horns' | 'fox_ears' | 'clip' | 'hat';
   readonly hairBack: 'short' | 'long';
   readonly hem: 'skirt' | 'shorts';
   readonly back: 'none' | 'spade_tail' | 'fox_tail';
@@ -213,6 +214,11 @@ export interface BodyView {
     /** Side shoe, toe forward (screen-right); top-left = foot − (2, 0.6). */
     readonly shoe: Mask;
     readonly headAcc?: PlacedMask;
+    /**
+     * Opt-in follow-through: the head-accessory mask stamped instead of `headAcc` on frames whose head is higher
+     * than on the previous frame (e.g. a hat tip drooping 1 px while the head rises); same size as `headAcc.mask`.
+     */
+    readonly headAccRising?: Mask;
     readonly neckAcc?: PlacedMask;
     /**
      * q34 far back hair (from the head joint): an authored sliver beyond the far jaw line. When set, the procedural
@@ -246,6 +252,13 @@ export interface BodyView {
    * lags the stride by a frame instead of moving as one slab.
    */
   readonly hairTipLag?: true;
+  /**
+   * Opt-in clump tips on the trailing edge of the back hair: on each listed row (frame rows from the head joint) the
+   * outermost back-hair px is cleared (the edge steps in 1 px) and the px outside the edge on the row above becomes
+   * hair (a 1-px outward flick); `nape` (rows from the neck joint) darkens the back-hair px touching the neck or
+   * collar on that row to hair shade 0 (a nape indent).
+   */
+  readonly hairBackCuts?: { readonly rows: readonly number[]; readonly nape?: number };
   /** Rest offsets in this view (default: the body's front `tweaks`). */
   readonly tweaks?: Partial<Readonly<Record<Joint, Offset>>>;
 }
@@ -305,6 +318,11 @@ export interface Body {
     /** One shoe, top-left = foot − (2, 0.6). */
     readonly shoe: Mask;
     readonly headAcc?: PlacedMask;
+    /**
+     * Opt-in follow-through: the head-accessory mask stamped instead of `headAcc` on frames whose head is higher
+     * than on the previous frame (e.g. a hat tip drooping 1 px while the head rises); same size as `headAcc.mask`.
+     */
+    readonly headAccRising?: Mask;
     readonly neckAcc?: PlacedMask;
     /** Spade tip of `spade_tail`, hung by its top-centre px. */
     readonly spade?: Mask;
@@ -344,6 +362,13 @@ export interface Body {
    * (near and far) are painted.
    */
   readonly shinWrap?: { readonly row: number; readonly shade?: number };
+  /** Skirt hem raised this many whole rows (`hem: 'skirt'`, 0..`SKIRT_RAISE_MAX`), so more legwear shows. */
+  readonly skirtRaise?: number;
+  /**
+   * Opt-in: leg px on each leg's lit (screen-left) outer edge — left neighbour not a leg px — take this whole
+   * legs-ramp shade (0..5), a 1-px lit side on pale legwear; shin wraps paint over it.
+   */
+  readonly legRim?: number;
   /** Waist sash: band height in rows (default 1) and a knot mask on the near hip (from the hip joint). */
   readonly sash?: { readonly rows: number; readonly knot: PlacedMask };
   /** Fox tail shape per view (default: the rig's dummy-b tail). */

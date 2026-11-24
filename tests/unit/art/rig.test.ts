@@ -17,6 +17,8 @@ import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
 import { frame } from '../../../assets-src/rig/anims/kit.ts';
 import { DUMMY_A, DUMMY_B, DUMMY_FACE, DUMMY_HEAD, MAID_PREVIEW } from '../../../assets-src/rig/dummies.ts';
 import { MAID } from '../../../assets-src/characters/maid/body.ts';
+import { createKitsunePack } from '../../../assets-src/characters/kitsune/body.ts';
+import { createWitchPack } from '../../../assets-src/characters/witch/body.ts';
 import { ARM_TORSO_RULE, armTorsoContrast, armTorsoProblems } from '../../../assets-src/rig/checks.ts';
 import { JOINTS, type RigAnim } from '../../../assets-src/rig/types.ts';
 import type { RgbaImage } from '../../../tools/lib/png.ts';
@@ -314,6 +316,18 @@ describe('dummy packs (MA-23 headroom, seams, determinism)', () => {
     for (const def of packs) expect(buildPack(def, ctx).sha256).toBe(buildPack(def, ctx).sha256);
     const walk = built[1]?.frames.get('walk') ?? [];
     expect(new Set(walk.map((f) => Buffer.from(f.data).toString('base64'))).size).toBe(8);
+  });
+});
+
+describe('headroom with a hat (R-W2, docs/art/witch.md)', () => {
+  const tops = (def: PackDef): number[] => [...buildPack(def, ctx).frames.values()].flat().map(topRow);
+  it('the witch hat apex never rises above the kitsune ear apex (frame row 3); rows 0–2 clear; H = 56 still fits', () => {
+    const witch = tops(createWitchPack());
+    const kitsuneApex = Math.min(...tops(createKitsunePack()));
+    expect(kitsuneApex).toBe(3);
+    for (const t of witch) expect(t).toBeGreaterThanOrEqual(3);
+    expect(Math.min(...witch)).toBeGreaterThanOrEqual(kitsuneApex);
+    expect(chooseFrameH(Math.min(...witch) - (RIG_H - FIGURE_H))).toBe(RIG_H);
   });
 });
 

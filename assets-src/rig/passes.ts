@@ -562,3 +562,55 @@ export function closeSeams(img: RgbaImage): RgbaImage {
   }
   return { width: w, height: h, data };
 }
+
+/** `Body.legRim`: leg px whose left neighbour is not a leg px take `shade` (the lit outer side of each leg). */
+export function legRim(buf: IndexBuffer, shade: number, legsRamp: number, locked: Locked): void {
+  const edge: number[] = [];
+  for (let y = 0; y < buf.height; y++) {
+    for (let x = 0; x < buf.width; x++) {
+      const i = y * buf.width + x;
+      if (locked.has(i) || buf.ramp[i] !== legsRamp || !LEG_PARTS.has(buf.partId[i] ?? 0)) continue;
+      if (x > 0 && LEG_PARTS.has(buf.partId[i - 1] ?? 0) && (buf.ramp[i - 1] ?? -1) >= 0) continue;
+      edge.push(i);
+    }
+  }
+  for (const i of edge) buf.shade[i] = shade;
+}
+
+/**
+ * `BodyView.hairBackCuts` (q34, trailing side = screen-left): on each row the outermost back-hair px is cleared and
+ * the px left of the edge on the row above becomes a copy of the edge px there (a 1-px outward flick).
+ */
+export function hairBackCuts(buf: IndexBuffer, rows: readonly number[]): void {
+  const edgeOf = (y: number): number => {
+    for (let x = 0; x < buf.width; x++) if (buf.partId[y * buf.width + x] === PART_ID.hair) return x;
+    return -1;
+  };
+  for (const y of rows) {
+    if (y < 1 || y >= buf.height) continue;
+    const x = edgeOf(y);
+    const above = edgeOf(y - 1);
+    if (x < 0 || above < 1) continue;
+    buf.clear(x, y);
+    const src = buf.get(above, y - 1);
+    if (src.ramp === null) continue;
+    buf.set(above - 1, y - 1, {
+      ramp: src.ramp,
+      shade: src.shade,
+      material: src.material,
+      partId: src.partId,
+      depth: src.depth,
+    });
+  }
+}
+
+/** Nape indent: back-hair px 4-adjacent to a torso / trim px on row `y` take shade 0 of their ramp. */
+export function napeIndent(buf: IndexBuffer, y: number): void {
+  if (y < 0 || y >= buf.height) return;
+  for (let x = 0; x < buf.width; x++) {
+    const i = y * buf.width + x;
+    if (buf.partId[i] !== PART_ID.hair) continue;
+    const touches = [i - 1, i + 1].some((k) => TORSO_PARTS.has(buf.partId[k] ?? 0) || buf.partId[k] === PART_ID.trim);
+    if (touches) buf.shade[i] = 0;
+  }
+}

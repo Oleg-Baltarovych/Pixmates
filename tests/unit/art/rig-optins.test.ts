@@ -8,7 +8,7 @@ import { outline } from '../../../assets-src/lib/passes.ts';
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
 import { buildShorts, buildTorso, leanLock } from '../../../assets-src/rig/chains.ts';
 import { createRigPack, createRigRenderer } from '../../../assets-src/rig/compose.ts';
-import { DUMMY_A, DUMMY_B } from '../../../assets-src/rig/dummies.ts';
+import { DUMMY_A, DUMMY_B, MAID_PREVIEW } from '../../../assets-src/rig/dummies.ts';
 import { ARM_LABEL, PART_ID } from '../../../assets-src/rig/part-ids.ts';
 import { farLegGap, silhouetteOutline, squashSeparator, type Locked } from '../../../assets-src/rig/passes.ts';
 import type { Body, RigAnim } from '../../../assets-src/rig/types.ts';
@@ -494,5 +494,128 @@ describe('rig opt-in: lockLean', () => {
     for (let f = 0; f < think.frames.length; f++) {
       expect(same(render({ ...noLocks, lockLean: true }, think, f), render(noLocks, think, f))).toBe(true);
     }
+  });
+});
+
+describe('rig opt-in: masks.headAccRising (R-W3 follow-through)', () => {
+  const RISING = ['.gt', 'gtr', '.r.'];
+  const withRising: Body = { ...DUMMY_A, masks: { ...DUMMY_A.masks, headAccRising: RISING } };
+  it('swaps in the alternate head-accessory mask exactly on frames whose head is higher than on the previous one', () => {
+    const r = createRigRenderer(DUMMY_A);
+    let rising = 0;
+    let still = 0;
+    for (const a of [anim('happy'), idle, anim('startle')]) {
+      a.frames.forEach((_, f) => {
+        const prev = a.loop ? (f + a.frames.length - 1) % a.frames.length : Math.max(0, f - 1);
+        const rises = r.fxAnchor(a, f)[1] < r.fxAnchor(a, prev)[1];
+        if (rises) rising++;
+        else still++;
+        expect(same(render(withRising, a, f), render(DUMMY_A, a, f)), `${a.name}/${String(f)}`).toBe(!rises);
+      });
+    }
+    expect(rising).toBeGreaterThan(0);
+    expect(still).toBeGreaterThan(0);
+  });
+  it('fails the build when it does not match the headAcc mask size', () => {
+    const bad: Body = { ...DUMMY_A, masks: { ...DUMMY_A.masks, headAccRising: ['gt'] } };
+    expect(() => createRigPack(bad, ANIMS)).toThrow(/headAccRising must be the size of headAcc/);
+  });
+});
+
+describe("rig opt-in: headAcc 'hat' bounds", () => {
+  /** A 20 × 6 hat placed from `acc` (figure row −1 at rest), the same in both views. */
+  const HAT = Array.from({ length: 6 }, (_, i) =>
+    i < 4 ? '.'.repeat(8 - 2 * i) + 'D'.repeat(4 + 4 * i) : 'D'.repeat(20),
+  );
+  const hatBody = (mask: readonly string[], at: [number, number]): Body => ({
+    ...DUMMY_A,
+    variants: { ...DUMMY_A.variants, headAcc: 'hat' },
+    masks: { ...DUMMY_A.masks, headAcc: { mask, at } },
+    views: { q34: { ...q34Of(DUMMY_A), masks: { ...q34Of(DUMMY_A).masks, headAcc: { mask, at } } } },
+  });
+  it('accepts a hat inside the bounds and stamps it over the crown', () => {
+    const body = hatBody(HAT, [-10, -4]);
+    expect(() => createRigPack(body, ANIMS)).not.toThrow();
+    expect(pxOn(render(body), DUMMY_A.outfit.dress.ramp).length).toBeGreaterThan(
+      pxOn(render(DUMMY_A), DUMMY_A.outfit.dress.ramp).length,
+    );
+  });
+  it('rejects a hat that is too wide, too tall or reaches above figure row −1', () => {
+    expect(() =>
+      createRigPack(
+        hatBody(
+          HAT.map((r) => r + '.'.repeat(10)),
+          [-10, -4],
+        ),
+        ANIMS,
+      ),
+    ).toThrow(/exceeds 28/);
+    expect(() => createRigPack(hatBody([...HAT, ...HAT], [-10, -4]), ANIMS)).toThrow(/exceeds/);
+    expect(() => createRigPack(hatBody(HAT, [-10, -5]), ANIMS)).toThrow(/top row -2 is above -1/);
+  });
+  it('needs a headAcc mask', () => {
+    const body: Body = { ...hatBody(HAT, [-10, -4]), masks: { shoe: DUMMY_A.masks.shoe } };
+    expect(() => createRigPack(body, ANIMS)).toThrow(/headAcc 'hat' needs a headAcc mask/);
+  });
+});
+
+describe('rig opt-in: skirtRaise', () => {
+  it('raises the skirt hem by whole rows (the lowest hem px moves up by exactly that many rows)', () => {
+    const lowestHem = (body: Body): number => {
+      const image = render(body);
+      const dress = new Set(palette.ramps.get(body.ramps.cloth) ?? []);
+      let low = -1;
+      for (let y = 0; y < image.height; y++)
+        for (let x = 0; x < image.width; x++)
+          if (dress.has(rgb(image, x, y)) && image.data[(y * image.width + x) * 4 + 3]) low = y;
+      return low;
+    };
+    expect(lowestHem({ ...MAID_PREVIEW, skirtRaise: 2 })).toBe(lowestHem(MAID_PREVIEW) - 2);
+  });
+  it('fails the build outside 0..3, fractional, or without a skirt', () => {
+    expect(() => createRigPack({ ...MAID_PREVIEW, skirtRaise: 4 }, ANIMS)).toThrow(/skirtRaise 4/);
+    expect(() => createRigPack({ ...MAID_PREVIEW, skirtRaise: 1.5 }, ANIMS)).toThrow(/skirtRaise 1.5/);
+    expect(() => createRigPack({ ...DUMMY_A, skirtRaise: 1 }, ANIMS)).toThrow(/skirtRaise needs hem 'skirt'/);
+  });
+});
+
+describe('rig opt-in: legRim', () => {
+  it('paints the lit (screen-left) edge px of each leg in the rim shade (the leg continues to its right)', () => {
+    const shade = 5;
+    const tone = palette.ramps.get(DUMMY_A.ramps.legs)?.[shade] ?? -1;
+    const base = render(DUMMY_A);
+    const lit = render({ ...DUMMY_A, legRim: shade });
+    expect(same(base, lit)).toBe(false);
+    const changed: [number, number][] = [];
+    for (let y = 0; y < lit.height; y++)
+      for (let x = 0; x < lit.width; x++) if (rgb(lit, x, y) !== rgb(base, x, y)) changed.push([x, y]);
+    const legs = new Set(palette.ramps.get(DUMMY_A.ramps.legs) ?? []);
+    const rim = changed.filter(([x, y]) => rgb(lit, x, y) === tone);
+    expect(rim.length).toBeGreaterThanOrEqual(2);
+    // The leg continues to the right of every rim px (it is the leg's left edge, not a stray recolour).
+    for (const [x, y] of rim) expect(legs.has(rgb(base, x + 1, y)), `(${String(x)}, ${String(y)})`).toBe(true);
+  });
+  it('fails the build on a shade outside the legs ramp or a fractional one', () => {
+    expect(() => createRigPack({ ...DUMMY_A, legRim: 9 }, ANIMS)).toThrow(/legRim/);
+    expect(() => createRigPack({ ...DUMMY_A, legRim: 2.5 }, ANIMS)).toThrow(/legRim/);
+  });
+});
+
+describe('rig opt-in: views.q34.hairBackCuts', () => {
+  const walk0 = (body: Body): RgbaImage => render(body, walk, 0);
+  const withCuts = (rows: readonly number[], nape?: number): Body => ({
+    ...DUMMY_B,
+    views: { q34: { ...q34Of(DUMMY_B), hairBackCuts: { rows, ...(nape === undefined ? {} : { nape }) } } },
+  });
+  it('changes q34 frames only; front frames stay byte-identical', () => {
+    const body = withCuts([4, 6]);
+    expect(same(walk0(body), walk0(DUMMY_B))).toBe(false);
+    expect(same(render(body), render(DUMMY_B))).toBe(true);
+  });
+  it('fails the build on rows outside 0..24, fractional rows or more than 4 cuts', () => {
+    expect(() => createRigPack(withCuts([30]), ANIMS)).toThrow(/hairBackCuts/);
+    expect(() => createRigPack(withCuts([1.5]), ANIMS)).toThrow(/hairBackCuts/);
+    expect(() => createRigPack(withCuts([1, 2, 3, 4, 5]), ANIMS)).toThrow(/hairBackCuts/);
+    expect(() => createRigPack(withCuts([4], 30), ANIMS)).toThrow(/hairBackCuts/);
   });
 });

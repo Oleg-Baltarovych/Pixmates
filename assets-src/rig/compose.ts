@@ -55,9 +55,12 @@ import {
   farLegGap,
   FISTS,
   handLineOverTies,
+  hairBackCuts,
   handShadows,
   kneeCreases,
   labelImage,
+  legRim,
+  napeIndent,
   pointToe,
   recolorHornOutline,
   shinWrap,
@@ -391,10 +394,17 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         )
       : [];
     const headAcc = headParts.masks.headAcc;
+    // Follow-through (`masks.headAccRising`): the alternate mask while the head rises vs the previous frame.
+    const rising = headParts.masks.headAccRising;
+    const accMask = rising && headRises(anim, frame) ? rising : headAcc?.mask;
     const accFirst = v.headAcc === 'fox_ears';
-    if (headAcc && accFirst) stamp(headAcc.mask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.4, MAT.hair);
+    if (headAcc && accMask && accFirst) {
+      stamp(accMask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.4, MAT.hair);
+    }
     stamp(headParts.headMask, j.head[0] + headParts.head.at[0], j.head[1] + headParts.head.at[1], 3.5, MAT.skin);
-    if (headAcc && !accFirst) stamp(headAcc.mask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.6, MAT.trim);
+    if (headAcc && accMask && !accFirst) {
+      stamp(accMask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.6, MAT.trim);
+    }
     const armsUp = p.parts.armL === 'up' && p.parts.armR === 'up';
     for (const fp of expressionParts(headParts.face, p.face, armsUp, p.irisDx === 1)) {
       stamp(fp.mask, j.face[0] + fp.at[0], j.face[1] + fp.at[1], 3.6, MAT.skin, MAT.hair);
@@ -455,10 +465,19 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     // 2. Tone passes on the composed parts.
     if (v.back === 'spade_tail') tubeTones(buf);
     if (q && q34?.hideFarShoulder) clipFarShoulder(buf, j.shoulderR[1]);
+    const cuts = q ? q34?.hairBackCuts : undefined;
+    if (cuts) {
+      hairBackCuts(
+        buf,
+        cuts.rows.map((r) => Math.round(j.head[1]) + r),
+      );
+      if (cuts.nape !== undefined) napeIndent(buf, Math.round(j.neck[1]) + cuts.nape);
+    }
     handShadows(buf, hands);
     // 3. Authored masks, then the opt-in locked tone passes over legs.
     const locked: Locked = new Map();
     const { tieAt, hairFarPx } = stampAuthored(buf, anim, frame, p, locked);
+    if (body.legRim !== undefined) legRim(buf, body.legRim, ctx.palette.rampNames.indexOf(body.ramps.legs), locked);
     if (body.shinWrap) {
       const legsRamp = ctx.palette.rampNames.indexOf(body.ramps.legs);
       const wrap = body.shinWrap;
@@ -515,6 +534,10 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     const squash = anim.frames[frame]?.squash ?? 0;
     return [Math.round(j.fx[0]), Math.round(j.fx[1]) + (j.fx[1] < waistRow(j) ? squash : 0)];
   };
+  /** The drawn head (after squash) is higher than on the previous frame (one-shot frame 0: never). */
+  function headRises(anim: RigAnim, frame: number): boolean {
+    return fxAnchor(anim, frame)[1] < fxAnchor(anim, prevFrameOf(anim, frame))[1];
+  }
 
   return { joints, render, renderLabeled, fxAnchor, tail, scarfEnds };
 }
@@ -557,6 +580,7 @@ function validateBody(body: Body, anims: readonly RigAnim[], frameH: number): vo
     ['head', body.head.mask],
     ['shoe', body.masks.shoe],
     ['headAcc', body.masks.headAcc?.mask],
+    ['headAccRising', body.masks.headAccRising],
     ['neckAcc', body.masks.neckAcc?.mask],
     ['spade', body.masks.spade],
     ['bib', body.apron?.bib.mask],
@@ -568,6 +592,7 @@ function validateBody(body: Body, anims: readonly RigAnim[], frameH: number): vo
       ['q34/head', q34.head.mask],
       ['q34/shoe', q34.masks.shoe],
       ['q34/headAcc', q34.masks.headAcc?.mask],
+      ['q34/headAccRising', q34.masks.headAccRising],
       ['q34/neckAcc', q34.masks.neckAcc?.mask],
       ['q34/bib', q34.apron?.bib.mask],
       ['q34/ties', q34.apron?.ties?.mask],
@@ -600,6 +625,7 @@ function validateBody(body: Body, anims: readonly RigAnim[], frameH: number): vo
   const shades: { name: string; s: number | undefined; ramp?: RampName; int?: true }[] = [
     { name: 'shorts.shade', s: body.shorts?.shade },
     { name: 'shinWrap.shade', s: body.shinWrap?.shade },
+    { name: 'legRim', s: body.legRim, ramp: body.ramps.legs, int: true },
     // Fractional on purpose (a far-leg tone between two steps).
     { name: 'views.q34.farLegShade', s: q34?.farLegShade },
     // The bodice lifts by BREATH_GLOW on breath frames.
@@ -617,6 +643,24 @@ function validateBody(body: Body, anims: readonly RigAnim[], frameH: number): vo
     const top = Math.min(MAX_SHADE, ramp === undefined ? MAX_SHADE : topOf(ramp));
     if (!(s >= 0 && s <= top)) partProblems.push(`${body.id}: ${name} ${String(s)} is outside 0..${String(top)}`);
     else if (int && !Number.isInteger(s)) partProblems.push(`${body.id}: ${name} ${String(s)} must be a whole shade`);
+  }
+  partProblems.push(...headAccProblems(body, frameH));
+  const raise = body.skirtRaise;
+  if (raise !== undefined && !(Number.isInteger(raise) && raise >= 0 && raise <= SKIRT_RAISE_MAX)) {
+    partProblems.push(`${body.id}: skirtRaise ${String(raise)} must be a whole 0..${String(SKIRT_RAISE_MAX)}`);
+  }
+  if (raise !== undefined && body.variants.hem !== 'skirt')
+    partProblems.push(`${body.id}: skirtRaise needs hem 'skirt'`);
+  const cuts = q34?.hairBackCuts;
+  if (cuts) {
+    const bad = [...cuts.rows, ...(cuts.nape === undefined ? [] : [cuts.nape])].filter(
+      (r) => !(Number.isInteger(r) && r >= 0 && r <= HAIR_CUT_MAX_ROW),
+    );
+    if (bad.length > 0 || cuts.rows.length > HAIR_CUT_MAX_COUNT) {
+      partProblems.push(
+        `${body.id}: hairBackCuts rows must be ≤ ${String(HAIR_CUT_MAX_COUNT)} whole offsets 0..${String(HAIR_CUT_MAX_ROW)}`,
+      );
+    }
   }
   if (partProblems.length > 0) throw new Error(partProblems.join('\n'));
   if (body.sleeveOverHand && body.variants.sleeves !== 'long') {
@@ -652,6 +696,55 @@ function validateBody(body: Body, anims: readonly RigAnim[], frameH: number): vo
   }
   if (problems.length > 0) throw new Error(problems.join('\n'));
   if (body.variants.back === 'spade_tail' && !body.masks.spade) throw new Error(`${body.id}: spade_tail needs a spade`);
+}
+
+/**
+ * `headAcc: 'hat'` bounds (figure units): at most `w` × `h` px, top row at rest ≥ `top` (the outline adds 1 row and
+ * the highest pose lifts the head 3, so the apex stays ≥ frame row 3 with 8 headroom rows), inside the frame width.
+ */
+export const HAT_MAX = { w: 28, h: 10, top: -1 } as const;
+/** `Body.skirtRaise` upper bound (rows): the hem stays below the knees. */
+export const SKIRT_RAISE_MAX = 3;
+/** `BodyView.hairBackCuts` bounds: offsets from the head / neck joint and the number of cut rows. */
+export const HAIR_CUT_MAX_ROW = 24;
+export const HAIR_CUT_MAX_COUNT = 4;
+
+/** Head-accessory checks: a rising alternate matches its mask; a hat stays inside `HAT_MAX` in every view. */
+function headAccProblems(body: Body, frameH: number): string[] {
+  const problems: string[] = [];
+  const views: readonly (readonly [View, BodyView['masks'] | Body['masks'] | undefined])[] = [
+    ['front', body.masks],
+    ['q34', body.views?.q34?.masks],
+  ];
+  for (const [view, masks] of views) {
+    if (!masks) continue;
+    const acc = masks.headAcc;
+    const name = `${body.id}/${view}`;
+    if (masks.headAccRising) {
+      if (!acc) problems.push(`${name}: headAccRising needs headAcc`);
+      else {
+        const [a, r] = [maskSize(acc.mask), maskSize(masks.headAccRising)];
+        if (a.w !== r.w || a.h !== r.h) problems.push(`${name}: headAccRising must be the size of headAcc`);
+      }
+    }
+    if (body.variants.headAcc !== 'hat') continue;
+    if (!acc) {
+      problems.push(`${name}: headAcc 'hat' needs a headAcc mask`);
+      continue;
+    }
+    const { w, h } = maskSize(acc.mask);
+    const rest = resolveJoints(body, poseFrame({}), frameH, view);
+    const x = Math.round(rest.acc[0] + acc.at[0]);
+    const top = Math.round(rest.acc[1] + acc.at[1]) - (frameH - FIGURE_H);
+    if (w > HAT_MAX.w || h > HAT_MAX.h) {
+      problems.push(`${name}: hat ${String(w)} × ${String(h)} exceeds ${String(HAT_MAX.w)} × ${String(HAT_MAX.h)}`);
+    }
+    if (top < HAT_MAX.top) problems.push(`${name}: hat top row ${String(top)} is above ${String(HAT_MAX.top)}`);
+    if (x < 1 || x + w > RIG_W - 1) {
+      problems.push(`${name}: hat cols ${String(x)}..${String(x + w - 1)} leave the frame`);
+    }
+  }
+  return problems;
 }
 
 /** A pack for `pnpm sprites` from a body and the shared poses; throws on any mask, face or pose problem. */

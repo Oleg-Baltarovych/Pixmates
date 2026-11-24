@@ -463,7 +463,10 @@ const cloth3 = (body: Body, seed: string, folds: number, shade = 3): Material =>
 
 /** Skirt + petticoat lace (seated: the lace is clipped to 1 row so it ends above the knee bumps). */
 export function buildSkirt(body: Body, p: PoseFrame, hip: Point, q: boolean): Part[] {
-  const { flare, hemDx, lift, farW, trailFlare } = hemShape(p, q);
+  const shape = hemShape(p, q);
+  const { flare, hemDx, farW, trailFlare } = shape;
+  // `Body.skirtRaise`: the hem sits whole rows higher (more legwear shows).
+  const lift = shape.lift + (body.skirtRaise ?? 0);
   const skirt = poly([
     [hip[0] - 5.6, hip[1] - 10.1],
     [hip[0] + 5.6 * farW, hip[1] - 10.1],

@@ -149,7 +149,8 @@ export function validateFace(
             problems.push(`${name}/${group}.${id}: unknown mask char "${ch}" at ${String(x)},${String(y)}`);
             continue;
           }
-          if (!FACE_SLOTS.has(entry[0])) {
+          // Brows may also use hair tones: a brow end fading into the fringe gap it shows through.
+          if (!FACE_SLOTS.has(entry[0]) && !(group === 'brows' && entry[0] === 'hair')) {
             problems.push(`${name}/${group}.${id}: slot "${entry[0]}" is not a face slot ("${ch}")`);
           }
           if (head) {

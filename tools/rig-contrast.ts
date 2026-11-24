@@ -7,13 +7,14 @@ import { DUMMY_A, DUMMY_B, MAID_PREVIEW } from '../assets-src/rig/dummies.ts';
 import { GOTH } from '../assets-src/characters/goth/body.ts';
 import { KITSUNE } from '../assets-src/characters/kitsune/body.ts';
 import { MAID } from '../assets-src/characters/maid/body.ts';
+import { WITCH } from '../assets-src/characters/witch/body.ts';
 import { deepestTones, loadMasterPalette, renderContext } from './lib/sprites.ts';
 
 const palette = loadMasterPalette();
 const ctx = renderContext(palette);
 const deepest = deepestTones(palette);
 const only = process.argv[2];
-for (const body of [MAID, KITSUNE, GOTH, DUMMY_A, DUMMY_B, MAID_PREVIEW]) {
+for (const body of [MAID, KITSUNE, GOTH, WITCH, DUMMY_A, DUMMY_B, MAID_PREVIEW]) {
   if (only && body.id !== only) continue;
   const r = createRigRenderer(body);
   for (const anim of ANIMS) {

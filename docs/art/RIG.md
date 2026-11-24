@@ -2,7 +2,7 @@
 
 The shared rig every built-in character is generated from. Code: `assets-src/rig/` (layout in «Code layout»),
 bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-23-m-art.md`. Per-character specs:
-`docs/art/kitsune.md`, `docs/art/goth.md` (D-17 adds witch, ronin, knight).
+`docs/art/kitsune.md`, `docs/art/goth.md`, `docs/art/witch.md` (D-17 adds ronin, knight).
 
 ## Code layout (MA-28 refactor 2026-11-24, sprites byte-identical)
 | file | owns |
@@ -32,7 +32,7 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
   **8 rows of headroom on top** (`RIG_H = 56`), so feet stay on the same row and the extra rows are only headroom.
 - **Why 56.** H is the smallest of 52 / 56 / 60 that keeps row 0 transparent in every frame of every body. Measured on
   the review bodies: the highest opaque px is figure row −5 (fox ears + outline at the happy apex, root −4 with a
-  1-frame head lag; the maid's horns reach −4). With 52 that is row −1 (clipped), with 56 row 3. The test
+  1-frame head lag; the maid's horns reach −4; the witch hat apex the same −5, R-W2). With 52 that is row −1 (clipped), with 56 row 3. The test
   `tests/unit/art/rig.test.ts` re-measures this and fails if H is no longer the smallest fit.
 - **`scaleRef` 48** in every built-in manifest: sizing uses the standing figure, not the frame, so S/M/L stay
   ×3/×4/×5 at 1080p / 125 % (SPEC §5.1, ADR 009). The 25 % work-area clamp also measures `scaleRef` (headroom rows
@@ -109,7 +109,7 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 | slot | variants | notes |
 |---|---|---|
 | `head` | authored mask per character | skull, fringe, crown, side locks; horns live in it when `head_acc = horns` |
-| `head_acc` | `horns`, `fox_ears`, `clip` | ears are stamped under the head mask, a clip over it; antenna in M3 |
+| `head_acc` | `horns`, `fox_ears`, `clip`, `hat` | ears are stamped under the head mask, a clip or hat over it (a hat hides the crown: the head mask leaves the rows under the cone blank); antenna in M3 |
 | `hair_back` | `short` (shoulder), `long` (waist) | below the temples it lags the head by one frame; side locks are chains |
 | `torso` | bodice | top on the chest joint, bottom on the hip (breathing never opens the waist) |
 | `arms` | mitten biped; `sleeves: short / long` | long = sleeve to the wrist + bell cuff, hand skin always visible |
@@ -142,6 +142,11 @@ offsets per joint). A body never forks an animation; proportions go through `twe
 | `Body.sleeveRim` (MA-29) | whole sleeve-ramp shade on the near (L) sleeve's outer edge only; the far (R) sleeve never |
 | `Body.lockLean` (MA-29) | side-lock chain points between root and tip on one straight line (no outward kink) |
 | `BodyView.hairTipLag` (MA-29, q34) | back-hair tips add the previous frame's `hairDx`, capped at `HAIR_TIP_MAX` 2 px |
+| `headAcc: 'hat'` (MA-29a, R-W1) | stamped like `clip` (over the head mask); `validateBody` bounds per view: ≤ `HAT_MAX` 28 × 10 px, rest top ≥ figure row −1 (outline −2, highest pose +3 → apex frame row 3 = kitsune ears), inside the frame width; needs a `headAcc` mask |
+| `masks.headAccRising` / `BodyView.masks.headAccRising` (MA-29a, R-W3) | alternate head-accessory mask (same size as `headAcc`) stamped on frames whose drawn head (fx anchor after squash) is higher than on the previous frame (loops wrap, one-shot frame 0 never): a hat tip droops 1 row while rising, back to rest on landing; no chain, deterministic |
+| `Body.skirtRaise` (MA-29a) | skirt hem raised whole rows (0..`SKIRT_RAISE_MAX` 3, `hem: 'skirt'` only) so more legwear shows |
+| `Body.legRim` (MA-29a) | whole legs-ramp shade on each leg's lit (screen-left) edge px (left neighbour not a leg px); shin wraps paint over it |
+| `BodyView.hairBackCuts` {rows, nape?} (MA-29a, q34) | clump tips on the trailing back-hair edge: per row (offset from the head joint, 0..24, ≤ 4 rows) the outermost hair px is cleared and the row above gets a 1-px outward flick; `nape` (offset from the neck) darkens back-hair px touching the torso/collar to shade 0 |
 | `Body.sleeve`, `Body.chinHand`, `Body.apron` (+ `ties`), `hornOutline`, `BodyView.{sleeveHairLine, hideFarShoulder, masks.hairFar}` | see «Arm over torso», «Views» |
 
 Post-squash separator pass: squash > 0 can join a sleeve px to the bodice, so the separator runs again after the
@@ -186,7 +191,7 @@ rows → seam closer (enclosed gaps ≤ 3 px take
 the darkest neighbour colour; larger enclosed spaces are intentional negative space).
 
 ## Face library (`assets-src/characters/<id>/face.ts`, format in `rig/face.ts`)
-Parts (eyes, brows, mouths, cheeks), each `{mask, at}` on the face anchor; an expression picks one of each. Required
+Parts (eyes, brows, mouths, cheeks), each `{mask, at}` on the face anchor; an expression picks one of each (brows may also use hair tones, a brow end fading into the fringe gap — MA-29a). Required
 expressions: `neutral`, `blink`, `half`, `talk_a/b/c`, `happy`, `worried`, `think`, `sleep`, `startle`, `petted`,
 `wince`. `validateFace` fails the build on a missing expression, an unknown part, a non-face slot (allowed: ink,
 eye, blush, skin, trim, apron) or a face px that lands on a hair px of the head mask. Optional `raisedMouth` per
