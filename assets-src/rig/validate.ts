@@ -6,9 +6,10 @@ import type { Point } from '../lib/chain.ts';
 import { checkMask, maskSize, type Mask } from '../lib/mask.ts';
 import MASTER from '../palettes/master.json' with { type: 'json' };
 import { frame as poseFrame } from './anims/kit.ts';
-import { FIGURE_H, resolveJoints, RIG_W } from './body.ts';
+import { resolveJoints } from './body.ts';
+import { layoutOf } from './layout.ts';
 import { BREATH_GLOW, dressShadeOf, HEM_LIFT_MAX, hemLiftOf } from './chains.ts';
-import { Q34_EXPRESSIONS, validateFace, type ExpressionId } from './face.ts';
+import { EXPRESSIONS, Q34_EXPRESSIONS, validateFace, type ExpressionId } from './face.ts';
 import { FISTS, fistKindOf } from './passes.ts';
 import type { Body, BodyView, RigAnim, View } from './types.ts';
 import { headViewOf, usesView } from './views.ts';
@@ -25,6 +26,15 @@ const MASTER_RAMP_SIZE: ReadonlyMap<string, number> = new Map(
  * range, required per-view parts (q34 view, scarf ends, spade), faces and expressions. Throws with every problem.
  */
 export function validateBody(body: Body, anims: readonly RigAnim[], frameH: number): void {
+  if (body.layout === 'adult' && body.build === undefined)
+    throw new Error(`${body.id}: layout 'adult' needs Body.build`);
+  if (body.layout !== 'adult' && body.build !== undefined) {
+    throw new Error(`${body.id}: Body.build needs layout 'adult' (legacy bodies have one build)`);
+  }
+  const layout = layoutOf(body);
+  if (!layout.frameHChoices.includes(frameH)) {
+    throw new Error(`${body.id}: frame height ${String(frameH)} is not one of ${layout.frameHChoices.join('/')}`);
+  }
   const q34 = body.views?.q34;
   const usesQ34 = usesView(anims, 'q34');
   if (usesQ34 && !q34) {
@@ -154,16 +164,27 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
     const rest = resolveJoints(body, poseFrame({}), frameH, view);
     return [rest.face[0] - (rest.head[0] + head.at[0]), rest.face[1] - (rest.head[1] + head.at[1])];
   };
-  const problems = validateFace(body.face, body.id, { mask: body.head.mask, faceAt: faceAtOf('front', body.head) });
+  const rules = layout.face;
+  const problems = validateFace(
+    body.face,
+    body.id,
+    { mask: body.head.mask, faceAt: faceAtOf('front', body.head) },
+    EXPRESSIONS,
+    rules,
+  );
   // Per view, only the expressions its frames reference are required (q34: neutral + blink).
   const usedBy = (view: View): ExpressionId[] => [
     ...new Set(anims.flatMap((a) => a.frames.filter((_, i) => headViewOf(a, i) === view).map((f) => f.face))),
   ];
   if (q34) {
     problems.push(
-      ...validateFace(q34.face, `${body.id}/q34`, { mask: q34.head.mask, faceAt: faceAtOf('q34', q34.head) }, [
-        ...new Set([...Q34_EXPRESSIONS, ...usedBy('q34')]),
-      ]),
+      ...validateFace(
+        q34.face,
+        `${body.id}/q34`,
+        { mask: q34.head.mask, faceAt: faceAtOf('q34', q34.head) },
+        [...new Set([...Q34_EXPRESSIONS, ...usedBy('q34')])],
+        rules,
+      ),
     );
   }
   for (const a of anims) {
@@ -215,12 +236,13 @@ function headAccProblems(body: Body, frameH: number): string[] {
     const { w, h } = maskSize(acc.mask);
     const rest = resolveJoints(body, poseFrame({}), frameH, view);
     const x = Math.round(rest.acc[0] + acc.at[0]);
-    const top = Math.round(rest.acc[1] + acc.at[1]) - (frameH - FIGURE_H);
+    const layout = layoutOf(body);
+    const top = Math.round(rest.acc[1] + acc.at[1]) - (frameH - layout.figureH);
     if (w > HAT_MAX.w || h > HAT_MAX.h) {
       problems.push(`${name}: hat ${String(w)} × ${String(h)} exceeds ${String(HAT_MAX.w)} × ${String(HAT_MAX.h)}`);
     }
     if (top < HAT_MAX.top) problems.push(`${name}: hat top row ${String(top)} is above ${String(HAT_MAX.top)}`);
-    if (x < 1 || x + w > RIG_W - 1) {
+    if (x < 1 || x + w > layout.w - 1) {
       problems.push(`${name}: hat cols ${String(x)}..${String(x + w - 1)} leave the frame`);
     }
   }
@@ -271,16 +293,17 @@ function slotProblems(body: Body, usesQ34: boolean): string[] {
   if (body.variants.back === 'cloak' && !c) problems.push(`${id}: back 'cloak' needs Body.cloak`);
   if (c && body.variants.back !== 'cloak') problems.push(`${id}: Body.cloak needs back 'cloak'`);
   if (c) {
-    if (!whole(c.hemRow, 0, CLOAK_MAX.hemRow))
-      problems.push(`${id}: cloak.hemRow must be a whole 0..${String(CLOAK_MAX.hemRow)}`);
+    const hemMax = layoutOf(body).cloakHemMax;
+    if (!whole(c.hemRow, 0, hemMax)) problems.push(`${id}: cloak.hemRow must be a whole 0..${String(hemMax)}`);
     if (!whole(c.maxTrail, 0, CLOAK_MAX.maxTrail))
       problems.push(`${id}: cloak.maxTrail must be a whole 0..${String(CLOAK_MAX.maxTrail)}`);
     if (!whole(c.hem.lobes, 0, CLOAK_MAX.lobes))
       problems.push(`${id}: cloak.hem.lobes must be a whole 0..${String(CLOAK_MAX.lobes)}`);
     if (!whole(c.hem.curl, 0, 3) || !whole(c.hem.cornerDrop, 0, 3))
       problems.push(`${id}: cloak corner curl / drop must be whole 0..3`);
-    if (!(c.widths.top > 0 && c.widths.hem >= c.widths.top && c.widths.hem <= RIG_W / 2 - 2)) {
-      problems.push(`${id}: cloak widths need 0 < top ≤ hem ≤ ${String(RIG_W / 2 - 2)}`);
+    const maxHalf = layoutOf(body).w / 2 - 2;
+    if (!(c.widths.top > 0 && c.widths.hem >= c.widths.top && c.widths.hem <= maxHalf)) {
+      problems.push(`${id}: cloak widths need 0 < top ≤ hem ≤ ${String(maxHalf)}`);
     }
     const rows = [...c.bands.map((b) => b.row), ...(c.dither?.rows ?? [])];
     if (rows.some((r) => !whole(r, 1, 30)) || new Set(rows).size !== rows.length) {

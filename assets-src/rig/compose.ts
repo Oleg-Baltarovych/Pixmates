@@ -24,7 +24,8 @@ import { MAT } from '../lib/materials.ts';
 import { compose, outline, selectiveOutline, type Part } from '../lib/passes.ts';
 import { antiAlias, rimLight } from '../lib/polish.ts';
 import type { AnimDef, PackDef, RenderContext } from '../lib/types.ts';
-import { FIGURE_H, REST_Q34, resolveJoints, RIG_W, withBand } from './body.ts';
+import { FIGURE_H, resolveJoints, withBand } from './body.ts';
+import { LAYOUT_LEGACY, layoutOf, type RigLayout } from './layout.ts';
 import {
   buildArm,
   buildBackHair,
@@ -92,18 +93,19 @@ export { ARM_LABEL } from './part-ids.ts';
 export { SCARF_MAX_BELOW_CHEST, SCARF_MAX_TRAIL, q34FoxTail } from './chains.ts';
 export { closeSeams, pointToe, stampMask, type StampOptions } from './passes.ts';
 export { RIG_W } from './body.ts';
+export { LAYOUT_ADULT, LAYOUT_LEGACY, layoutOf, type RigLayout } from './layout.ts';
 export { HAIR_CUT_MAX_COUNT, HAIR_CUT_MAX_ROW, HAT_MAX, SKIRT_RAISE_MAX } from './validate.ts';
 export { animFacing, bodyViewOf, headViewOf, usesView } from './views.ts';
 
 /** Frame height: the smallest of 52/56/60 that keeps row 0 clear in every frame (measured by tests/unit/art/rig). */
-export const RIG_H = 56;
+export const RIG_H = LAYOUT_LEGACY.frameH;
 /** Standing-figure height for sizing (manifest `scaleRef`, ADR 009): S/M/L stay ×3/×4/×5 at 1080p / 125 %. */
 export const SCALE_REF = FIGURE_H;
-export const FRAME_H_CHOICES = [52, 56, 60] as const;
+export const FRAME_H_CHOICES = LAYOUT_LEGACY.frameHChoices;
 
 /** Smallest frame height whose headroom keeps ≥ 1 clear row above `lowestTop` (top opaque row, figure units). */
-export function chooseFrameH(lowestTop: number): number {
-  for (const h of FRAME_H_CHOICES) if (lowestTop + (h - FIGURE_H) >= 1) return h;
+export function chooseFrameH(lowestTop: number, layout: RigLayout = LAYOUT_LEGACY): number {
+  for (const h of layout.frameHChoices) if (lowestTop + (h - layout.figureH) >= 1) return h;
   throw new Error(`no frame height fits a figure reaching row ${String(lowestTop)}`);
 }
 
@@ -165,8 +167,10 @@ interface Layers {
   readonly knees: readonly Point[];
 }
 
-export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRenderer {
+export function createRigRenderer(body: Body, frameH: number = layoutOf(body).frameH): RigRenderer {
   const v = body.variants;
+  const layout = layoutOf(body);
+  const rigW = layout.w;
   const sleeve = { ramp: body.sleeve?.ramp ?? body.ramps.cloth, shade: body.sleeve?.shade ?? DEFAULT_SLEEVE_SHADE };
   if (sleeve.ramp === body.ramps.cloth && Math.abs(sleeve.shade - dressShadeOf(body)) < 1) {
     throw new Error(
@@ -271,7 +275,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     const prev = joints(anim, prevIndex);
     const q = bodyViewOf(anim, frame) === 'q34';
     const prevHairDx = anim.frames[prevIndex]?.hairDx ?? 0;
-    return cloakGeometry(body.cloak, p, j, q, [prev.hip[0] - j.hip[0], prev.hip[1] - j.hip[1]], prevHairDx, RIG_W);
+    return cloakGeometry(body.cloak, p, j, q, [prev.hip[0] - j.hip[0], prev.hip[1] - j.hip[1]], prevHairDx, rigW);
   };
 
   /** Procedural parts of a frame in draw order (q34: far arm + far leg first, behind everything; ADR 010). */
@@ -335,7 +339,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     (q ? front : behind).push(...buildScarfParts(body, scarfEnds(anim, frame), bv));
     // Cloak: behind everything (the far arm and leg too), in both views.
     const cloakGeom = cloakOf(anim, frame);
-    const cloak = cloakGeom && body.cloak ? [cloakPart(body.cloak, cloakGeom, RIG_W)] : [];
+    const cloak = cloakGeom && body.cloak ? [cloakPart(body.cloak, cloakGeom, rigW)] : [];
     return { parts: [...cloak, ...far, ...back, ...behind, ...front], hands, knees: legs.knees };
   };
 
@@ -361,7 +365,8 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     let tieAt: Point | undefined;
     if (bodyParts.apron) {
       const ap = bodyParts.apron;
-      apronPanel(buf, body, j.hip[0] + (ap.dx ?? 0), Math.round(j.hip[1] - 10.1) + 1, ap.panelW, locked);
+      const skirtTop = layout.torso.skirt.top;
+      apronPanel(buf, body, j.hip[0] + (ap.dx ?? 0), Math.round(j.hip[1] + skirtTop) + 1, ap.panelW, locked);
       // Bib = torso, only over bodice px: never over a sleeve or hand in front of it.
       stampMask(
         buf,
@@ -445,7 +450,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       stamp(accMask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.6, MAT.trim);
     }
     const armsUp = p.parts.armL === 'up' && p.parts.armR === 'up';
-    for (const fp of expressionParts(headParts.face, p.face, armsUp, p.irisDx === 1)) {
+    for (const fp of expressionParts(headParts.face, p.face, armsUp, p.irisDx === 1, layout.irisHalf)) {
       stamp(fp.mask, j.face[0] + fp.at[0], j.face[1] + fp.at[1], 3.6, MAT.skin, MAT.hair);
     }
     stampChinFists(stamp, p.parts, j, fistKindOf(body));
@@ -471,7 +476,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     if (q) {
       // q34: far shoe (R) one ramp step darker, stamped first so the near shoe overlaps it; a foot lifted ≥ 2 px
       // (passing frames) tips its toe down 1 px.
-      const ground = REST_Q34.footL[1] + frameH - FIGURE_H;
+      const ground = layout.restQ34.footL[1] + frameH - layout.figureH;
       for (const [foot, far] of [
         [j.footR, true],
         [j.footL, false],
@@ -495,7 +500,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     const { parts, hands, knees } = layers(anim, frame, p);
     const sleeveDir =
       toneOf(ctx, sleeve.ramp, sleeve.shade) > toneOf(ctx, body.ramps.cloth, dressShadeOf(body)) ? 1 : -1;
-    const buf = createIndexBuffer(RIG_W, frameH, ctx.palette);
+    const buf = createIndexBuffer(rigW, frameH, ctx.palette);
     compose(buf, parts, ctx.rampSize, {
       light: { strength: style.light },
       occlusion: { radius: 1, strength: style.occlusion, cast: { length: 1, strength: 0.4 } },
@@ -570,7 +575,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       handLineOverTies(buf, ties.mask, tieAt, body.outfit.skin, skinRamp, apronRamp);
     }
     // 6. Quantize, squash at the waist (labels too), squash separator, seam closer.
-    const cut = waistRow(j);
+    const cut = waistRow(j, layout);
     const labels = squashRows(labelImage(buf), cut, p.squash);
     const squashed = squashRows(quantize(buf, ctx.palette), cut, p.squash);
     const deep = ctx.palette.ramps.get(sleeve.ramp)?.[0];
@@ -588,7 +593,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
   const fxAnchor = (anim: RigAnim, frame: number): Point => {
     const j = joints(anim, frame);
     const squash = anim.frames[frame]?.squash ?? 0;
-    return [Math.round(j.fx[0]), Math.round(j.fx[1]) + (j.fx[1] < waistRow(j) ? squash : 0)];
+    return [Math.round(j.fx[0]), Math.round(j.fx[1]) + (j.fx[1] < waistRow(j, layout) ? squash : 0)];
   };
   /**
    * The drawn head (after squash) is higher than on the previous frame (one-shot frame 0: never; a body- or head-view
@@ -606,7 +611,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
 }
 
 /** The row squash cuts at: the waist, under the chest. */
-const waistRow = (j: JointMap): number => Math.round(j.hip[1] - 10);
+const waistRow = (j: JointMap, layout: RigLayout): number => Math.round(j.hip[1] + layout.torso.waistRow);
 
 const FALLBACKS = {
   idle: 'idle_a',
@@ -620,7 +625,9 @@ const FALLBACKS = {
 } as const;
 
 /** A pack for `pnpm sprites` from a body and the shared poses; throws on any mask, face or pose problem. */
-export function createRigPack(body: Body, anims: readonly RigAnim[], frameH: number = RIG_H): PackDef {
+export function createRigPack(body: Body, anims: readonly RigAnim[], frameH: number = layoutOf(body).frameH): PackDef {
+  const layout = layoutOf(body);
+  const rigW = layout.w;
   validateBody(body, anims, frameH);
   const renderer = createRigRenderer(body, frameH);
   const byName = new Map(anims.map((a) => [a.name, a]));
@@ -636,7 +643,7 @@ export function createRigPack(body: Body, anims: readonly RigAnim[], frameH: num
       frames: a.frames.length,
       fps: a.fps,
       loop: a.loop,
-      ...(seat ? { anchor: { x: round4(seat[0] / RIG_W), y: round4(seat[1] / frameH) } } : {}),
+      ...(seat ? { anchor: { x: round4(seat[0] / rigW), y: round4(seat[1] / frameH) } } : {}),
       // q34 is authored facing screen-right (ADR 010); the runtime mirrors it for walking left.
       ...(animFacing(a) === 'front' ? {} : { facing: animFacing(a) }),
     };
@@ -646,9 +653,9 @@ export function createRigPack(body: Body, anims: readonly RigAnim[], frameH: num
     name: body.name,
     version: '0.1.0',
     author: 'Pixmates (generated by code)',
-    frameSize: { w: RIG_W, h: frameH },
+    frameSize: { w: rigW, h: frameH },
     anchor: { x: 0.5, y: 1 },
-    scaleRef: SCALE_REF,
+    scaleRef: layout.scaleRef,
     layout: 'shelf',
     headroom: true,
     animations,

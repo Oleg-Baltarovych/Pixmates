@@ -1,27 +1,43 @@
-# Pixmates ART-BIBLE v0.5 (M-ART phase 2: ADR 009 numbers, anime soft only)
+# Pixmates ART-BIBLE v0.6 (M-ART phase 3: ADR 011 adult rules, frame 56 × 72, anime soft only)
 
 The source of style for every built-in character (rules/art.md). v0 holds what the spike needs. v0.5 adds the
-numbers chosen in ADR 009 (frame size, style) and the arm-over-torso rule (§3) with the goth recipe (§11.8); v1
-closes M-ART. All art is made by code (D-11): masks and geometry
+numbers chosen in ADR 009 (frame size, style) and the arm-over-torso rule (§3) with the goth recipe (§11.8); v0.6
+(MA-41) sets the adult frame and rules of ADR 011 (§1, §11.0), chibi text kept as history; v1 closes M-ART. All art is made by code (D-11): masks and geometry
 are authored in `assets-src/`, and procedural code is used only for material texture.
 
 ## 1. Grid and frame
-> **D-19 (owner, 2026-11-24): superseded by the adult rules (ADR 011, proposed — frame pending the style spike).**
-> New target frame: **B = 48 × 56 (≈ 3.2 heads) or C = 48 × 64 (≈ 4.5 heads)**, picked by the owner from
-> `reports/sprites/style-spike/`. Still 48 wide, body axis x = 24, headroom (row 0 transparent), pivot at the feet,
-> integer scale, one atlas ≤ 1024² (C ≈ 1008 × 400). C changes `scaleRef` (≈ 58 → S ×2 / M ×3 / L ×4 at
-> 1080p / 125 %). Adult build and face rules: §11 «D-19». The text below is **historical** (chibi, phase 2) until
-> MA-41 rewrites it.
+ADR 011 (accepted 2026-11-24, owner pick C+ from `reports/sprites/style-spike/`). Code numbers are re-measured in the
+rig in MA-42; until then the shipped packs are still 48 × 56 (history below).
 
-- Frame **48 × 56** (ADR 009): a 48 × 48 figure box (feet on row 46, row 47 free for the outline) plus 8 rows of
-  headroom on top, so horns, ears and the happy jump never clip. Row 0 stays transparent in every frame (builder
-  check). Manifests carry `scaleRef: 48`, so sizing follows the figure, not the frame (S/M/L ×3/×4/×5 at
-  1080p / 125 %). Pivot at the feet: anchor (0.5, 1); `sit_edge` pivots on the seat (per-animation `anchor`).
-  Rig details: `docs/art/RIG.md`.
-- Body axis on a pixel boundary (x = 24 in 48-units), so left and right mirror exactly.
-- Integer scale on screen (`computeScale`). Never resample art. Squash means inserting or removing whole rows.
-- One atlas per character, strips shelf-packed (≤ 1024², ≈ 1008 × 336 for the 15 animations), `origin` per
-  animation in the manifest.
+- Frame **56 × 72**, rows top to bottom (male build, standing):
+
+  | rows | use |
+  |---|---|
+  | 0 | always transparent (builder + headroom gate) |
+  | 1–5 | headroom above the crown: ears, horns, hats, the ronin tuft, the happy apex, head lag |
+  | ≈ 6 | crown (top of the skull) |
+  | 6–20 | skull 14 × 15, face 12 rows (hairline → chin at row 20) |
+  | 21–23 | neck 3 rows (shadow on the top 2) |
+  | 24 | shoulder line; chest → hip 17 rows |
+  | 41 | hip joint (female 40); hip → sole 30 rows |
+  | 70 | soles (feet row) |
+  | 71 | free for the outline / ground contact |
+
+  Standing figure ≈ 66 rows → **`scaleRef` 66 in every built-in manifest** (sizing follows the figure, not the frame;
+  S/M/L ×2/×3/×4 at 1080p / 125 % with the 0.30 clamp and L 200 DIP, SPEC §3.3).
+- **Headroom budget:** tallest extra above the crown + happy apex + 1-frame head lag ≤ 5 rows (spike ronin: tuft 2 +
+  hop 2 = 4). A character that needs more (kitsune ears, witch hat) makes the frame grow by 4 rows on top (H 76, feet
+  row 74) — the gate picks the smallest fit; ears and hats are never shrunk to fit.
+- **Width 56:** the figure stays inside x ≈ 14–42; the extra columns are for the saya, haori sleeves, cloaks, tails
+  and wide arm poses. Body axis on a pixel boundary at **x = 28**, so left and right mirror exactly.
+- Pivot at the feet: anchor (0.5, 1); `sit_edge` pivots on the seat (per-animation `anchor`). Rig details:
+  `docs/art/RIG.md`.
+- Integer scale on screen (`computeScale`). Never resample art. Squash means inserting or removing whole rows. One
+  art pixel at M is ×3 (was ×4): detail comes from the bigger frame, not bigger pixels.
+- One atlas per character, strips shelf-packed (≤ 1024², ≈ 1008 × 432 = 18 × 6 cells for 105 frames, ≈ 1.66 MiB),
+  `origin` per animation in the manifest.
+- *History (phase 2, ADR 009):* frame 48 × 56 = a 48 × 48 figure box (feet row 46) + 8 rows of headroom, axis x = 24,
+  `scaleRef` 48, S/M/L ×3/×4/×5, atlas 1008 × 336.
 
 ## 2. Light
 - One light from the top-left (`SUN` in `passes.ts`). Every shading pass uses it.
@@ -29,7 +45,7 @@ are authored in `assets-src/`, and procedural code is used only for material tex
 - Cast shadow and AO from part depth: under the chin, under the bib, behind the arms.
 
 ## 3. Outline and rim
-- Outline is coloured: the neighbour's own ramp, 2 steps darker (anime soft). Never `#000`. The ink ramp starts at a dark plum.
+- Outline is coloured: the neighbour's own ramp, 2 steps darker (anime soft; D-19 adult rule: 3 steps, 2 on the lit side — §11.0). Never `#000`. The ink ramp starts at a dark plum.
 - Selective outline: one step lighter on the lit (top-left) side.
 - Internal lines appear only where materials meet and the part behind gets the line.
 - Rim light: the inner edge on the side away from the light gets 2 steps brighter (anime soft), so the sprite holds on dark wallpapers.
@@ -50,7 +66,7 @@ are authored in `assets-src/`, and procedural code is used only for material tex
 
 ## 6. Faces
 - Faces are authored masks, one face layer per emotion, placed on the head's face anchor (`mask.ts` legend: slot + tone 0–5).
-- Eyes, mouth, nose and blush follow §11.2–11.3 (anime construction per frame size).
+- Eyes, mouth, nose and blush follow §11.0 (adult face, D-19); §11.2–11.3 are history except where §11.0 keeps them.
 - An emotion must read within 2–4 frames at real size.
 
 ## 7. Motion
@@ -140,19 +156,27 @@ are authored in `assets-src/`, and procedural code is used only for material tex
 Every built-in character is pixel anime. The style is a technique, not IP: originality (§9, ADR 005) is checked on
 every review. Numbers below are the spike `maid`'s (`assets-src/spike/maid-{48,64}/rig.ts`); ADR 009 fixes one size.
 
-### 11.0 D-19 — adult rules (new target; ADR 011 proposed, frame B | C pending the spike)
-> **§11.1 and §11.2 below are superseded and kept as history.** Owner D-19: adult, tough characters, not childish.
-> Pixel anime, «anime soft», authored faces, hair clumps with an angel ring and FX marks (§11.4–11.6) still hold.
+### 11.0 D-19 — adult rules (final; ADR 011 accepted 2026-11-24, frame 56 × 72)
+> **§11.1 and §11.2 below are superseded and kept as history; §11.3 blush and nose rules too.** Owner D-19: adult,
+> tough characters, not childish. Pixel anime, «anime soft», authored faces, hair clumps with an angel ring and FX
+> marks (§11.4–11.6) still hold. Numbers are the spike C+ targets; MA-42…44 re-measure them in the rig.
 
-- **Build.** B ≈ 3.2 heads at 48 × 56 | C ≈ 4.5 heads at 48 × 64. A neck; shoulders wider than the head; a waist;
-  elbows and knees (rig joints in C, shading breaks in B); arms reach mid-thigh; long legs; stance with feet apart,
-  never together. Male and female **build presets** on one skeleton (male: broader shoulders, narrow hips, straighter
-  waist; female: narrower shoulders, defined waist, wider hips).
-- **Face.** Eyes ¼–⅕ of the face height, 2–3 rows (iris colour + highlight + lash; no ⅓-face anime eye); visible
-  brows (the emotion carrier together with the eyes); a nose-shadow px; a defined jaw line to the chin; no blush
-  outside `petted`. Adult face shape, never round baby cheeks.
-- **Colour.** Each character: a dark anchor ramp + one saturated accent (e.g. ronin oxblood); no all-pastel sets.
-  Outline 3 steps darker than the fill; a hard shadow terminator on body and face (ramps, AA and rim as §3, §11.5).
+- **Build.** ≈ 4.4 heads in 56 × 72 (rows in §1). Skull 14 × 15, neck 3, chest → hip 17, hip → foot 30 (≈ 45 %).
+  Shoulders wider than the head: male 21 / female 17; neck width male 5 / female 3. Arms upper 10 + fore 9 + fist 3,
+  reaching mid-thigh; elbow and knee joints. Stance (foot centres) male 13 / female 9, never feet together; foot width
+  male 6 / female 5. **Build presets** on one skeleton — male: broad shoulders, narrow hips, straight waist; female:
+  hip 1 row higher, waist pinched 2 px per side at 60 % of the torso, hips = shoulders, feet 1 px shorter.
+  Contrapposto idle: hip 1 px out, the opposite shoulder 1 px down.
+- **Face (12 rows).** Eyes ¼–⅕ of the face height; eye row ≈ 50 % of the face; iris 2 × 3 with its top row under a
+  1-px lid, one top-left highlight (same side in both eyes), sclera on the outer side only. Brows 3–4 px with a 1-row
+  gap above the lid, always visible (with the eyes they carry the emotion); the male inner end 1 px lower. Nose: 1
+  shadow px left of the axis at ≈ 70 %. Mouth 2–3 px at ≈ 82 %. Jaw: male = corner step, then a 3-px chin; female =
+  taper to a 2-px chin + a lower-lip px. 2-row neck shadow under the chin. No blush outside `petted`. Adult face shape,
+  never round baby cheeks.
+- **Colour.** Each character: a dark anchor ramp (darkest L ≤ 0.28) + one saturated accent (C ≥ 0.12, e.g. ronin
+  oxblood); no all-pastel sets. Contour 3 tone steps darker than the fill (2 on the lit side); dark cloth: ink contour
+  on the shadow side, 2-step rim on the lit side. A hard shadow terminator on body and face (ramps, AA and rim as §3,
+  §11.5).
 
 ### 11.1 Proportions (chibi) — historical, superseded by §11.0 (D-19)
 - About 2 heads to the feet (target 2–2.5): the skull (crown to chin, horns excluded) is 23 rows of 48 / 28 of 64.
@@ -179,6 +203,8 @@ highlights sit the same way in both eyes (never mirror them); the lash shape is 
   row between fringe tips and the lash line.
 
 ### 11.3 Mouth, nose, blush
+> D-19: the nose px, mouth size and «blush only in `petted`» rules of §11.0 replace the nose and blush lines below.
+
 - Mouth minimal: calm symmetric smile = corners `x..x` + centre `XX` (4 px), never a v/cat mouth; keep ≥ 1 skin row
   above the chin (48: lifted 1 px in round 3). Happy: open 4-px `XXXX` + rose tongue.
 - Nose: none at 48; 1 skin-shadow px left of the axis at 64.

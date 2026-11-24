@@ -1,4 +1,21 @@
-# ronin — design spec (MA-29b)
+# ronin — design spec (MA-29b; adult redesign MA-46)
+
+> **D-19 / ADR 011 (owner, 2026-11-24): adult redesign, frame 56 × 72, ≈ 4.4 heads, male build.** The chibi body below
+> (dome head, 48 × 56, ≈ 2.2 heads, bell cloak silhouette, 4 × 4 iris, blush, ochre accent, «no ties/topknots») is
+> **superseded**; MA-46 rewrites this spec. Target = the style-spike costume (`reports/sprites/style-spike/`,
+> `assets-src/spike/style/figure.ts`):
+> - shaggy swept-back `hair_umber`, jade-glint eyes (iris 2 × 3), adult male face and jaw (ART-BIBLE §11.0);
+> - charcoal kosode (`cloth_ash`); charcoal split hakama, trapezoid with 2 stiff pleats;
+> - dove-ivory `mist` **haori** — open front, square shoulders, square-hanging empty tamoto, hem of tapered 3→2→1-px
+>   wisps (the knee mist cloak becomes optional / owner call in MA-46);
+> - **oxblood** obi and accent, **replacing ochre** (cord, sageo, tuft cord);
+> - **katana through the obi** at the left hip: hilt up ≈ 30° forward, 3 × 3 tsuba, black saya behind the body,
+>   showing 6–9 px past the silhouette, angled down (frame width 56 is for it); sageo with the paper charm;
+> - lacquer **kote** (forearm guard) with brass px; zori with a lit toe;
+> - **futokoro-de idle** (arms withdrawn into the kimono, empty sleeve hanging); `idle_b` thumb on the tsuba;
+> - **crown tuft allowed** (Q-D19-2): a short tied tuft with an oxblood cord — never a ponytail or a neat chonmage.
+>   This lifts the «no ponytail, topknot or tie» rule of §1 and the lookalike list for the tuft only; the art-director
+>   re-checks Jin, Hanzo, Samurai Jack, Kenshin and Musashi at the ronin gate.
 
 Originality gate: **PASS** (art-director, 2026-11-24). Owner decisions 2026-11-24 (§8): colourway B — warm dove-ivory mist (chosen so the green witch and the cloak never clash), paper charm on the sword cord; cloak changed to **knee length** after art round 1 (owner 2026-11-24: the calf cloak and the hakama fused into one dress triangle). Brief: ART-BIBLE §9. A calm
 spirit swordsman who speaks in aphorisms. Frame 48 × 56, chibi ≈ 2.2 heads. No portrait, no scar, no reference images.

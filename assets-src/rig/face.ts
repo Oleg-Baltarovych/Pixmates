@@ -3,7 +3,8 @@
 // validator fails the build when an expression is missing, a part id is unknown, a mask uses a non-face slot or a
 // face px would land on a hair px of the head mask or outside it (ART-BIBLE §11: a face px never covers hair).
 import type { Point } from '../lib/chain.ts';
-import { LEGEND, type Mask, type Slot } from '../lib/mask.ts';
+import { LEGEND, maskSize, type Mask, type Slot } from '../lib/mask.ts';
+import type { FaceRules } from './layout.ts';
 
 export const EXPRESSIONS = [
   'neutral',
@@ -52,6 +53,8 @@ export interface FaceLibrary {
   readonly brows?: Readonly<Record<string, FacePart>>;
   readonly mouths: Readonly<Record<string, FacePart>>;
   readonly cheeks: Readonly<Record<string, FacePart>>;
+  /** Nose shadow (adult faces, ADR 011): stamped on every expression after the cheeks. */
+  readonly nose?: FacePart;
   readonly expressions: Readonly<Record<ExpressionId, Expression>>;
 }
 
@@ -110,14 +113,21 @@ export function onlyIrisDiffers(a: Mask, b: Mask): boolean {
 }
 
 /** The parts of an expression in stamp order (cheeks under everything, then eyes, brows, mouth). */
-export function expressionParts(lib: ViewFaceLibrary, id: ExpressionId, armsUp = false, irisDx = false): FacePart[] {
+export function expressionParts(
+  lib: ViewFaceLibrary,
+  id: ExpressionId,
+  armsUp = false,
+  irisDx = false,
+  irisHalf = 10,
+): FacePart[] {
   const e = lib.expressions[id];
   if (!e) throw new Error(`face library has no expression "${id}"`);
   const mouth = armsUp && e.raisedMouth !== undefined ? e.raisedMouth : e.mouth;
   const eyes = lib.eyes[e.eyes];
   const parts = [
     lib.cheeks[e.cheeks],
-    irisDx && eyes ? { ...eyes, mask: irisShift(eyes.mask, 10, eyes.irisRows) } : eyes,
+    lib.nose,
+    irisDx && eyes ? { ...eyes, mask: irisShift(eyes.mask, irisHalf, eyes.irisRows) } : eyes,
     e.brows === undefined ? undefined : lib.brows?.[e.brows],
     lib.mouths[mouth],
   ];
@@ -135,9 +145,16 @@ export function validateFace(
   name: string,
   head?: { readonly mask: Mask; readonly faceAt: Point },
   required: readonly ExpressionId[] = EXPRESSIONS,
+  rules?: FaceRules,
 ): string[] {
   const problems: string[] = [];
-  const groups = { eyes: lib.eyes, brows: lib.brows ?? {}, mouths: lib.mouths, cheeks: lib.cheeks } as const;
+  const groups = {
+    eyes: lib.eyes,
+    brows: lib.brows ?? {},
+    mouths: lib.mouths,
+    cheeks: lib.cheeks,
+    nose: lib.nose ? { nose: lib.nose } : {},
+  } as const;
   for (const [group, parts] of Object.entries(groups)) {
     for (const [id, part] of Object.entries(parts)) {
       part.mask.forEach((row, y) => {
@@ -182,6 +199,67 @@ export function validateFace(
     if (e.brows !== undefined && !(e.brows in (lib.brows ?? {}))) {
       problems.push(`${name}/${id}: unknown brows "${e.brows}"`);
     }
+  }
+  if (rules) problems.push(...adultFaceProblems(lib, name, required, rules, head?.mask));
+  return problems;
+}
+
+const slotOf = (ch: string): Slot | undefined => LEGEND[ch]?.[0];
+const countSlot = (mask: Mask, slot: Slot): number =>
+  mask.reduce((n, row) => n + row.split('').filter((ch) => slotOf(ch) === slot).length, 0);
+/** Rows of a mask holding any px. */
+const paintedRows = (mask: Mask): number => mask.filter((row) => /[^. ]/.test(row)).length;
+
+/**
+ * Adult face rules (ADR 011, ART-BIBLE §11.0): open eyes 2–3 rows and ¼–⅕ of the face height (neutral), no eye
+ * taller than the max, brows on every expression but the listed browless ones, a 1–3 px skin nose shadow, blush only
+ * on the listed expressions, and a jaw (the head mask's chin row narrower than its widest skin row).
+ */
+function adultFaceProblems(
+  lib: ViewFaceLibrary,
+  name: string,
+  required: readonly ExpressionId[],
+  rules: FaceRules,
+  head: Mask | undefined,
+): string[] {
+  const problems: string[] = [];
+  const [minRows, maxRows] = rules.eyeRows;
+  for (const [id, part] of Object.entries(lib.eyes)) {
+    const rows = paintedRows(part.mask);
+    if (rows > maxRows) problems.push(`${name}/eyes.${id}: ${String(rows)} rows, adult eyes are ≤ ${String(maxRows)}`);
+  }
+  const open = lib.eyes[lib.expressions.neutral?.eyes ?? ''];
+  if (open) {
+    const rows = paintedRows(open.mask);
+    const lo = Math.max(minRows, rules.faceH / 5);
+    const hi = Math.min(maxRows, rules.faceH / 4);
+    if (rows < Math.floor(lo) || rows > Math.ceil(hi)) {
+      problems.push(`${name}: neutral eyes ${String(rows)} rows, need ¼–⅕ of a ${String(rules.faceH)}-row face`);
+    }
+  }
+  if (rules.nose) {
+    const px = lib.nose ? countSlot(lib.nose.mask, 'skin') : 0;
+    if (px < 1 || px > 3) problems.push(`${name}: adult faces need a 1–3 px skin nose shadow (has ${String(px)})`);
+  }
+  for (const id of required) {
+    const e = lib.expressions[id];
+    if (!e) continue;
+    if (!rules.browless.includes(id) && e.brows === undefined) problems.push(`${name}/${id}: adult faces need brows`);
+    const parts = [lib.cheeks[e.cheeks], lib.eyes[e.eyes], lib.mouths[e.mouth]];
+    const blush = parts.some((p) => p !== undefined && countSlot(p.mask, 'blush') > 0);
+    if (blush && !rules.blushOnly.includes(id))
+      problems.push(`${name}/${id}: blush only on ${rules.blushOnly.join(', ')}`);
+  }
+  if (head) {
+    const skinW = head.map((row) => row.split('').filter((ch) => slotOf(ch) === 'skin').length);
+    const chin = [...skinW].reverse().find((w) => w > 0) ?? 0;
+    const widest = Math.max(0, ...skinW);
+    if (widest - chin < rules.jawTaper) {
+      problems.push(
+        `${name}: jaw — chin row ${String(chin)} px vs widest ${String(widest)} (taper ≥ ${String(rules.jawTaper)})`,
+      );
+    }
+    if (maskSize(head).h === 0) problems.push(`${name}: empty head mask`);
   }
   return problems;
 }

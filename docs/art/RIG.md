@@ -17,6 +17,33 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 | `passes.ts` | `stampMask` and the buffer / image passes (shin wraps, far-leg gap, knee creases, far-shoulder clip, chin fists, spade notches, apron panel, arm over torso, sleeve/hair line, hand over ties, labels, squash separator, seam closer) |
 | `part-ids.ts` | `PART_ID` table, `LABEL_OF`, part sets (`SLEEVE_PARTS`, `TORSO_PARTS`, `LEG_PARTS`, …); no bare part numbers elsewhere |
 | `face.ts`, `checks.ts`, `style.ts`, `q34.ts`, `dummies.ts`, `anims/` | face library + validator, arm-over-torso check, SOFT preset, q34 masks for dummies only, review bodies, shared poses |
+| `layout.ts` | `RigLayout` per body (`Body.layout` / `Body.build`, `layoutOf`): frame, rests, arm / leg shapes, knees, torso + hem geometry, hair scale, cloak bound, face rules; `LAYOUT_LEGACY` (48 × 56) and `LAYOUT_ADULT.male` / `.female` (56 × 72) |
+| `dummies-adult.ts` | adult review bodies `rig-adult-male` (shorts, cloak, collar) / `rig-adult-female` (skirt, long hair) |
+
+## Layouts (D-19 MA-42…MA-44, ADR 011; tests `tests/unit/art/rig-adult.test.ts`)
+- Every size the composer, chains, passes and validators used to take from module constants now comes from the
+  body's `RigLayout`. `LAYOUT_LEGACY` holds the pre-D-19 numbers verbatim, so the chibi packs (maid, kitsune, goth,
+  witch, ronin) are byte-identical until each is redrawn; `REST`, `REST_Q34`, `ARMS`, `RIG_W`, `RIG_H`, `FIGURE_H`
+  stay exported as its aliases.
+- **Adult** (`layout: 'adult'`, `build` required; a legacy body with `build` fails): frame 56 × 72 (figure box = frame,
+  no headroom offset), soles on row 70, axis x = 28, `scaleRef` 66. Rest: head joint row 13 (head mask 16 × 15 at
+  (−8, −7): rows 6…20, face anchor (−6, −3) from it), neck 21, shoulder line 23.2, chest 24, hip 40 (female 39),
+  ankles 67.6. Builds: shoulder joints ±9 / ±7, neck 5 / 3 px, feet ±6.5 / ±4.5, chest half 7.4 / 6; the female
+  bodice ends at the pinched waist (half 4.2) and the skirt flares over the hip (with shorts a 2-px pinch vertex at
+  60 % of the bodice). Measured on the dummies: crown row 5, H 66 rows = 4.40 heads (15-row head mask), legs 47 % / 49 %,
+  shoulders 26 / 22 px = 1.44× / 1.22× the rendered head (18 px with hair + outline), hands at hip + 3.6, top row
+  ≥ 2 in all 16 anims (happy apex), atlas 1008 × 504.
+- **Two-segment limbs.** Arms: upper ≈ 10, forearm + half fist ≈ 10.5; every variant bends at the elbow (≥ 0.5 px
+  off the shoulder → hand line). Legs: `kneeOf` puts the knee at half of hip-top → ankle plus a per-variant bend
+  (front: outward; q34: forward); the leg is one 3-point stroke (hip r 2.1 / 2.2 → knee 1.5 → ankle 1.15). Legacy
+  layouts have no knees (one stroke, the seated knee bump as before).
+- **Adult faces** (`RigLayout.face` → `validateFace(..., rules)`): open eyes 2–3 rows and ¼–⅕ of the 12-row face, no
+  eye mask > 3 rows, brows on every expression but blink / sleep / happy / petted, a 1–3 px skin nose shadow
+  (`FaceLibrary.nose`, stamped after the cheeks), blush only on `petted`, a jaw (chin row ≥ 6 skin px narrower than
+  the widest). Glance splits the eye mask at `irisHalf` (adult 6, legacy 10).
+- Sheets: `pnpm sprites:sheet --adult` → `reports/sprites/rig-adult-<build>/sheet-x1.png`, `sheet-x4.png` (idle_a,
+  walk, happy; white + dark). The other 13 shared anims still use the legacy pose offsets on the adult dummies
+  (MA-45).
 
 ## Part ids (`rig/part-ids.ts`, written per px by compose and `stampMask`)
 | id | part | id | part |
@@ -31,6 +58,13 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 `LABEL_OF` maps sleeve / end / torso / trim ids to the arm-over-torso check labels; every other id is `none`.
 
 ## Frame and sizing
+> **ADR 011 (accepted 2026-11-24): frame 56 × 72, to be re-measured in MA-42.** Targets: `RIG_W` 56, `RIG_H` 72,
+> soles on row 70 (row 71 free), crown ≈ row 6, rows 1–5 headroom (budget: extra above crown + happy apex + head lag
+> ≤ 5; else H 76 with feet on row 74, smallest fit chosen by the gate), body axis x = 28, `scaleRef` 66 in every
+> built-in manifest, atlas ≈ 1008 × 432. Rest skeleton, build presets and joints: ART-BIBLE §1, §11.0. The numbers
+> below (48 × 56, feet row 46, x = 24, `scaleRef` 48, raised hands x ≤ 10 / ≥ 38, chin-fist cols, REST geometry,
+> stride) describe the shipped chibi rig and all change in MA-42…45.
+
 - **Frame 48 × 56.** The figure box is 48 × 48 (feet on row 46, row 47 free for the outline). The frame adds
   **8 rows of headroom on top** (`RIG_H = 56`), so feet stay on the same row and the extra rows are only headroom.
 - **Why 56.** H is the smallest of 52 / 56 / 60 that keeps row 0 transparent in every frame of every body. Measured on
@@ -43,6 +77,8 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 - Pivot at the feet `anchor (0.5, 1)`; `sit_edge` has a per-animation `anchor` on the seat joint (≈ 0.5, 0.866).
 
 ## Coordinates and joints
+- *(to be re-measured in MA-42/43 for 56 × 72: units, axis x = 28, REST from the spike C+ numbers, elbow + knee
+  joints, male/female builds.)*
 - 48-px figure units, origin top-left of the figure box; body axis x = 24 on a pixel boundary (left/right mirror).
 - Joints (parent → child): root → hip → {seat, chest, footL/R}; chest → {back, neck, shoulderL/R}; neck → head →
   {face, acc, fx}; shoulder → hand. Rest positions = the 48-soft spike geometry (`REST` in `body.ts`).
@@ -237,7 +273,7 @@ mark anchor; it is exported per frame to the sheet tool now, and reaches the man
 ## Builder checks (`tools/lib/sprites.ts`)
 Palette-only px, binary alpha, non-empty, frame size, **row 0 transparent** (`headroom`), frame counts = pose
 lengths, shelf atlas ≤ 1024² (first-fit decreasing, longest strips first; 48 × 56 × 103 frames → 1008 × 336,
-≈ 1.35 MB RGBA), manifest passes `manifestSchema` + `checkStrips`, two builds → same hashes. Frame names
+≈ 1.35 MB RGBA; after MA-42: 56 × 72 × 105 → ≈ 1008 × 432, ≈ 1.74 MB), manifest passes `manifestSchema` + `checkStrips`, two builds → same hashes. Frame names
 `<pack>/<anim>/<nn>` in errors.
 
 ## Review commands

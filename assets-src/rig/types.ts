@@ -344,10 +344,20 @@ export interface SilhouetteOutline {
   readonly shade: number;
 }
 
+/** Adult build presets (ADR 011): shoulder / hip / waist / neck / stance numbers in `layout.ts` `BUILDS`. */
+export type BodyBuild = 'male' | 'female';
+
 export interface Body {
   /** Pack id (`pixmates.<id>` for built-ins, `rig-dummy-*` for test bodies). */
   readonly id: string;
   readonly name: string;
+  /**
+   * Rig layout (`layout.ts`): `legacy` 48 × 56 (default; the pre-D-19 packs until each is redrawn) or `adult`
+   * 56 × 72 (ADR 011, needs `build`).
+   */
+  readonly layout?: 'legacy' | 'adult';
+  /** Adult build preset (required with `layout: 'adult'`, not allowed on legacy). */
+  readonly build?: BodyBuild;
   /** Mask slot → ramp + six shades (authored masks and face library). */
   readonly outfit: Outfit;
   readonly ramps: {

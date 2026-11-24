@@ -1,9 +1,9 @@
-# 011. Adult proportions for all built-in characters (frame B or C pending the spike)
+# 011. Adult proportions for all built-in characters, frame 56 × 72
 
-- Status: Proposed (D-19, owner 2026-11-24; the one open parameter is the frame, B or C, picked by eye from the style spike)
-- Date: 2026-11-24
-- Supersedes: ADR 009's style rules on proportions and eyes; ADR 009's frame (48 × 56) only if C is chosen.
-  ADR 009's «anime soft» shading, authored-mask faces and headroom rule stay.
+- Status: **Accepted** (owner, 2026-11-24: Q-D19-1 = **C+**, Q-D19-2 = ronin crown tuft allowed; D-19)
+- Date: 2026-11-24 (proposed and accepted)
+- Supersedes: ADR 009's frame (48 × 56), proportion and eye rules and its S/M/L scale table. ADR 009's «anime soft»
+  shading, authored-mask faces and the headroom rule stay. Revises ADR 010's numbers (see Consequences).
 
 ## Context
 At the `ronin` sign-off the owner said he looks like a kindergarten kid and decided (D-19) that every character must
@@ -11,44 +11,78 @@ be redone as an adult: «not childish, adult, tough characters», more samurai f
 The art-director traced it to the chibi proportions of D-13 / ADR 009 (ART-BIBLE §11.1–11.2): ≈ 2.0 heads, legs 13 %
 of the height, arms ending at the waist, head 2.4× the shoulders, round baby face, eyes ⅓ of the face, blush, feet
 together, pastel palette. Recolouring or a new costume does not fix that; the body plan has to change.
-A style spike (`reports/sprites/style-spike/`: ronin-C, goth-C, ronin-B) is being built so the owner can pick by eye.
+The style spike (MA-40, `reports/sprites/style-spike/`, painter `assets-src/spike/style/`) showed ronin and goth in
+three variants at real size on white, a dark IDE and grey. The owner picked **C+** with the rule «the size must make
+the body proportions right; it can be bigger if needed».
 
 ## Options
-| | A — keep chibi, toughen details | B — «SD adult», 48 × 56, ≈ 3.2 heads | C — adult, 48 × 64, ≈ 4.5 heads (recommended) |
+| | B — «SD adult», 48 × 56 | C — adult, 48 × 64 | **C+ — adult, 56 × 72 (chosen)** |
 |---|---|---|---|
-| Read | still a child: the owner's complaint stands | older and sturdier, still stylised; limbs short for a sword stance | adult silhouette: neck, shoulders, waist, long limbs |
-| Frame / atlas | unchanged | unchanged (≈ 1008 × 336) | +8 rows: ≈ 1008 × 400, still ≤ 1024² |
-| Rig | none | re-rest REST / REST_Q34, longer limbs; elbows/knees optional | re-rest + elbow and knee joints, male/female torso builds |
-| Shared anims (16, 105 frames) | none | re-pose all, timing kept | re-pose all, timing kept |
-| Faces / heads | tweaks | all redone (smaller head, eyes ¼–⅕) | all redone, more face rows per eye |
-| Scale (1080p / 125 %) | ×3/×4/×5 | scaleRef ≈ 48–52, presets likely ×3/×4/×5 (re-measure) | scaleRef ≈ 58 → S ×2 / M ×3 / L ×4; S may be too small for face reads |
-| Cost | ≈ 0, but fails D-19 | high | highest (≈ B + joints + frame change) |
+| Heads | ≈ 3.2 | ≈ 4.4 | ≈ 4.4, with the bigger B head (face 12) |
+| Read | older, still stylised; short limbs | adult, but a small 11-row face | adult silhouette and a face with room for 2 × 3 irises |
+| Width | 48 | 48: saya, sleeves, cloaks crowd the edges | 56: room for the saya, haori sleeves, cloaks, tails, wide arms |
+| Atlas | 1008 × 336, 1.29 MiB | 1008 × 384, 1.48 MiB | 1008 × 432, 1.66 MiB |
+| Scale 1080p / 125 % | ×3/×4/×5 | ×2/×3/×4 | ×2/×3/×3 with today's numbers → fixed below |
 
 ## Decision
-**Adult proportions for every built-in character** (A is rejected: it does not meet D-19). The frame — **B (48 × 56,
-≈ 3.2 heads) or C (48 × 64, ≈ 4.5 heads)** — is chosen by the owner from the spike; this ADR becomes Accepted with
-that choice written here. Rules shared by B and C:
-- Anatomy: a neck; shoulders wider than the head; a waist; elbows and knees (joints in C, implied by shading in B);
-  arms reaching mid-thigh; stance with feet apart. Male and female **build presets** (torso width, shoulder/hip ratio,
-  waist) on the same skeleton.
-- Face: eyes ¼–⅕ of the face height, 2–3 rows; visible brows; a nose shadow px; a jaw line; no blush outside `petted`.
-- Palette: a dark anchor ramp plus one saturated accent per character; outline 3 steps darker than the fill;
-  a hard shadow terminator (the «anime soft» ramps, manual AA and rim stay).
-- Unchanged: all art by code (D-11), authored face masks, coloured outline + rim, light top-left, `front` + `q34`
-  views (ADR 010), headroom rule (row 0 transparent), one atlas ≤ 1024² per character, roster D-18.
+**Adult proportions for every built-in character, frame 56 × 72.** Option A (keep chibi) is rejected: it fails D-19.
+- **Target numbers (spike C+, male build; MA-42 re-measures them in the rig):** feet (sole) row 70, row 71 free for
+  the outline; skull 14 × 15 (face 12, hairline → chin), neck 3 rows, chest → hip 17, hip → foot 30 (≈ 45 % of the
+  figure), shoulders male 21 / female 17, neck width male 5 / female 3, arm upper 10 + fore 9 + fist 3 (reaches
+  mid-thigh), stance (foot centres) male 13 / female 9, foot width male 6 / female 5. Crown ≈ row 6, standing figure
+  ≈ 66 rows. Body axis x = 28 on a pixel boundary.
+- **Build presets** on one skeleton. Female: hip 1 row higher, waist pinched 2 px per side at 60 % of the torso, hips
+  equal to the shoulders, feet 1 px shorter. Male: broader shoulders, narrow hips, straighter waist. Contrapposto idle:
+  hip 1 px out, the opposite shoulder 1 px down.
+- **Face:** eyes ¼–⅕ of the face height; eye row ≈ 50 % of the face; iris 2 × 3 with the top row under a 1-px lid,
+  one top-left highlight, sclera on the outer side only; brows 3–4 px with a 1-row gap (male inner end 1 px lower);
+  a nose px left of the axis at ≈ 70 %; mouth 2–3 px at ≈ 82 %; jaw: male corner step then a 3-px chin, female taper
+  to a 2-px chin + a lower-lip px; 2-row neck shadow; no blush outside `petted`.
+- **Palette and outline:** a dark anchor ramp (darkest L ≤ 0.28) plus one saturated accent (C ≥ 0.12) per character;
+  contour 3 tone steps darker than the fill (2 on the lit side); dark cloth gets an ink contour on the shadow side and
+  a 2-step rim on the lit side; a hard shadow terminator. The «anime soft» ramps, manual AA and rim stay.
+- **Frame width 56** is for the saya, haori sleeves, cloaks, tails and wide arms; the figure itself stays inside
+  x ≈ 14–42. The shelf atlas is ≈ 1008 × 432 (18 × 6 cells, 105 frames).
+- **Headroom:** row 0 transparent in every frame (gate). Rows 0–5 sit above the crown; the budget is «tallest extra
+  above the crown (ears, hat, tuft) + happy apex + head lag ≤ 5 rows». If a character needs more (kitsune ears, witch
+  hat), the frame grows by 4 rows on top (H 76, feet row 74, atlas 1008 × 456) — decided by the gate in MA-42 as the
+  smallest fit, never by shrinking ears or hats. Owner: «it can be bigger if needed».
+- **Sizing:** `scaleRef` = the standing figure, **66 for every built-in** (one value, so switching characters never
+  changes the size, D-8). To keep three distinct sizes at 1080p / 125 % (work area ≈ 816 DIP = 1020 device px):
+  `MAX_HEIGHT_FRACTION` **0.25 → 0.30** and the L preset **176 → 200 DIP** (S 96 and M 136 unchanged). Both are
+  needed: with the clamp alone L still rounds to ×3 (176 × 1.25 / 66 = 3.33); with L alone the 0.25 clamp caps at ×3
+  (255 / 66 = 3.86). Result:
+
+  | display | S | M | L | max |
+  |---|---|---|---|---|
+  | 1080p / 125 % | ×2 (106 DIP) | ×3 (158 DIP) | ×4 (211 DIP) | 4 |
+  | 1080p / 150 % | ×2 | ×3 | ×4 (clamp) | 4 |
+  | 4K / 150 % | ×2 | ×3 | ×5 | 9 |
+  | 1080p or 1440p / 100 % | ×2 | ×2 (collapses into S) | ×3 | 4 / 6 |
+
+  M stays ≈ 3 cm on the owner's laptop (198 device px vs 192 today). One art pixel at M is ×3 instead of today's
+  ×4, so fine detail reads coarser — the bigger frame carries the detail instead.
+- **Unchanged:** all art by code (D-11), authored face masks, coloured outline + rim, light top-left, `front` + `q34`
+  views (ADR 010), one atlas ≤ 1024² per character, roster D-18.
+- **Ronin crown tuft (Q-D19-2):** a short tied crown tuft with an oxblood cord is allowed for `ronin` only — never a
+  ponytail or a neat chonmage. The art-director re-checks Jin, Hanzo, Samurai Jack, Kenshin and Musashi at the ronin
+  gate.
 
 ## Consequences
-- Rig: re-rest `REST` / `REST_Q34` (C: with elbow and knee joints), male/female torso builds, all 16 shared
-  animations re-posed with timing kept; all head masks and face libraries redone. Tests first for the rig.
-- ADR 010 numbers revised (q34 stride 8 px and `WALK_TRAVEL` 2 px/frame scale with leg length; head-steady,
-  mirror axis x = 24 and the 2-frame turn stay).
-- Gates: the headroom test and `validateFace` sizes are re-derived for the new frame and eye sizes.
-- Sizing: `scaleRef` per manifest changes; in C the presets drop one step (S ×2 / M ×3 / L ×4). S must pass a face-read
-  check at real size, otherwise S is raised or removed (owner).
-- Atlas: C ≈ 1008 × 400 (still one ≤ 1024² atlas), B unchanged. RAM impact negligible (one resident atlas, D-8) —
-  confirm with `pnpm perf` (CPU < 2 %, private ≤ 280 MB).
+- Rig (MA-42…45, tests first): `RIG_W` 56, `RIG_H` 72, re-rest `REST` / `REST_Q34`, figure height, masks, validators,
+  headroom gate and `scaleRef`; male/female build presets; elbow and knee joints; all 16 shared animations re-posed
+  with timing and frame counts kept; all head masks and face libraries redone. The spike painter is a proportion
+  reference only, not production code.
+- `src/content/stage.ts`: `MAX_HEIGHT_FRACTION` 0.30, `SIZE_PRESETS_DIP.l` 200 (MA-42, with `presetScales` tests for
+  the table above). `computeScale` code is unchanged. SPEC §3.3 updated.
+- ADR 010 numbers revised: mirror axis x = 24 → **28**; the q34 stride (8 px) and `WALK_TRAVEL` (2 px/frame) scale
+  with the leg (30 vs ≈ 18 rows) and are re-derived in MA-45. Head-steady, the 2-frame turn and `facing` stay.
+- Gates: the headroom test, `validateFace` sizes and the arm-over-torso check are re-derived for 56 × 72.
+- At 100 % scaling S and M are both ×2 (integer scale, `MIN_SCALE` 2); fine steps still work. Owner may accept it or
+  ask for a different S/M split (open question in the plan).
+- Memory: +0.37 MiB GPU/private per resident atlas (one on screen, D-8) — negligible vs 280 MB; the overlay window does
+  not grow (ADR 007). Confirmed by `pnpm perf` per pack (CPU < 2 %, private ≤ 265 MB, cap 280).
 - Carry-over: most rig opt-ins (cloak, scarf, fox tail, hat, apron, sash, prop, sleeve rules) and the master palette
-  carry over; ramps get re-tuned for dark anchor + accent.
-- Cost: every signed-off character (`maid`, `kitsune`, `goth`, `witch`) loses its sign-off and is redrawn; `ronin`
-  is redesigned; `knight`, `coder`, `vampire` are built directly in the adult style. M-ART grows by one phase
-  (plan §«D-19»); SPEC §13 risk row.
+  carry over; ramps get re-tuned for dark anchor + accent; opt-ins that no longer fit are deleted.
+- Cost: every signed-off character (`maid`, `kitsune`, `goth`, `witch`) is redrawn; `ronin` is redesigned; `knight`,
+  `coder`, `vampire` are built directly in the adult style. M-ART grows by Phase 3 (plan §«D-19»); SPEC §13 risk row.

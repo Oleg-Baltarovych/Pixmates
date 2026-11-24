@@ -226,3 +226,6 @@ export const MAID_PREVIEW: Body = {
 
 /** Review packs for `pnpm sprites:sheet --review` (never written to resources/). */
 export const reviewPacks = (): PackDef[] => [DUMMY_A, DUMMY_B, MAID_PREVIEW].map((b) => createRigPack(b, ANIMS));
+
+/** Adult dummies (ADR 011) live in dummies-adult.ts. */
+export { ADULT_FEMALE, ADULT_MALE, adultPacks } from './dummies-adult.ts';
