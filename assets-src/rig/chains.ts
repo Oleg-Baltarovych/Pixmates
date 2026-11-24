@@ -34,6 +34,15 @@ const lace = (body: Body, shape: Shape, shade: number): Material => {
   return { ...folds, base: (f) => (f.y === bottom && (f.x & 1) === 1 ? null : { ramp, shade }) };
 };
 
+/** Points between a lock's root and tip on one straight line (same count; root and tip kept). */
+export function leanLock(points: readonly Point[]): Point[] {
+  const root = points[0];
+  const tip = points[points.length - 1];
+  if (!root || !tip || points.length < 3) return points.map((pt): Point => [pt[0], pt[1]]);
+  const n = points.length - 1;
+  return points.map((_, i): Point => [root[0] + ((tip[0] - root[0]) * i) / n, root[1] + ((tip[1] - root[1]) * i) / n]);
+}
+
 // ---- Back hair ----------------------------------------------------------------------------------------------------
 
 /** Back hair outline (head-joint units), built from named segments: crown, right tips, left tips. */
@@ -87,10 +96,11 @@ export function buildBackHair(
   headView: View,
   tucked: boolean,
   locks: readonly (readonly Point[] | undefined)[],
+  tipDx: number = p.hairDx ?? 0,
 ): Part[] {
   const parts: Part[] = [];
   const stretch = body.hairBackStretch ?? HAIR_STRETCH[body.variants.hairBack];
-  const hairDx = p.hairDx ?? 0;
+  const hairDx = tipDx;
   const lag: Point = [prev.head[0] - j.head[0], p.hairLift === 1 ? -1 : prev.head[1] - j.head[1]];
   const hx = j.head[0] + (headView === 'q34' ? -2 : 0);
   const hairOutline = tucked ? HAIR_BACK_Q34_TUCKED : HAIR_BACK;
@@ -106,7 +116,8 @@ export function buildBackHair(
   const shown = body.sideLocks === false ? [] : headView === 'q34' ? [locks[0]] : locks;
   for (const lock of shown) {
     if (!lock) continue;
-    const lagged = lock.map((pt, i): Point => (i === 0 ? pt : [pt[0] + trail[0], pt[1] + trail[1]]));
+    const trailed = lock.map((pt, i): Point => (i === 0 ? pt : [pt[0] + trail[0], pt[1] + trail[1]]));
+    const lagged = body.lockLean ? leanLock(trailed) : trailed;
     parts.push(part(stroke(chainStroke(lagged, [1.5, 1.25, 1.05, 0.8])), hairMat(body, 2), PART_ID.hair, 0.2));
   }
   return parts;
@@ -464,7 +475,7 @@ export function buildSkirt(body: Body, p: PoseFrame, hip: Point, q: boolean): Pa
     p.parts.legs === 'sit' ? 1 : 2,
   );
   return [
-    part(curveX(skirt, hip[0] + (q ? 1 : 0), 9), cloth3(body, 'skirt', 1), PART_ID.hem, 1),
+    part(curveX(skirt, hip[0] + (q ? 1 : 0), 9), cloth3(body, 'skirt', 1, dressShadeOf(body)), PART_ID.hem, 1),
     part(pet, lace(body, pet, 4), PART_ID.hem, 1.05),
   ];
 }
@@ -515,6 +526,15 @@ export function buildShorts(body: Body, p: PoseFrame, hip: Point, q: boolean): P
 /** Bodice tone on the cloth ramp; the default sleeve tone sits one step under it. */
 export const BODICE_SHADE = 3;
 export const DEFAULT_SLEEVE_SHADE = 2;
+/** Bodice + skirt base shade of a body (`Body.dressShade`, default `BODICE_SHADE`). */
+export const dressShadeOf = (body: Body): number => body.dressShade ?? BODICE_SHADE;
+/** Default bell-cuff shade on the clothAlt ramp. */
+export const DEFAULT_CUFF_SHADE = 3;
+/**
+ * `Body.sleeveOverHand`: cuff position along elbow → hand (1 = on the hand; 0.8 slid back with the hand above the
+ * shoulder), bell radii, and the small hand under it (1–2 fingertip px show).
+ */
+const OVER_HAND = { t: 1.0, raisedT: 0.8, bell: [1.8, 0.9], hand: 0.8 } as const;
 
 /** Neck, bodice (q34: half-width near 4.8 / far 3.6, lit centre 1 px toward the facing) and waist band / sash. */
 export function buildTorso(body: Body, j: JointMap, q: boolean, glow: number): Part[] {
@@ -538,7 +558,12 @@ export function buildTorso(body: Body, j: JointMap, q: boolean, glow: number): P
       PART_ID.torso,
       0.9,
     ),
-    part(curveX(bodice, chest[0] + (q ? 1 : 0), 6), cloth3(body, 'bodice', 0.4, BODICE_SHADE + glow), PART_ID.torso, 1),
+    part(
+      curveX(bodice, chest[0] + (q ? 1 : 0), 6),
+      cloth3(body, 'bodice', 0.4, dressShadeOf(body) + glow),
+      PART_ID.torso,
+      1,
+    ),
     part(
       rect(Math.round(hip[0] - 5.4), Math.round(hip[1] + band), q ? 10 : 11, body.sash?.rows ?? 1),
       flat(MAT.trim, body.ramps.trim, 2.4),
@@ -571,6 +596,13 @@ export function buildArm(
   const hand = j[side === 'L' ? 'handL' : 'handR'];
   const longSleeve = body.variants.sleeves === 'long';
   const ids = side === 'L' ? ARM_IDS_L : ARM_IDS_R;
+  // Sleeve over the hand (opt-in): the bell sits on the hand, over it (only fingertips show); raised, it slides back.
+  const over = longSleeve && body.sleeveOverHand === true;
+  const raised = hand[1] < shoulder[1];
+  const t = over ? (raised ? OVER_HAND.raisedT : OVER_HAND.t) : longSleeve ? 0.8 : 0.62;
+  const cuff: Point = [elbow[0] + (hand[0] - elbow[0]) * t, elbow[1] + (hand[1] - elbow[1]) * t];
+  // Over the hand the sleeve ends inside the bell (no sleeve px past the cuff).
+  const foreEnd: StrokePoint = over ? [...cuff, OVER_HAND.bell[1]] : [...hand, longSleeve ? 1.25 : 0.95];
   const parts: Part[] = [
     part(
       ellipse(shoulder[0] - (side === 'L' ? 0.1 : -0.1), shoulder[1] - 0.2, 2.6, 2.3, 0.9),
@@ -588,10 +620,7 @@ export function buildArm(
       2,
     ),
     part(
-      stroke([
-        [...elbow, 1.2],
-        [...hand, longSleeve ? 1.25 : 0.95],
-      ]),
+      stroke([[...elbow, 1.2], foreEnd]),
       longSleeve ? flat(MAT.cloth, sleeve.ramp, sleeve.shade) : flat(MAT.skin, skin, 4),
       ids.fore,
       2.1,
@@ -599,12 +628,17 @@ export function buildArm(
   ];
   // Arm end (rule iii): a cuff, then >= 2 px of hand skin past it. Long sleeves end in a bell cuff at the wrist
   // and never swallow the hand.
-  const t = longSleeve ? 0.8 : 0.62;
-  const cuff: Point = [elbow[0] + (hand[0] - elbow[0]) * t, elbow[1] + (hand[1] - elbow[1]) * t];
-  const bell = longSleeve ? ellipse(cuff[0], cuff[1], 1.6, 0.75, 0.6) : ellipse(cuff[0], cuff[1], 1.3, 0.55, 0.6);
-  parts.push(part(bell, flat(MAT.apron, body.ramps.clothAlt, 3), ids.end, 2.2));
-  const handY = hand[1] + (hand[1] < shoulder[1] ? -0.4 : 0.4);
-  const handR = farHand && !longSleeve ? 1.0 : longSleeve ? 1.2 : 1.3;
+  const bell = over
+    ? ellipse(cuff[0], cuff[1], OVER_HAND.bell[0], OVER_HAND.bell[1], 0.6)
+    : longSleeve
+      ? ellipse(cuff[0], cuff[1], 1.6, 0.75, 0.6)
+      : ellipse(cuff[0], cuff[1], 1.3, 0.55, 0.6);
+  const cuffTone = body.cuff ?? { ramp: body.ramps.clothAlt, shade: DEFAULT_CUFF_SHADE };
+  // A chin paw (sleeve over hand, think) is the authored FIST_PAW mask alone: no procedural cuff or hand under it.
+  if (over && arm === 'chin') return { parts, hand };
+  parts.push(part(bell, flat(MAT.apron, cuffTone.ramp, cuffTone.shade), ids.end, over ? 2.35 : 2.2));
+  const handY = hand[1] + (raised ? -0.4 : 0.4);
+  const handR = over ? OVER_HAND.hand : farHand && !longSleeve ? 1.0 : longSleeve ? 1.2 : 1.3;
   const handShade = farHand ? 3 : 4.2;
   parts.push(part(ellipse(hand[0], handY, handR, handR + 0.05, 1), flat(MAT.skin, skin, handShade), ids.end, 2.3));
   return { parts, hand: [hand[0], handY] };

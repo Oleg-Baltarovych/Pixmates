@@ -4,12 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { createIndexBuffer } from '../../../assets-src/lib/buffer.ts';
 import { LEGEND } from '../../../assets-src/lib/mask.ts';
 import { MAT } from '../../../assets-src/lib/materials.ts';
+import { outline } from '../../../assets-src/lib/passes.ts';
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
-import { buildShorts, buildTorso } from '../../../assets-src/rig/chains.ts';
+import { buildShorts, buildTorso, leanLock } from '../../../assets-src/rig/chains.ts';
 import { createRigPack, createRigRenderer } from '../../../assets-src/rig/compose.ts';
 import { DUMMY_A, DUMMY_B } from '../../../assets-src/rig/dummies.ts';
 import { ARM_LABEL, PART_ID } from '../../../assets-src/rig/part-ids.ts';
-import { farLegGap, squashSeparator, type Locked } from '../../../assets-src/rig/passes.ts';
+import { farLegGap, silhouetteOutline, squashSeparator, type Locked } from '../../../assets-src/rig/passes.ts';
 import type { Body, RigAnim } from '../../../assets-src/rig/types.ts';
 import type { RgbaImage } from '../../../tools/lib/png.ts';
 import { loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
@@ -192,5 +193,259 @@ describe('squashSeparator', () => {
     const out = squashSeparator(img, labels, 0x102030);
     expect(rgb(out, 0, 0)).toBe(0x102030);
     expect([rgb(out, 1, 0), rgb(out, 2, 0), rgb(out, 3, 0)]).toEqual([0xc8c8c8, 0xc8c8c8, 0xc8c8c8]);
+  });
+});
+// ---- MA-29 (goth) opt-ins: R1 sleeveOverHand, R2 silhouetteOutline, R3 cuff, R4 trim split, dressShade ----------
+
+const LONG: Body = DUMMY_B;
+/** Px of one arm-end label (red channel of the label map) whose colour is on `ramp`. */
+const endPx = (body: Body, a: RigAnim, f: number, label: number, ramp: string): number => {
+  const { image, labels } = createRigRenderer(body).renderLabeled(a, f, ctx);
+  const tones = new Set(palette.ramps.get(ramp) ?? []);
+  let n = 0;
+  for (let i = 0; i < image.width * image.height; i++) {
+    if ((labels.data[i * 4 + 3] ?? 0) === 0 || labels.data[i * 4] !== label) continue;
+    if ((image.data[i * 4 + 3] ?? 0) > 0 && tones.has(rgb(image, i % image.width, Math.floor(i / image.width)))) n++;
+  }
+  return n;
+};
+/** First frame of `a` whose left arm is one of `arms`. */
+const frameWith = (a: RigAnim, ...arms: readonly string[]): number => {
+  const f = a.frames.findIndex((p) => arms.includes(p.parts.armL));
+  if (f < 0) throw new Error(`${a.name}: no ${arms.join('/')} frame`);
+  return f;
+};
+/** First frame of `a` whose right arm is `arm`. */
+const frameWithR = (a: RigAnim, arm: string): number => {
+  const f = a.frames.findIndex((p) => p.parts.armR === arm);
+  if (f < 0) throw new Error(`${a.name}: no right ${arm} frame`);
+  return f;
+};
+
+describe('rig opt-in: sleeveOverHand (R1)', () => {
+  const over: Body = { ...LONG, sleeveOverHand: true };
+  const skin = LONG.outfit.skin.ramp;
+
+  it('needs long sleeves', () => {
+    expect(() => createRigPack({ ...DUMMY_A, sleeveOverHand: true }, ANIMS)).toThrow('sleeveOverHand');
+  });
+
+  it('covers the hand with the bell cuff: 1–2 fingertip skin px below it on a down arm (was more)', () => {
+    const f = frameWith(idle, 'down');
+    const tips = endPx(over, idle, f, ARM_LABEL.endL, skin);
+    expect(tips).toBeGreaterThanOrEqual(1);
+    expect(tips).toBeLessThanOrEqual(2);
+    expect(endPx(LONG, idle, f, ARM_LABEL.endL, skin)).toBeGreaterThan(tips);
+    // The cuff itself is the rest of the arm end (≥ 2 px of lace).
+    expect(endPx(over, idle, f, ARM_LABEL.endL, LONG.ramps.clothAlt)).toBeGreaterThanOrEqual(2);
+  });
+
+  it('slides back with the hand above the shoulder: 2–3 px of hand show', () => {
+    const wave = anim('wave');
+    const shown = endPx(over, wave, frameWithR(wave, 'wave_b'), ARM_LABEL.endR, skin);
+    expect(shown).toBeGreaterThanOrEqual(2);
+    expect(shown).toBeLessThanOrEqual(3);
+  });
+
+  it('makes the chin fist a paw: 2 knuckle skin px over one lace row of 1–3 px (no procedural cuff or hand)', () => {
+    const think = anim('think');
+    const f = think.frames.findIndex((p) => p.parts.armR === 'chin' || p.parts.armL === 'chin');
+    const p = think.frames[f];
+    if (!p) throw new Error('think chin frame');
+    const label = p.parts.armR === 'chin' ? ARM_LABEL.endR : ARM_LABEL.endL;
+    const paw = endPx(over, think, f, label, skin);
+    expect(paw).toBeLessThan(endPx(LONG, think, f, label, skin));
+    expect(paw).toBeGreaterThanOrEqual(2);
+    const lace = endPx(over, think, f, label, LONG.outfit.apron.ramp);
+    expect(lace).toBeGreaterThanOrEqual(1);
+    expect(lace).toBeLessThanOrEqual(3);
+    expect(paw).toBe(2);
+  });
+});
+
+describe('rig opt-in: cuff (R3)', () => {
+  it('draws the bell cuff in its own ramp/shade; the hem lace keeps clothAlt', () => {
+    const tone = palette.ramps.get('cloth_rose')?.[5] ?? -1;
+    const body: Body = { ...LONG, cuff: { ramp: 'cloth_rose', shade: 5 } };
+    const img = render(body);
+    expect(pxOn(img, 'cloth_rose').filter(([x, y]) => rgb(img, x, y) === tone).length).toBeGreaterThanOrEqual(2);
+    // The petticoat lace (lowest clothAlt row) is still on clothAlt.
+    const laceRow = Math.max(...pxOn(render(LONG), LONG.ramps.clothAlt).map(([, y]) => y));
+    expect(pxOn(img, LONG.ramps.clothAlt).some(([, y]) => y === laceRow)).toBe(true);
+    expect(() => createRigPack({ ...LONG, cuff: { ramp: 'cloth_rose', shade: 7 } }, ANIMS)).toThrow('cuff.shade');
+  });
+});
+
+describe('rig: outfit.trim (masks) and ramps.trim (waist band) are independent (R4)', () => {
+  it('paints mask trim letters in outfit.trim and the waist band in ramps.trim', () => {
+    const body: Body = {
+      ...LONG,
+      outfit: {
+        ...LONG.outfit,
+        trim: { ramp: 'gem_garnet', tones: [0, 1, 2, 3, 4, 5] },
+      },
+      ramps: { ...LONG.ramps, trim: 'cloth_indigo' },
+    };
+    const img = render(body);
+    const j = createRigRenderer(body).joints(idle, 0);
+    const band = Math.round(j.hip[1] - 10.1);
+    const garnet = pxOn(img, 'gem_garnet');
+    expect(garnet.length).toBeGreaterThan(0);
+    // Garnet only on the collar mask, never on the waist band.
+    expect(garnet.every(([, y]) => y < band - 2)).toBe(true);
+    expect(pxOn(img, 'cloth_indigo').some(([, y]) => y === band)).toBe(true);
+  });
+});
+
+describe('rig opt-in: dressShade', () => {
+  it('sets the bodice/skirt base shade; the sleeve-on-bodice-ramp rule uses it', () => {
+    expect(same(render({ ...DUMMY_A, dressShade: 4 }), render(DUMMY_A))).toBe(false);
+    expect(same(render({ ...DUMMY_A, dressShade: 3 }), render(DUMMY_A))).toBe(true);
+    const onCloth = { ramp: DUMMY_A.ramps.cloth, shade: 2 } as const;
+    expect(() => createRigPack({ ...DUMMY_A, dressShade: 2, sleeve: onCloth }, ANIMS)).toThrow('arm-over-torso');
+    expect(() => createRigPack({ ...DUMMY_A, dressShade: 9 }, ANIMS)).toThrow('dressShade');
+  });
+});
+
+describe('rig opt-in: silhouetteOutline (R2)', () => {
+  it('gives outer-outline px of the listed ramps shade `lit` on the top-left, `shade` elsewhere; others untouched', () => {
+    const buf = createIndexBuffer(5, 5, palette);
+    buf.set(2, 2, {
+      ramp: 'cloth_indigo',
+      shade: 3,
+      material: MAT.cloth,
+      depth: 1,
+    });
+    const map = outline(buf, ctx.rampSize, { drop: 2 });
+    silhouetteOutline(buf, map, [{ ramp: 'cloth_indigo', lit: 5, shade: 3 }]);
+    // Left / top neighbours face the light; right / bottom do not.
+    expect([buf.shade[2 * 5 + 1], buf.shade[1 * 5 + 2]]).toEqual([5, 5]);
+    expect([buf.shade[2 * 5 + 3], buf.shade[3 * 5 + 2]]).toEqual([3, 3]);
+    const other = createIndexBuffer(5, 5, palette);
+    other.set(2, 2, {
+      ramp: 'cloth_teal',
+      shade: 3,
+      material: MAT.cloth,
+      depth: 1,
+    });
+    const m2 = outline(other, ctx.rampSize, { drop: 2 });
+    silhouetteOutline(other, m2, [{ ramp: 'cloth_indigo', lit: 5, shade: 3 }]);
+    expect(other.shade[2 * 5 + 3]).toBe(1);
+  });
+
+  it('never leaves a shade-0 outer px of the ramp on the rendered silhouette, and validates shades', () => {
+    const ramp = DUMMY_A.ramps.cloth;
+    const body: Body = {
+      ...DUMMY_A,
+      silhouetteOutline: [{ ramp, lit: 5, shade: 3 }],
+    };
+    const img = render(body);
+    expect(same(img, render(DUMMY_A))).toBe(false);
+    const deep = palette.ramps.get(ramp)?.[0];
+    const alpha = (x: number, y: number): number =>
+      x < 0 || y < 0 || x >= img.width || y >= img.height ? 0 : (img.data[(y * img.width + x) * 4 + 3] ?? 0);
+    const edgeDeep = pxOn(img, ramp).filter(
+      ([x, y]) =>
+        rgb(img, x, y) === deep && [alpha(x - 1, y), alpha(x + 1, y), alpha(x, y - 1), alpha(x, y + 1)].includes(0),
+    );
+    expect(edgeDeep).toEqual([]);
+    expect(() => createRigPack({ ...DUMMY_A, silhouetteOutline: [{ ramp, lit: 8, shade: 3 }] }, ANIMS)).toThrow(
+      'silhouetteOutline',
+    );
+  });
+});
+
+describe('rig opt-in: silhouetteOutline per ramp', () => {
+  it('uses each ramp its own lit / other shade', () => {
+    const buf = createIndexBuffer(5, 3, palette);
+    buf.set(1, 1, { ramp: 'cloth_indigo', shade: 3, material: MAT.cloth, depth: 1 });
+    buf.set(3, 1, { ramp: 'cloth_teal', shade: 3, material: MAT.cloth, depth: 1 });
+    const map = outline(buf, ctx.rampSize, { drop: 2 });
+    silhouetteOutline(buf, map, [
+      { ramp: 'cloth_indigo', lit: 5, shade: 3 },
+      { ramp: 'cloth_teal', lit: 4, shade: 2 },
+    ]);
+    expect([buf.shade[1 * 5 + 0], buf.shade[0 * 5 + 1], buf.shade[2 * 5 + 1]]).toEqual([5, 5, 3]);
+    expect([buf.shade[0 * 5 + 3], buf.shade[1 * 5 + 4], buf.shade[2 * 5 + 3]]).toEqual([4, 2, 2]);
+  });
+});
+
+describe('rig opt-in: sleeveRim', () => {
+  /** Labelled px of `label` and the colour count of `tone` among them. */
+  const toneIn = (
+    body: Body,
+    label: number,
+    tone: number,
+  ): { px: number; hit: number; edge: number; edgeHit: number } => {
+    const { image, labels } = createRigRenderer(body).renderLabeled(idle, 0, ctx);
+    const lab = (x: number, y: number): number =>
+      x < 0 || !labels.data[(y * image.width + x) * 4 + 3]
+        ? ARM_LABEL.none
+        : (labels.data[(y * image.width + x) * 4] ?? 0);
+    const out = { px: 0, hit: 0, edge: 0, edgeHit: 0 };
+    for (let y = 0; y < image.height; y++) {
+      for (let x = 0; x < image.width; x++) {
+        if (lab(x, y) !== label || !image.data[(y * image.width + x) * 4 + 3]) continue;
+        const hit = rgb(image, x, y) === tone ? 1 : 0;
+        out.px++;
+        out.hit += hit;
+        if (lab(x - 1, y) === ARM_LABEL.none) {
+          out.edge++;
+          out.edgeHit += hit;
+        }
+      }
+    }
+    return out;
+  };
+  const ramp = LONG.sleeve?.ramp ?? LONG.ramps.cloth;
+  const tone = palette.ramps.get(ramp)?.[5] ?? -1;
+  const rimmed: Body = { ...LONG, sleeveRim: 5 };
+
+  it('lights every outer (screen-left) edge px of the near sleeve in the rim shade; the far sleeve is untouched', () => {
+    const near = toneIn(rimmed, ARM_LABEL.sleeveL, tone);
+    expect(near.edge).toBeGreaterThan(0);
+    expect(near.edgeHit).toBe(near.edge);
+    expect(toneIn(LONG, ARM_LABEL.sleeveL, tone).edgeHit).toBeLessThan(near.edge);
+    expect(toneIn(rimmed, ARM_LABEL.sleeveR, tone)).toEqual(toneIn(LONG, ARM_LABEL.sleeveR, tone));
+    expect(() => createRigPack({ ...LONG, sleeveRim: 7 }, ANIMS)).toThrow('sleeveRim');
+  });
+});
+
+describe('rig opt-in: views.q34.hairTipLag', () => {
+  it('adds the previous frame hairDx to the back-hair tips on q34 frames (follow-through); front frames unchanged', () => {
+    const q = q34Of(DUMMY_B);
+    const lagged: Body = { ...DUMMY_B, views: { q34: { ...q, hairTipLag: true } } };
+    const after = walk.frames.findIndex(
+      (_, i) => (walk.frames[(i + walk.frames.length - 1) % walk.frames.length]?.hairDx ?? 0) !== 0,
+    );
+    expect(after).toBeGreaterThanOrEqual(0);
+    expect(same(render(lagged, walk, after), render(DUMMY_B, walk, after))).toBe(false);
+    const still = walk.frames.findIndex(
+      (f, i) =>
+        (f.hairDx ?? 0) === 0 && (walk.frames[(i + walk.frames.length - 1) % walk.frames.length]?.hairDx ?? 0) === 0,
+    );
+    if (still >= 0) expect(same(render(lagged, walk, still), render(DUMMY_B, walk, still))).toBe(true);
+    expect(same(render(lagged), render(DUMMY_B))).toBe(true);
+  });
+});
+
+describe('rig opt-in: lockLean', () => {
+  it('leanLock keeps root and tip and puts the points between them on one straight line', () => {
+    const out = leanLock([
+      [0, 0],
+      [2, 3],
+      [0, 6],
+      [1, 9],
+    ]);
+    expect(out[0]).toEqual([0, 0]);
+    expect(out[3]).toEqual([1, 9]);
+    expect(out[1]?.[0]).toBeCloseTo(1 / 3);
+    expect(out[2]?.[1]).toBeCloseTo(6);
+  });
+  it('changes only bodies that opt in', () => {
+    const think = anim('think');
+    const leaned = { ...DUMMY_B, lockLean: true as const };
+    const differs = think.frames.some((_, f) => !same(render(leaned, think, f), render(DUMMY_B, think, f)));
+    expect(differs).toBe(true);
   });
 });

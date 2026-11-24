@@ -21,7 +21,7 @@ import {
   SLEEVE_PARTS,
   TORSO_PARTS,
 } from './part-ids.ts';
-import type { ArmVariant, Body, JointMap } from './types.ts';
+import type { ArmVariant, Body, JointMap, SilhouetteOutline } from './types.ts';
 
 /** Px index → final (ramp index, shade), restored after outline/AA. */
 export type Locked = Map<number, readonly [number, number]>;
@@ -117,21 +117,29 @@ export function pointToe(mask: Mask): Mask {
  */
 const FIST: Mask = ['.Ezz..', 'ZSSsZd', 'ZSssZd', 'sZZZ..'];
 const FIST_LONG: Mask = ['.Ezz..', 'ZSSsZa', 'ZSssZa', 'sZZZq.'];
+/**
+ * Sleeve-over-hand paw (`Body.sleeveOverHand`): 2 knuckle px of skin on top (touching the chin) over a single 3-px
+ * row of cuff lace; the sleeve itself carries on below (the composer draws no procedural cuff or hand for it).
+ */
+const FIST_PAW: Mask = ['.Ez...', 'qAq...'];
 const FIST_BREAK: Mask = ['.ZZ...'];
+/** Chin fist per sleeve kind. */
+export type FistKind = 'bare' | 'long' | 'paw';
+const FISTS: Readonly<Record<FistKind, Mask>> = { bare: FIST, long: FIST_LONG, paw: FIST_PAW };
 
 /** think: fists stamped over the bow/bib under the chin (after the head), each with its jaw break above. */
 export function stampChinFists(
   stamp: Stamp,
   arms: { readonly armL: ArmVariant; readonly armR: ArmVariant },
   j: JointMap,
-  longSleeves: boolean,
+  kind: FistKind,
 ): void {
   for (const [side, arm, hand] of [
     ['L', arms.armL, j.handL],
     ['R', arms.armR, j.handR],
   ] as const) {
     if (arm !== 'chin') continue;
-    const mask = longSleeves ? FIST_LONG : FIST;
+    const mask = FISTS[kind];
     const flip = (m: Mask): Mask => (side === 'R' ? m : m.map((r) => r.split('').reverse().join('')));
     const end = (side === 'L' ? ARM_IDS_L : ARM_IDS_R).end;
     const w = maskSize(mask).w;
@@ -289,6 +297,49 @@ export function apronPanel(buf: IndexBuffer, body: Body, cx: number, top: number
       locked.set(i, [buf.ramp[i] ?? -1, shade]);
     }
   }
+}
+
+/**
+ * Silhouette outline (`Body.silhouetteOutline`): outer-outline px whose ramp is listed take shade `lit` where the
+ * outline faces the top-left light and `shade` elsewhere (never the near-black shade 0 on a dark ramp). Horn
+ * outlines (recoloured by `recolorHornOutline`) keep their tone.
+ */
+export function silhouetteOutline(
+  buf: IndexBuffer,
+  map: ReturnType<typeof outline>,
+  outlines: readonly SilhouetteOutline[],
+): void {
+  const byRamp = new Map<string, SilhouetteOutline>(outlines.map((o) => [o.ramp, o]));
+  for (let i = 0; i < map.kind.length; i++) {
+    if ((map.kind[i] ?? 0) !== 1 || buf.material[i] === MAT.horn) continue;
+    const ramp = buf.get(i % buf.width, Math.floor(i / buf.width)).ramp;
+    const o = ramp === null ? undefined : byRamp.get(ramp);
+    if (!o) continue;
+    const facing = -((map.ox[i] ?? 0) + (map.oy[i] ?? 0));
+    buf.shade[i] = facing > 0 ? o.lit : o.shade;
+  }
+}
+
+/**
+ * Near-sleeve rim (`Body.sleeveRim`): near (L) sleeve cloth px whose left neighbour is neither arm nor torso (hair,
+ * background, empty) take `shade`; px touching the torso keep the arm-over-torso separator.
+ */
+export function sleeveRim(buf: IndexBuffer, shade: number): void {
+  const w = buf.width;
+  const hits: number[] = [];
+  const idAt = (x: number, y: number): number =>
+    buf.inBounds(x, y) && (buf.ramp[y * w + x] ?? -1) >= 0 ? (buf.partId[y * w + x] ?? 0) : PART_ID.none;
+  for (let y = 0; y < buf.height; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (!NEAR_SLEEVE.has(buf.partId[i] ?? 0) || buf.material[i] !== MAT.cloth || (buf.ramp[i] ?? -1) < 0) continue;
+      const left = idAt(x - 1, y);
+      if (LEFT_ARM.has(left) || TORSO_PARTS.has(left)) continue;
+      if (N4.some(([dx, dy]) => TORSO_PARTS.has(idAt(x + dx, y + dy)))) continue;
+      hits.push(i);
+    }
+  }
+  for (const i of hits) buf.shade[i] = shade;
 }
 
 /** Outline px next to a horn take `ramp` shade 1 (so ivory never reads as a pale ear). */

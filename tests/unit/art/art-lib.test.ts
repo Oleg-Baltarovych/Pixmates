@@ -126,6 +126,7 @@ describe('spike packs (MA-07/08)', () => {
     expect(PACKS.map((p) => p.id)).toEqual([
       'pixmates.maid',
       'pixmates.kitsune',
+      'pixmates.goth',
       'spike-maid-48soft',
       'spike-maid-64soft',
     ]);

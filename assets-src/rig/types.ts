@@ -241,8 +241,20 @@ export interface BodyView {
   readonly sashKnot?: PlacedMask;
   /** Scarf ends in this view (required with `neckAcc: 'scarf'`). */
   readonly scarf?: ScarfEnds;
+  /**
+   * Opt-in follow-through: the back-hair tips add the previous frame's `hairDx` to their own (≤ 2 px), so long hair
+   * lags the stride by a frame instead of moving as one slab.
+   */
+  readonly hairTipLag?: true;
   /** Rest offsets in this view (default: the body's front `tweaks`). */
   readonly tweaks?: Partial<Readonly<Record<Joint, Offset>>>;
+}
+
+/** One ramp's outer-outline tones (`Body.silhouetteOutline`). */
+export interface SilhouetteOutline {
+  readonly ramp: RampName;
+  readonly lit: number;
+  readonly shade: number;
 }
 
 export interface Body {
@@ -266,6 +278,25 @@ export interface Body {
    * one step under the bodice (3); on the cloth ramp the shade must differ from the bodice by >= 1 (build throws).
    */
   readonly sleeve?: { readonly ramp?: RampName; readonly shade?: number };
+  /** Base shade (0..5) of the bodice and skirt on the cloth ramp (default `BODICE_SHADE`, 3). */
+  readonly dressShade?: number;
+  /**
+   * Opt-in (long sleeves only): the bell cuff sits over the hand so only 1–2 fingertip px show below it; with the
+   * hand above the shoulder the sleeve slides back (2–3 px of hand). The chin fist becomes a lace-wrapped paw.
+   */
+  readonly sleeveOverHand?: true;
+  /** Bell-cuff ramp and shade (0..5); default the clothAlt ramp at shade 3 (the hem lace keeps clothAlt). */
+  readonly cuff?: { readonly ramp: RampName; readonly shade: number };
+  /**
+   * Opt-in outer silhouette outline for dark ramps: outer-outline px taken from each listed ramp get its shade `lit`
+   * on the lit (top-left) side and `shade` elsewhere (0..5), so a near-black figure never melts into a dark backdrop.
+   */
+  readonly silhouetteOutline?: readonly SilhouetteOutline[];
+  /**
+   * Opt-in: the near (screen-left) sleeve's outer edge px (left neighbour not arm or torso) take this sleeve-ramp shade
+   * (0..5), a 1-px lit rim from shoulder to cuff so a dark sleeve reads against dark hair; the far sleeve keeps its tone.
+   */
+  readonly sleeveRim?: number;
   /** Authored head (skin, fringe, crown; horns when `headAcc` is `horns`); `at` from the head joint. */
   readonly head: PlacedMask & { readonly band: number };
   readonly face: FaceLibrary;
@@ -297,6 +328,11 @@ export interface Body {
   readonly hairBackStretch?: number;
   /** Procedural side-lock chains (default true); false = the head mask's own (short) locks only. */
   readonly sideLocks?: boolean;
+  /**
+   * Opt-in: each drawn side lock is one straight lean from its root to its simulated tip (`leanLock`), so a lagging
+   * chain never steps out locally (no headphone bulge at cheek height); the tip keeps its secondary motion.
+   */
+  readonly lockLean?: true;
   /**
    * Tailored shorts (`hem: 'shorts'`): `shade` of the clothAlt ramp (0..5, default 3), hem raised `raise` rows;
    * the front view adds a 1-px notch between the legs and a 1-px outward flare at each leg hem.

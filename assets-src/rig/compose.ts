@@ -17,7 +17,6 @@ import type { AnimDef, Facing, PackDef, RenderContext } from '../lib/types.ts';
 import { frame as poseFrame } from './anims/kit.ts';
 import { FIGURE_H, REST_Q34, resolveJoints, withBand } from './body.ts';
 import {
-  BODICE_SHADE,
   buildArm,
   buildBackHair,
   buildFoxTailParts,
@@ -29,6 +28,7 @@ import {
   buildTorso,
   capScarfEnds,
   DEFAULT_SLEEVE_SHADE,
+  dressShadeOf,
   FOX_TAIL_FRONT,
   FOX_TAIL_Q34,
   frontTailLine,
@@ -53,6 +53,8 @@ import {
   pointToe,
   recolorHornOutline,
   shinWrap,
+  silhouetteOutline,
+  sleeveRim,
   sleeveHairLine,
   squashSeparator,
   stampChinFists,
@@ -117,6 +119,8 @@ export function squashRows(img: RgbaImage, cut: number, n: number): RgbaImage {
 const DEPTH_TIES = 1.6;
 const DEPTH_HAIR_FAR = 0.5;
 const DEPTH_TRIM_MASK = 1.7;
+/** Back-hair tip offset cap with `hairTipLag` (px). */
+const HAIR_TIP_MAX = 2;
 
 export interface LabeledFrame {
   readonly image: RgbaImage;
@@ -152,7 +156,7 @@ interface Layers {
 export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRenderer {
   const v = body.variants;
   const sleeve = { ramp: body.sleeve?.ramp ?? body.ramps.cloth, shade: body.sleeve?.shade ?? DEFAULT_SLEEVE_SHADE };
-  if (sleeve.ramp === body.ramps.cloth && Math.abs(sleeve.shade - BODICE_SHADE) < 1) {
+  if (sleeve.ramp === body.ramps.cloth && Math.abs(sleeve.shade - dressShadeOf(body)) < 1) {
     throw new Error(
       `${body.id}: sleeves on the bodice ramp need >= 1 shade step from the bodice (arm-over-torso rule)`,
     );
@@ -176,6 +180,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         sleeveHairLine: undefined,
         hideFarShoulder: false,
         farLegShade: undefined,
+        hairTipLag: false,
       };
     }
     if (!q34 || !headMasks.q34) throw new Error(`${body.id}: q34 poses need Body.views.q34 (ADR 010)`);
@@ -190,6 +195,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       sleeveHairLine: q34.sleeveHairLine,
       hideFarShoulder: q34.hideFarShoulder === true,
       farLegShade: q34.farLegShade,
+      hairTipLag: q34.hairTipLag === true,
     };
   };
   const jointCache = new Map<string, readonly JointMap[]>();
@@ -279,8 +285,20 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     }
     if (!q) back.push(...tailParts);
     const headParts = viewParts(hv);
+    // Follow-through (opt-in): the tips add the previous frame's offset, capped at HAIR_TIP_MAX px.
+    const prevDx = headParts.hairTipLag ? (anim.frames[prevIndex]?.hairDx ?? 0) : 0;
+    const tipDx = Math.max(-HAIR_TIP_MAX, Math.min(HAIR_TIP_MAX, hairDx + prevDx));
     back.push(
-      ...buildBackHair(body, p, j, prev, hv, headParts.hairFar !== undefined, [ch.lockL[frame], ch.lockR[frame]]),
+      ...buildBackHair(
+        body,
+        p,
+        j,
+        prev,
+        hv,
+        headParts.hairFar !== undefined,
+        [ch.lockL[frame], ch.lockR[frame]],
+        tipDx,
+      ),
     );
     if (q) back.push(...tailParts);
 
@@ -388,7 +406,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     for (const fp of expressionParts(headParts.face, p.face, armsUp, p.irisDx === 1)) {
       stamp(fp.mask, j.face[0] + fp.at[0], j.face[1] + fp.at[1], 3.6, MAT.skin, MAT.hair);
     }
-    stampChinFists(stamp, p.parts, j, v.sleeves === 'long');
+    stampChinFists(stamp, p.parts, j, v.sleeves === 'short' ? 'bare' : body.sleeveOverHand ? 'paw' : 'long');
     const spade = v.back === 'spade_tail' ? body.masks.spade : undefined;
     if (spade && p.tailTucked) {
       // Tucked: the spade hangs under the hem near the centre, behind the skirt, lace and shoes (only its tip shows).
@@ -436,7 +454,8 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     const bodyParts = viewParts(bodyViewOf(anim, frame));
     // 1. Procedural parts → compose.
     const { parts, hands, knees } = layers(anim, frame, p);
-    const sleeveDir = toneOf(ctx, sleeve.ramp, sleeve.shade) > toneOf(ctx, body.ramps.cloth, BODICE_SHADE) ? 1 : -1;
+    const sleeveDir =
+      toneOf(ctx, sleeve.ramp, sleeve.shade) > toneOf(ctx, body.ramps.cloth, dressShadeOf(body)) ? 1 : -1;
     const buf = createIndexBuffer(RIG_W, frameH, ctx.palette);
     compose(buf, parts, ctx.rampSize, {
       light: { strength: style.light },
@@ -462,6 +481,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     if (body.hornOutline) recolorHornOutline(buf, map, body.hornOutline);
     selectiveOutline(buf, map, { lit: 'lighter' });
     if (style.aa) antiAlias(buf, map);
+    if (body.silhouetteOutline) silhouetteOutline(buf, map, body.silhouetteOutline);
     for (const [i, [ramp, shade]] of locked) {
       buf.ramp[i] = ramp;
       buf.shade[i] = shade;
@@ -475,6 +495,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     }
     // 5. Last tone passes: the arm-over-torso separator must survive AA and rim (RIG.md rule ii).
     armOverTorso(buf, ctx.palette, sleeveDir);
+    if (body.sleeveRim !== undefined) sleeveRim(buf, body.sleeveRim);
     if (bodyParts.sleeveHairLine) sleeveHairLine(buf, bodyParts.sleeveHairLine);
     const ties = bodyParts.apron?.ties;
     if (ties && tieAt) {
@@ -561,11 +582,21 @@ function validateBody(body: Body, anims: readonly RigAnim[], frameH: number): vo
     ['shorts.shade', body.shorts?.shade],
     ['shinWrap.shade', body.shinWrap?.shade],
     ['views.q34.farLegShade', q34?.farLegShade],
+    ['dressShade', body.dressShade],
+    ['cuff.shade', body.cuff?.shade],
+    ['sleeveRim', body.sleeveRim],
+    ...(body.silhouetteOutline ?? []).flatMap((o): [string, number][] => [
+      [`silhouetteOutline.${o.ramp}.lit`, o.lit],
+      [`silhouetteOutline.${o.ramp}.shade`, o.shade],
+    ]),
   ];
   for (const [name, s] of shades) {
     if (s !== undefined && !(s >= 0 && s <= MAX_SHADE)) {
       throw new Error(`${body.id}: ${name} ${String(s)} is outside 0..${String(MAX_SHADE)}`);
     }
+  }
+  if (body.sleeveOverHand && body.variants.sleeves !== 'long') {
+    throw new Error(`${body.id}: sleeveOverHand needs sleeves 'long'`);
   }
   if (body.variants.neckAcc === 'scarf') {
     if (!body.scarf) throw new Error(`${body.id}: neckAcc 'scarf' needs Body.scarf (front ends)`);
