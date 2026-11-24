@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_HEIGHT_FRACTION, MIN_SCALE, SIZE_PRESETS_DIP } from '../../../src/content/stage.ts';
 import { computeScale, maxScale, presetScales, stepScale, type ScaleInput } from '../../../src/core/scale.ts';
 
-const PRESETS = { s: 96, m: 136, l: 176 };
+const PRESETS = SIZE_PRESETS_DIP;
 /** Sprite height in DIP for a scale (frame px × scale ÷ scale factor). */
 const heightDip = (scale: number, frameH: number, scaleFactor: number): number => (frameH * scale) / scaleFactor;
 
@@ -137,5 +138,30 @@ describe('scaleRef sizing with headroom (ADR 009, plan MA-21)', () => {
   });
   it('treats a broken refH like a missing one', () => {
     expect(computeScale({ ...headroom(1.25), refH: Number.NaN, targetDip: PRESETS.m })).toBe(3);
+  });
+});
+
+describe('adult presets (ADR 011: scaleRef 66, frame 56 × 72)', () => {
+  const content = (scaleFactor: number, refH: number, frameH: number, workAreaHeightDip = 816) => ({
+    scaleFactor,
+    frameH,
+    refH,
+    workAreaHeightDip,
+    maxFraction: MAX_HEIGHT_FRACTION,
+    minScale: MIN_SCALE,
+  });
+  it('uses the content numbers S 96 / M 136 / L 200 DIP and a 30 % work-area clamp', () => {
+    expect(SIZE_PRESETS_DIP).toEqual({ s: 96, m: 136, l: 200 });
+    expect(MAX_HEIGHT_FRACTION).toBe(0.3);
+  });
+  it('gives S ×2 / M ×3 / L ×4 at 1080p / 125 % with scaleRef 66', () => {
+    const input = { ...content(1.25, 66, 72), targetDip: SIZE_PRESETS_DIP.l };
+    expect(presetScales(SIZE_PRESETS_DIP, input)).toEqual({ s: 2, m: 3, l: 4 });
+    // L is not clamped: 0.30 × 816 × 1.25 / 66 = 4.6 (with 0.25 it would be 3.9 → ×3).
+    expect(maxScale(input)).toBe(4);
+    expect(maxScale({ ...input, maxFraction: 0.25 })).toBe(3);
+  });
+  it('keeps the legacy scaleRef 48 packs at S ×3 / M ×4 / L ×5 with the new numbers', () => {
+    expect(presetScales(SIZE_PRESETS_DIP, content(1.25, 48, 56))).toEqual({ s: 3, m: 4, l: 5 });
   });
 });

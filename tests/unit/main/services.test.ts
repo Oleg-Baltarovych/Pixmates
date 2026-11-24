@@ -151,10 +151,8 @@ describe('StageController', () => {
     const controller = new StageController({ stage: () => undefined, display, now: () => 0, seed: 1 });
     controller.setPreset('m');
     expect(controller.scale).toBe(5);
-    controller.nudge(1);
-    controller.nudge(1);
-    controller.nudge(1);
-    expect(controller.scale).toBe(7); // clamp: 25 % of 816 DIP at 125 %
+    for (let i = 0; i < 5; i++) controller.nudge(1);
+    expect(controller.scale).toBe(9); // clamp: 30 % of 816 DIP at 125 % on the 32-px placeholder
     controller.setPreset('s');
     expect(controller.scale).toBe(4);
   });

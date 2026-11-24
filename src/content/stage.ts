@@ -4,13 +4,16 @@ import { builtinPackId } from '../shared/pack.ts';
 /** Height of the placeholder frame in art pixels; real packs bring their own `frameSize` in the manifest. */
 export const FRAME_HEIGHT_PX = 32;
 
-/** Size presets as target on-screen height in DIP (M ≈ 3 cm on a 15.6" 1080p laptop at 125 %). */
-export const SIZE_PRESETS_DIP = { s: 96, m: 136, l: 176 } as const;
+/**
+ * Size presets as target on-screen height in DIP (M ≈ 3 cm on a 15.6" 1080p laptop at 125 %). ADR 011: L 200 so the
+ * adult `scaleRef` 66 gives S ×2 / M ×3 / L ×4 at 1080p / 125 % (legacy `scaleRef` 48 stays ×3 / ×4 / ×5).
+ */
+export const SIZE_PRESETS_DIP = { s: 96, m: 136, l: 200 } as const;
 export type SizePreset = keyof typeof SIZE_PRESETS_DIP;
 export const DEFAULT_SIZE_PRESET: SizePreset = 'm';
 
-/** The character never grows taller than this share of the work-area height. */
-export const MAX_HEIGHT_FRACTION = 0.25;
+/** The character never grows taller than this share of the work-area height (ADR 011: 0.30 keeps adult L at ×4). */
+export const MAX_HEIGHT_FRACTION = 0.3;
 
 /** Smallest integer physical scale: one art pixel is at least 2×2 device pixels. */
 export const MIN_SCALE = 2;
