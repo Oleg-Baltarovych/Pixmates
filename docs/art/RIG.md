@@ -1,7 +1,31 @@
 # Pixmates rig spec (M-ART phase 2, ADR 004 / 009)
 
-The shared rig every built-in character is generated from. Code: `assets-src/rig/` (types, body, compose, face,
-style, `anims/`), bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-23-m-art.md`.
+The shared rig every built-in character is generated from. Code: `assets-src/rig/` (layout in «Code layout»),
+bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-23-m-art.md`. Per-character specs:
+`docs/art/kitsune.md`, `docs/art/goth.md` (D-17 adds witch, ronin, knight).
+
+## Code layout (MA-28 refactor 2026-11-24, sprites byte-identical)
+| file | owns |
+|---|---|
+| `types.ts` | rig contract: views, joints, pose frame, `RigAnim`, `Body`, `BodyView`, opt-in shapes |
+| `body.ts` | rest layouts `REST` / `REST_Q34` (`restOf(view)`), joint resolution |
+| `compose.ts` | `createRigRenderer` + `createRigPack`; `renderLabeled` = ordered steps: layers → compose → tone passes → `stampAuthored` → leg passes → outline / AA / rim → arm over torso → quantize / squash / seams; `validateBody` (every authored mask incl. front bib/ties and sash knots; shade opt-ins 0..5); `animFacing` |
+| `chains.ts` | looped verlet chains per animation (side locks, fox tail, scarf ends) + procedural part builders (back hair, tails, scarf ends, legs, skirt / shorts, torso, arms) |
+| `passes.ts` | `stampMask` and the buffer / image passes (shin wraps, far-leg gap, knee creases, far-shoulder clip, chin fists, spade notches, apron panel, arm over torso, sleeve/hair line, hand over ties, labels, squash separator, seam closer) |
+| `part-ids.ts` | `PART_ID` table, `LABEL_OF`, part sets (`SLEEVE_PARTS`, `TORSO_PARTS`, `LEG_PARTS`, …); no bare part numbers elsewhere |
+| `face.ts`, `checks.ts`, `style.ts`, `q34.ts`, `dummies.ts`, `anims/` | face library + validator, arm-over-torso check, SOFT preset, q34 masks for dummies only, review bodies, shared poses |
+
+## Part ids (`rig/part-ids.ts`, written per px by compose and `stampMask`)
+| id | part | id | part |
+|---|---|---|---|
+| 0 | none / unlabelled (e.g. fist-to-jaw break) | 9 / 10 / 11 | near (L) arm: upper, fore, end (cuff + hand + chin fist) |
+| 1 | back hair, side locks | 12 | scarf ends (not torso/trim: the separator ignores them) |
+| 2 | fox tail, spade tube | 13 | q34 far leg with `BodyView.farLegShade` |
+| 3 | legs (front both; q34 near, and far without `farLegShade`) | 19 / 20 / 21 | far (R) arm, as L |
+| 4 | hem: skirt + lace + apron panel, or shorts | 7 | bodice + neck (+ apron bib) |
+| 8 | trim: waist band, sash knot, collar accessory | | |
+
+`LABEL_OF` maps sleeve / end / torso / trim ids to the arm-over-torso check labels; every other id is `none`.
 
 ## Frame and sizing
 - **Frame 48 × 56.** The figure box is 48 × 48 (feet on row 46, row 47 free for the outline). The frame adds
@@ -90,14 +114,31 @@ style, `anims/`), bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `d
 | `torso` | bodice | top on the chest joint, bottom on the hip (breathing never opens the waist) |
 | `arms` | mitten biped; `sleeves: short / long` | long = sleeve to the wrist + bell cuff, hand skin always visible |
 | `legs` | `biped` | wheel legs: M3, contract only |
-| `hem` | `skirt` (+ lace), `shorts` | `dx` lag, `flare`, `lift` per frame |
-| `back` | `none`, `spade_tail`, `fox_tail` | spade = authored curve with tip lag; fox = 4-segment chain, pale tip, no fur noise |
-| `neck_acc` | `bow`, `choker`, `scarf` | authored masks on the neck joint |
+| `hem` | `skirt` (+ lace), `shorts` | `dx` lag, `flare`, `lift` per frame; tailored shorts via `Body.shorts` |
+| `back` | `none`, `spade_tail`, `fox_tail` | spade = authored curve with tip lag; fox = chain (default 4 segments, per body `Body.foxTail`), pale tip, no fur noise; cloak: decided at the ronin gate (MA-29b, D-17) |
+| `neck_acc` | `bow`, `choker`, `scarf` | authored masks on the neck joint; scarf adds chain ends (`ScarfEnds`) |
 
 ## Body (`assets-src/characters/<id>/body.ts`)
 `Body` in `types.ts`: id (`pixmates.<id>`), outfit (mask slot → ramp), ramps per material, variants, head mask +
 band row, face library, masks (shoe, head_acc, neck_acc, spade), optional horn outline ramp and `tweaks` (rest
 offsets per joint). A body never forks an animation; proportions go through `tweaks` only.
+
+## Body opt-ins (MA-27/28; all optional, unset = maid/dummy output unchanged; tests `tests/unit/art/rig-optins.test.ts`)
+| field | effect |
+|---|---|
+| `Body.scarf` / `BodyView.scarf` (`ScarfEnds`) | required with `neckAcc: 'scarf'` (build throws without). Two 2-segment chains, 2 px wide, part 12, hung from `at` (neck joint; front under the knot, q34 at the nape trailing); `lengths` = drawn length incl. the stroke cap; end points capped at chest row + `maxBelowChest` (default `SCARF_MAX_BELOW_CHEST` 5); q34 ends trail ≤ `maxTrail` px (default `SCARF_MAX_TRAIL` 6) and draw over the near arm. Knot + band = the authored neck_acc mask |
+| `Body.foxTail` (`FoxTail`) | per-body fox tail (default = dummy-b's). `front`: verlet chain from the back joint, `radii.length − 1` segments of `length`, `gravity` sets the rest direction, `bend` px per point (S-curve, tip curl), `root` (default [1, 1]), `shine` = lit stroke (tail shade 5) on the upper-left edge. `q34`: fixed centre line `points` (trailing = −x), tip swings against `hairDx`. Pale tip = second stroke over the last `tipRadii.length` points |
+| `Body.shorts` {shade, raise} | tailored shorts (`hem: 'shorts'`): clothAlt shade (0..5, default 3), hem raised `raise` rows; front adds a 1-px notch between the legs + 1-px outward flare at each leg hem |
+| `Body.shinWrap` {row, shade?} | darker legs-ramp row `row` rows above each foot joint (shade 0..5, default `WRAP_SHADE` 3), leg px only (near and far) |
+| `Body.sash` {rows, knot} + `BodyView.sashKnot` | waist sash band `rows` high (default 1) + knot mask on the near hip (from the hip joint, trim part 8); q34 knot per view, default none |
+| `BodyView.farLegShade` | q34 far leg in that legs shade (0..5), part 13, shade-0 px where it touches the near leg (two pale shins never merge on contact frames) |
+| `Body.hairBackStretch` | back-hair length below the temples as a factor (default short 1 / long 1.45; ≈ 0.2 = short mop ending at the nape) |
+| `Body.sideLocks` | procedural side-lock chains (default true); false = the head mask's own short locks only |
+| `FacePart.irisRows` | eyes with 1-px pupils: the rows `irisShift` moves (glance / `irisDx`), the pupil's lighter ink end `x` moves with the iris; default = rows with a 2-px `XX` pupil |
+| `Body.sleeve`, `Body.chinHand`, `Body.apron` (+ `ties`), `hornOutline`, `BodyView.{sleeveHairLine, hideFarShoulder, masks.hairFar}` | see «Arm over torso», «Views» |
+
+Post-squash separator pass: squash > 0 can join a sleeve px to the bodice, so the separator runs again after the
+squash rows (`squashSeparator`). Test hooks: `RigRenderer.tail()` / `scarfEnds()`.
 
 ## Pose (`assets-src/rig/anims/<anim>.ts`, shared by all bodies)
 Per frame: `root {dx, dy}`, `joints?` offsets, `parts {armL, armR, legs, hem?}`, `face` (expression id), `squash`

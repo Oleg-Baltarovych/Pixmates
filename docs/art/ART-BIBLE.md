@@ -71,6 +71,27 @@ are authored in `assets-src/`, and procedural code is used only for material tex
   sleeves past the hands. Forbidden: red or heterochromatic eyes, clock or eyepatch motifs, twin-tails or drills,
   scythe/halberd/umbrella props, white collar + braids, hood with a forehead gem, purple headband. A stylized
   archetype, not a portrait: no tattoos or other identifying details, no reference images in the repo.
+- Specs after the gate: kitsune — `docs/art/kitsune.md`, goth — `docs/art/goth.md`.
+- **D-17 briefs (proposals; each per-character art-director gate refines them into `docs/art/<id>.md`):**
+  - **witch** (female, «відьма-учениця»: an unsure apprentice witch who is still learning; spells fizzle). Own-trait
+    ideas: a slightly too-big hat that is bent or patched (compact enough for the headroom gate, RIG.md), a
+    scorch-marked hem or sleeve, a small potion vial on the belt, a non-black colourway (e.g. moss/teal with a warm
+    accent) so she never doubles as `goth`. Forbidden lookalikes: Kiki (black dress + big red bow + broom + black
+    cat), Little Witch Academia (Akko's red eyes / brown hair + wide-brim hat with a band, Luna Nova uniform),
+    Frieren (white twin-tails, white-gold mage coat, elf ears), Sabrina (blonde teen + black cat), also Megumin (red eyes +
+    eyepatch + crimson robe). No black cat familiar, no red bow, no elf ears, no eyepatch.
+  - **ronin** (male, spirit swordsman with a mist cloak; calm, aphorisms). Own-trait ideas: the cloak dissolving
+    into mist at its ends (texture only, binary alpha), a pale spirit-blue or slate colourway, a sheathed sword worn
+    on the back or carried, a single paper charm or bell. Forbidden lookalikes: Kenshin (red hair, cross-shaped
+    scar, magenta gi, reverse-blade sword), Zoro (green hair, three swords, green haramaki, earrings), Jin from
+    Samurai Champloo (glasses, ponytail, blue/indigo hakama with a long blade), also Jin Sakai's (Ghost of
+    Tsushima) mask and Mugen's red jacket. No facial scar, no glasses, no green hair, no multiple swords.
+  - **knight** (male, cat knight in oversized armour; noble coward). Own-trait ideas: a helmet that is visibly too
+    big (slips over the eyes on `startle`), cat ears through slots in the helmet, a short tail out of the back plate,
+    a wooden or toy-ish sword, a non-ginger fur (e.g. grey tabby or cream) and a plume or tabard colour of his own.
+    Forbidden lookalikes: Puss in Boots (ginger cat, feathered cavalier hat, boots, rapier, cape), Felyne/Palico
+    (Monster Hunter cat armour sets), Hollow Knight (white mask with two horns, black body, nail), Garfield (orange
+    tabby with black stripes). No ginger/orange fur, no cavalier hat with a feather, no white horned mask.
 - **Black cloth and hair rule** (R6): "black" is a lifted ramp (`hair_black` blue-black with a cool angel ring,
   `cloth_black` desaturated plum-blue); its darkest tone is never `#000` (tested), the rim stays at 2 and the
   selective outline is lighter, so the figure holds on a dark IDE (judged first on that backdrop).
