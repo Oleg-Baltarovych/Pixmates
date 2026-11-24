@@ -13,6 +13,7 @@ import {
   ADULT_FEMALE,
   ADULT_MALE,
   adultSword,
+  adultSwordQ34,
 } from '../../../assets-src/rig/dummies-adult.ts';
 import { DUMMY_A } from '../../../assets-src/rig/dummies.ts';
 import { validateFace } from '../../../assets-src/rig/face.ts';
@@ -27,7 +28,7 @@ import {
 } from '../../../assets-src/rig/anims/adult.ts';
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
 import { frame } from '../../../assets-src/rig/anims/kit.ts';
-import type { ArmVariant, Body, RigAnim } from '../../../assets-src/rig/types.ts';
+import type { ArmVariant, Body, Prop, RigAnim } from '../../../assets-src/rig/types.ts';
 import type { Point } from '../../../assets-src/lib/chain.ts';
 import type { RgbaImage } from '../../../tools/lib/png.ts';
 import { loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
@@ -322,16 +323,16 @@ describe('art-director round 1 poses (MA-45)', () => {
     const j = createRigRenderer(body).joints(a, f);
     return kneeOf(j, side, p.parts.legs, p.view ?? 'front', layoutOf(body), p.knees?.[side]) ?? [0, 0];
   };
-  it('sit_edge / sleep: male knees ±5, feet ±7, near foot lower; female knees ±2, ankles crossed', () => {
+  it('sit_edge / sleep: male knees ±5, feet ±7, near foot lower; female knees ±6, ankles meeting', () => {
     for (const name of ['sit_edge', 'sleep']) {
       const m = js(ADULT_MALE, name)[0];
       expect(Math.round(kneeAt(ADULT_MALE, name, 0, 'L')[0])).toBe(23);
       expect(Math.round(kneeAt(ADULT_MALE, name, 0, 'R')[0])).toBe(33);
       expect([m?.footL[0], m?.footR[0]]).toEqual([21, 35]);
       const f = js(ADULT_FEMALE, name)[0];
-      expect(Math.round(kneeAt(ADULT_FEMALE, name, 0, 'L')[0])).toBe(26);
-      expect(Math.round(kneeAt(ADULT_FEMALE, name, 0, 'R')[0])).toBe(30);
-      expect([f?.footL[0], f?.footR[0]]).toEqual([30, 26]);
+      expect(Math.round(kneeAt(ADULT_FEMALE, name, 0, 'L')[0])).toBe(22);
+      expect(Math.round(kneeAt(ADULT_FEMALE, name, 0, 'R')[0])).toBe(34);
+      expect([f?.footL[0], f?.footR[0]]).toEqual([27.5, 28.5]);
       expect((f?.footL[1] ?? 0) - (f?.footR[1] ?? 0)).toBeGreaterThanOrEqual(1);
     }
     expect(js(ADULT_MALE, 'sleep').every((j) => j.footL[1] - j.footR[1] === 2)).toBe(true);
@@ -407,9 +408,42 @@ describe('art-director round 1 poses (MA-45)', () => {
       expect(Math.abs(j.handR[1] - j.hip[1])).toBeLessThanOrEqual(2);
     }
   });
-  it('petted drops the clasp: neck hand + one arm down', () => {
-    const a = animOf(ADULT_FEMALE, 'petted');
-    expect(a.frames.every((f) => f.parts.armL === 'neck' && f.parts.armR === 'down' && f.face === 'petted')).toBe(true);
+  it('petted: both arms down, shoulders up 1, head 1 px toward the near side, eyes closed (not worried)', () => {
+    for (const body of BODIES) {
+      const a = animOf(body, 'petted');
+      const r = createRigRenderer(body);
+      const rest = r.joints(animOf(body, 'talk'), 0);
+      a.frames.forEach((f, i) => {
+        expect(f.parts.armL === 'down' && f.parts.armR === 'down' && f.face === 'petted').toBe(true);
+        const j = r.joints(a, i);
+        expect(j.shoulderL[1] - j.chest[1]).toBeLessThan(rest.shoulderL[1] - rest.chest[1]);
+        expect(j.head[0] - j.hip[0]).toBeLessThan(rest.head[0] - rest.hip[0]);
+      });
+      expect(ADULT_FACE.expressions.petted.eyes).toBe('happy');
+      expect(animOf(body, 'worried').frames[0]?.parts.armL).not.toBe(a.frames[0]?.parts.armL);
+    }
+  });
+  it('sit_edge female: two shins with a 1–2 px gap under the hem (no one-legged stub at 1×)', () => {
+    const img = createRigRenderer(ADULT_FEMALE).render(animOf(ADULT_FEMALE, 'sit_edge'), 0, ctx);
+    const runs = (y: number): [number, number][] => {
+      const out: [number, number][] = [];
+      for (let x = 0; x < img.width; x++) {
+        if (!opaque(img, x, y)) continue;
+        const last = out.at(-1);
+        if (last && last[1] === x - 1) last[1] = x;
+        else out.push([x, x]);
+      }
+      return out;
+    };
+    const span = (y: number): number => (runs(y).at(-1)?.[1] ?? 99) - (runs(y)[0]?.[0] ?? 0);
+    let y = layoutOf(ADULT_FEMALE).rest.hip[1];
+    while (y < img.height && span(y) > 12) y++;
+    const legs = runs(y);
+    expect(legs, `row ${String(y)}`).toHaveLength(2);
+    const [l, r] = legs as [[number, number], [number, number]];
+    expect(r[0] - l[1] - 1).toBeGreaterThanOrEqual(1);
+    expect(r[0] - l[1] - 1).toBeLessThanOrEqual(2);
+    expect(l[1] - l[0]).toBeGreaterThanOrEqual(2);
   });
   it('long hair reaches mid-back (rows 38–44) on the adult female', () => {
     const idle = animOf(ADULT_FEMALE, 'idle_a');
@@ -428,15 +462,71 @@ describe('art-director round 1 poses (MA-45)', () => {
   });
 });
 
-describe('adult prop scale (MA-45)', () => {
-  it('validates the adult prop length (≈ 34–36 px) and hilt row (≥ 36)', () => {
-    expect(() =>
-      createRigPack({ ...ADULT_MALE, prop: { mask: adultSword(48), at: [-21, -4] } }, animsFor(ADULT_MALE)),
-    ).toThrow(/front prop spans/);
-    expect(() =>
-      createRigPack({ ...ADULT_MALE, prop: { mask: adultSword(), at: [-21, -12] } }, animsFor(ADULT_MALE)),
-    ).toThrow(/front prop top row 28/);
-    expect(() => createRigPack(ADULT_MALE, animsFor(ADULT_MALE))).not.toThrow();
+describe('adult hip prop per view (MA-45 rounds 1–2)', () => {
+  const sword = adultSword();
+  const pack = (b: Body) => () => createRigPack(b, animsFor(b));
+  const q34 = ADULT_MALE.views?.q34;
+  if (!q34) throw new Error('q34 view');
+  const withQ34Prop = (prop: Prop): Body => ({ ...ADULT_MALE, views: { q34: { ...q34, prop } } });
+  it('q34 keeps the 35-px 25° trailing sword at hilt row 36', () => {
+    expect(q34.prop).toEqual({ mask: adultSwordQ34(), at: [-23, -4] });
+    expect(pack(withQ34Prop({ mask: adultSwordQ34(48), at: [-23, -4] }))).toThrow(/q34 prop spans/);
+    expect(pack(withQ34Prop({ mask: adultSwordQ34(), at: [-23, -12] }))).toThrow(/q34 prop top row 28/);
+    expect(pack(ADULT_MALE)).not.toThrow();
+  });
+  it('front: rejects the q34 diagonal, a missing hilt, crossing the axis, > 3 px past the outline, a low tip', () => {
+    expect(pack({ ...ADULT_MALE, prop: { ...sword.front, mask: adultSwordQ34() } })).toThrow(/scabbard at 28°/);
+    expect(pack({ ...ADULT_MALE, prop: { mask: sword.front.mask, at: sword.front.at } })).toThrow(/projected hilt/);
+    expect(pack({ ...ADULT_MALE, prop: { ...sword.front, at: [-3, -1] } })).toThrow(/crosses the axis/);
+    expect(pack({ ...ADULT_MALE, prop: { ...sword.front, at: [9, -1] } })).toThrow(/past the outline/);
+    expect(pack({ ...ADULT_MALE, prop: { ...sword.front, at: [5, 2] } })).toThrow(/tip row 59/);
+  });
+
+  const strip = <T extends object>(v: T): T =>
+    // Object.fromEntries loses the record type; the copy has the same keys minus the optional `prop`.
+    Object.fromEntries(Object.entries(v).filter(([k]) => k !== 'prop')) as unknown as T;
+  const bare: Body = { ...strip(ADULT_MALE), views: { q34: strip(q34) } };
+  const same = (w: RgbaImage, b: RgbaImage, i: number): boolean =>
+    [0, 1, 2, 3].every((k) => w.data[i + k] === b.data[i + k]);
+  it('front frames: no prop px across the axis, at most 3 px past the body silhouette', () => {
+    let frames = 0;
+    for (const a of ANIMS_ADULT) {
+      a.frames.forEach((p, f) => {
+        if ((p.view ?? 'front') !== 'front') return;
+        frames++;
+        const w = createRigRenderer(ADULT_MALE).render(a, f, ctx);
+        const b = createRigRenderer(bare).render(a, f, ctx);
+        const axis = 28 + Math.round(p.root.dx);
+        const at = `${a.name}/${String(f)}`;
+        let seen = 0;
+        for (let y = 0; y < w.height; y++) {
+          let edge = -1;
+          for (let x = axis; x < w.width; x++) if (opaque(b, x, y)) edge = x;
+          for (let x = 0; x < w.width; x++) {
+            if (same(w, b, (y * w.width + x) * 4)) continue;
+            seen++;
+            expect(x, `${at}: px (${String(x)}, ${String(y)}) across the axis`).toBeGreaterThanOrEqual(axis);
+            if (!opaque(b, x, y))
+              expect(x - edge, `${at}: (${String(x)}, ${String(y)}) outside`).toBeLessThanOrEqual(3);
+          }
+        }
+        expect(seen, `${at}: prop visible`).toBeGreaterThan(0);
+      });
+    }
+    expect(frames).toBeGreaterThan(40);
+  });
+  it('turn: the hilt stays on the screen-right hip in both frames (the prop never jumps sides)', () => {
+    const turn = animOf(ADULT_MALE, 'turn');
+    for (const f of [0, 1]) {
+      const w = createRigRenderer(ADULT_MALE).render(turn, f, ctx);
+      const b = createRigRenderer(bare).render(turn, f, ctx);
+      let top: [number, number] | undefined;
+      for (let i = 0; i < w.data.length && !top; i += 4) {
+        if (!same(w, b, i)) top = [(i / 4) % w.width, Math.floor(i / 4 / w.width)];
+      }
+      expect(top?.[0] ?? 0, `turn f${String(f)}`).toBeGreaterThan(28);
+      expect(top?.[1] ?? 0).toBeGreaterThanOrEqual(35);
+    }
   });
 });
 

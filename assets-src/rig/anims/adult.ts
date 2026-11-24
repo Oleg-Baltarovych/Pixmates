@@ -107,8 +107,9 @@ const idleB = (build: BodyBuild): PoseFrame[] =>
 
 /**
  * Seated adult: standing root (the long shins hang inside the frame), knees on the seat row, hem lifted 4 rows.
- * Never feet together: male knees ±5 / feet ±7, the near (L) foot 2 px lower; female knees ±2, ankles crossed (the
- * left foot at axis +2, the right at axis −2 and 1 row higher).
+ * Never feet together: male knees ±5 / feet ±7, the near (L) foot 2 px lower; female knees ±6 (round 2: the shins
+ * keep a 1–2 px gap under the hem, two legs at 1×) closing to the ankles, which meet and overlap only in the bottom
+ * rows (the left foot at axis −0.5, the right at axis +0.5 and 1 row higher).
  */
 export const ADULT_SEATED = { root: o(0, 0), legs: 'sit', hem: { lift: 4 } } as const;
 interface SeatLegs {
@@ -117,7 +118,7 @@ interface SeatLegs {
 }
 const SEAT_LEGS: Readonly<Record<BodyBuild, SeatLegs>> = {
   male: { feet: { L: [-3, 1], R: [3, -1] }, knees: { L: o(1.4, 0), R: o(-1.4, 0) } },
-  female: { feet: { L: [6, 0], R: [-6, -1] }, knees: { L: o(-0.2, 0), R: o(0.2, 0) } },
+  female: { feet: { L: [3.5, 0], R: [-3.5, -1] }, knees: { L: o(-2.6, 0), R: o(2.6, 0) } },
 };
 const SIT_CHEST = [0, 0, 0, -1, 0, 0] as const;
 const SIT_BREATH = [0, 0, 1, 0, 0, 1] as const;
@@ -224,10 +225,19 @@ const worriedFrames: PoseFrame[] = WORRIED.frames.map((p, i) => ({
   face: i >= 2 && i <= 5 ? 'think' : 'worried',
 }));
 
-/** Petted: the face kept, one hand to the back of the neck, the other down at the side. */
+/**
+ * Petted (round 2, distinct from worried): both arms down, the shoulders up 1 (an enjoying shrug), the head tilted
+ * 1 px toward the near (L) side — pressed 1 lower on the nuzzle frames — with the closed `petted` ^^ eyes and blush.
+ */
+export const PETTED_SHRUG = -1;
 const pettedFrames: PoseFrame[] = PETTED.frames.map((p) => ({
   ...p,
-  parts: { ...p.parts, armL: 'neck', armR: 'down' },
+  parts: { ...p.parts, armL: 'down', armR: 'down' },
+  joints: {
+    shoulderL: o(0, PETTED_SHRUG),
+    shoulderR: o(0, PETTED_SHRUG),
+    head: o(-1, p.joints?.head?.dy ?? 0),
+  },
 }));
 
 function adultAnims(build: BodyBuild): readonly RigAnim[] {

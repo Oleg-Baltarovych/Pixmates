@@ -273,6 +273,11 @@ export interface Cloak {
 export interface Prop extends PlacedMask {
   /** `overHem`: the dangle hangs in front of the skirt and legs (never over an arm), e.g. a charm over a hakama. */
   readonly dangle?: PlacedMask & { readonly overHem?: true };
+  /**
+   * Front projection (MA-45 round 2): a foreshortened hilt poking toward the viewer, offset from the prop's `at`,
+   * stamped over the torso, hem and legs (never over an arm) while the main mask stays behind them.
+   */
+  readonly hilt?: PlacedMask;
 }
 
 /** Head-accessory masks shared by the front body and every view. */

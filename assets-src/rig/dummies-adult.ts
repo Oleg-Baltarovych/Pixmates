@@ -8,7 +8,7 @@ import type { PackDef } from '../lib/types.ts';
 import { animsFor } from './anims/adult.ts';
 import { createRigPack } from './compose.ts';
 import { irisShift, type FaceLibrary, type FacePart, type ViewFaceLibrary } from './face.ts';
-import type { Body, BodyView } from './types.ts';
+import type { Body, BodyView, Prop } from './types.ts';
 
 const T6 = [0, 1, 2, 3, 4, 5] as const;
 const T6UP = [1, 2, 3, 4, 5, 6] as const;
@@ -66,10 +66,10 @@ export const ADULT_HEAD_FEMALE: Mask = [
 ];
 
 /**
- * Adult worn sword (prop slot scale, MA-45): 35 px along a 25° diagonal, hilt (8 px, wrap `X` under a `w` edge) at
- * the top right, a 2-px guard `r`, then the scabbard (`d` top edge, `v` underside) trailing down to the tip `V`.
+ * Adult worn sword, q34 view (prop slot scale, MA-45): 35 px along a 25° diagonal, hilt (8 px, wrap `X` under a `w`
+ * edge) at the top right, a 2-px guard `r`, then the scabbard (`d` top edge, `v` underside) trailing down to the tip `V`.
  */
-export function adultSword(length = 35, angleDeg = 25, hilt = 8, guard = 2): Mask {
+export function adultSwordQ34(length = 35, angleDeg = 25, hilt = 8, guard = 2): Mask {
   const rad = (angleDeg * Math.PI) / 180;
   const w = Math.round(length * Math.cos(rad));
   const h = Math.round(length * Math.sin(rad)) + 2;
@@ -85,6 +85,35 @@ export function adultSword(length = 35, angleDeg = 25, hilt = 8, guard = 2): Mas
     if (r1) r1[x] = bottom;
   }
   return rows.map((r) => r.join(''));
+}
+
+/**
+ * Adult worn sword, front projection (MA-45 motion round 2): the scabbard drops near-vertical behind the thigh on the
+ * wearing side — a 3-px guard `r`, then a vertical 2-px scabbard (`d` lit edge, `v` shade) ending in the tip `V`
+ * (`drop` rows below the guard; vertical so the contrapposto hip shift keeps it ≤ 3 px past the thigh). Hilt: a foreshortened `hilt`-px stub (`w` edge over `X` wrap)
+ * rising 1 row toward the axis, stamped over the torso (`Prop.hilt`).
+ */
+export function adultSwordFront(drop = 17, hilt = 5): { readonly mask: Mask; readonly hilt: Mask } {
+  const scabbard = ['rrr', ...Array.from({ length: drop }, (_, i) => (i === drop - 1 ? '.VV' : '.dv'))];
+  const rise = Math.ceil(hilt / 2) - 1;
+  const top = 'w'.repeat(rise) + '.'.repeat(hilt - rise);
+  const mid = 'X'.repeat(rise) + 'w'.repeat(hilt - rise);
+  const low = '.'.repeat(rise) + 'X'.repeat(hilt - rise);
+  return { mask: scabbard, hilt: [top, mid, low] };
+}
+
+/**
+ * The adult male dummy's sword in both views (hip-relative placements): q34 hilt top on row 36 at the front hip, the
+ * scabbard trailing down-back to row 52; front hilt top on row 36 at the screen-right hip pointing toward the axis
+ * (never crossing it), the scabbard behind the screen-right thigh to row 56, ≤ 3 px past the outline. Both views wear
+ * it on the screen-right hip, so the turn never flips it.
+ */
+export function adultSword(): { readonly front: Prop; readonly q34: Prop } {
+  const front = adultSwordFront();
+  return {
+    front: { mask: front.mask, at: [5, -1], hilt: { mask: front.hilt, at: [-2, -3] } },
+    q34: { mask: adultSwordQ34(), at: [-23, -4] },
+  };
 }
 const ADULT_SWORD = adultSword();
 
@@ -212,8 +241,8 @@ export const ADULT_MALE: Body = {
   head: { mask: ADULT_HEAD, at: ADULT_HEAD_AT, band: ADULT_BAND },
   face: ADULT_FACE,
   masks: { shoe: ADULT_SHOE, neckAcc: { mask: ADULT_COLLAR, at: [-5, 1] } },
-  // Hip prop at adult scale (MA-45): hilt top on row 36 at the right hip, the scabbard trailing down-left to row 52.
-  prop: { mask: ADULT_SWORD, at: [-21, -4] },
+  // Hip prop at adult scale (MA-45 round 2): projected per view (`adultSword`).
+  prop: ADULT_SWORD.front,
   cloak: {
     ramp: 'hair_plum',
     shade: 2,
@@ -226,7 +255,7 @@ export const ADULT_MALE: Body = {
     bands: [],
   },
   views: {
-    q34: { ...adultQ34({ neckAcc: { mask: ADULT_COLLAR, at: [-5, 1] } }), prop: { mask: ADULT_SWORD, at: [-23, -4] } },
+    q34: { ...adultQ34({ neckAcc: { mask: ADULT_COLLAR, at: [-5, 1] } }), prop: ADULT_SWORD.q34 },
   },
 };
 

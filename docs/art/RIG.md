@@ -58,16 +58,22 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
   turn f1 feet near −3 / far +3, far 1 row higher (walk contact frames unchanged: stride x about the axis on the
   ground row). Per-frame knee nudges `PoseFrame.knees` (two-segment only). Long back hair (`hairBack: 'long'`, no
   `hairBackStretch`) reaches `RigLayout.longHairTipRow` (adult 41, mid-back) — `hairScale` narrows, never shortens.
-  **Prop slot scale** (validated, `ADULT_PROP`): ≈ 34–36 px along its diagonal (hilt 8, guard 2), hilt top ≥ row 36,
-  blade trailing down-back ≈ 25° to row ≈ 52, never parallel to and beside a forearm (review rule; the think chin fist
-  goes on the side without the prop). Dummy sword: `adultSword()` (35 px, 25°).
+  **Hip-prop rule per view** (validated separately, `ADULT_PROP.q34` / `.front`; round 2): **q34** ≈ 34–36 px along
+  its diagonal (hilt 8, guard 2), hilt top ≥ row 36, trailing down-back ≈ 25° to row ≈ 52. **front** (projected): a
+  4–5 px hilt (`Prop.hilt`, stamped over torso / hem / legs, under the arms) poking forward at the wearing hip, top
+  row ≥ 36, ≤ 20° off horizontal toward the axis; the scabbard drops ≥ 70° from horizontal behind the thigh on the
+  same side, tip row ≤ 56, every px ≥ 2 px off the axis on the wearing side (hip sway ±1) and ≤ 3 px past the rest
+  outline. turn f0 uses the front projection; q34 keeps the hilt on the same (screen-right) side — the prop never
+  jumps sides. Never parallel to and beside a forearm (review rule; the think chin fist goes on the side without the
+  prop). Dummy sword: `adultSword()` → `{ front, q34 }` (`adultSwordFront()` 5-px hilt + 17-row drop,
+  `adultSwordQ34()` 35 px, 25°); tests render every front frame of the male dummy against a prop-less copy.
 - **Adult poses (round 1):** idle_a contrapposto (hip +1 toward the weight leg, weight foot axis +5, free −8, free
   shoulder +1 row, head on the axis), idle_b shifts the weight over 2 frames and holds; `down` arms 1 px off torso
   and thigh; happy = fist pump (`pump`), no jump (crouch with knees out 1, root −1 on the toes); land hip +3 / +2 / +1
   with knees out 2 and arms `out` low; drag shoulders −3, head +1, left knee up 2, feet 1 row apart; sit_edge / sleep
-  male knees ±5 / feet ±7 (near foot 2 lower), female knees ±2 with crossed ankles; sleep head o(2, 3) on the collar,
+  male knees ±5 / feet ±7 (near foot 2 lower), female knees ±6 (kneeOf 22 / 34; round 2: a 2-px gap between the shins under the hem, the ankles meet only at the bottom); sleep head o(2, 3) on the collar,
   far hand 2 px toward the edge; think chin fist left, forearm vertical (elbow row ≈ 32: two 10-px segments cannot
-  reach 36); worried `neck` + `hip` hands; petted `neck` + down; walk passing swing foot 2 px behind the planted ankle,
+  reach 36); worried `neck` + `hip` hands; petted (round 2) both arms down, shoulders −1 (shrug), head 1 px toward the near side, `petted` ^^ eyes; walk passing swing foot 2 px behind the planted ankle,
   lifted 3, knee 2 px ahead (`PASS_KNEE`).
 - Sheets: `pnpm sprites:sheet --adult` → `reports/sprites/rig-adult-<build>/sheet-x1.png`, `sheet-x4.png` (all 16
   anims; white + dark) + `walk`, `turn`, `walk-mirrored` `.apng.png` (×4).

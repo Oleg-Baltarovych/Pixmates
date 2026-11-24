@@ -11,7 +11,7 @@ import { layoutOf } from './layout.ts';
 import { BREATH_GLOW, dressShadeOf, HEM_LIFT_MAX, hemLiftOf } from './chains.ts';
 import { EXPRESSIONS, Q34_EXPRESSIONS, validateFace, type ExpressionId } from './face.ts';
 import { FISTS, fistKindOf } from './passes.ts';
-import type { Body, BodyView, RigAnim, View } from './types.ts';
+import type { Body, BodyView, Prop, RigAnim, View } from './types.ts';
 import { headViewOf, usesView } from './views.ts';
 
 /** Highest index of a six-tone ramp / swatch (shade opt-ins are 0..MAX_SHADE). */
@@ -52,6 +52,7 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
     ['sashKnot', body.sash?.knot.mask],
     ['prop', body.prop?.mask],
     ['prop.dangle', body.prop?.dangle?.mask],
+    ['prop.hilt', body.prop?.hilt?.mask],
   ];
   if (q34) {
     masks.push(
@@ -67,6 +68,7 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
       ['q34/sashKnot', q34.sashKnot?.mask],
       ['q34/prop', q34.prop?.mask],
       ['q34/prop.dangle', q34.prop?.dangle?.mask],
+      ['q34/prop.hilt', q34.prop?.hilt?.mask],
     );
   }
   masks.push(['chinFist', FISTS[fistKindOf(body)]]);
@@ -284,29 +286,99 @@ function cloakShades(body: Body): { name: string; s: number | undefined; ramp?: 
 }
 
 /**
- * Adult hip-prop scale (MA-45 art round): a worn sword-like prop spans ≈ 34–36 px along its diagonal (mask bbox
- * hypot, ±1 tolerance) and its top (the hilt) sits at or below row 36 at rest; checked per view.
+ * Adult hip-prop rules, per view (MA-45 art rounds 1–2). **q34**: a worn sword-like prop spans ≈ 34–36 px along its
+ * diagonal (mask bbox hypot, ±1 tolerance), top (the hilt) at or below row 36. **front** (projected): a 4–5 px hilt
+ * (`Prop.hilt`, ≤ 20° off horizontal toward the axis) with its top at or below row 36; the scabbard drops ≥ 70° from
+ * horizontal to a tip at row ≤ 56; every px stays ≥ `axisGap` px on the wearing side of the axis (the hip sways ±1)
+ * and ≤ `maxOut` px past the rest outline (hem / bodice half above the hem, the leg's outer edge below it, + 1 outline).
  */
-export const ADULT_PROP = { minLen: 33, maxLen: 37, topRow: 36 } as const;
+export const ADULT_PROP = {
+  q34: { minLen: 33, maxLen: 37, topRow: 36 },
+  front: {
+    topRow: 36,
+    tipRow: 56,
+    minDropDeg: 70,
+    hilt: { minLen: 4, maxLen: 5.5, maxDeg: 20 },
+    axisGap: 2,
+    maxOut: 3,
+  },
+} as const;
+
+const deg = (rad: number): number => (rad * 180) / Math.PI;
+
+/** Opaque px of a mask, hip-relative: [dx, dy]. */
+function propPx(mask: Mask, at: readonly [number, number]): [number, number][] {
+  const out: [number, number][] = [];
+  mask.forEach((row, r) => {
+    for (let c = 0; c < row.length; c++) if (row.charAt(c) !== '.') out.push([at[0] + c, at[1] + r]);
+  });
+  return out;
+}
+
+function adultFrontPropProblems(body: Body, prop: Prop): string[] {
+  const layout = layoutOf(body);
+  const rule = ADULT_PROP.front;
+  const id = body.id;
+  const hip = layout.rest.hip;
+  const out: string[] = [];
+  const hilt = prop.hilt;
+  if (!hilt) return [`${id}: front prop needs a projected hilt (Prop.hilt)`];
+  const hiltAt = [prop.at[0] + hilt.at[0], prop.at[1] + hilt.at[1]] as const;
+  const hs = maskSize(hilt.mask);
+  const hLen = Math.hypot(hs.w, hs.h - 2);
+  if (hLen < rule.hilt.minLen || hLen > rule.hilt.maxLen)
+    out.push(
+      `${id}: front prop hilt spans ${hLen.toFixed(1)} px (${String(rule.hilt.minLen)}…${String(rule.hilt.maxLen)})`,
+    );
+  const hDeg = deg(Math.atan2(hs.h - 2, Math.max(1, hs.w - 1)));
+  if (hDeg > rule.hilt.maxDeg)
+    out.push(`${id}: front prop hilt at ${hDeg.toFixed(0)}° (≤ ${String(rule.hilt.maxDeg)}°)`);
+  const { w, h } = maskSize(prop.mask);
+  const drop = deg(Math.atan2(h - 1, Math.max(0, w - 2)));
+  if (drop < rule.minDropDeg)
+    out.push(`${id}: front prop scabbard at ${drop.toFixed(0)}° (≥ ${String(rule.minDropDeg)}° from horizontal)`);
+  const top = hip[1] + Math.min(prop.at[1], hiltAt[1]);
+  if (top < rule.topRow) out.push(`${id}: front prop top row ${String(top)} above ${String(rule.topRow)}`);
+  const tip = hip[1] + prop.at[1] + h - 1;
+  if (tip > rule.tipRow) out.push(`${id}: front prop tip row ${String(tip)} below ${String(rule.tipRow)}`);
+  // Rest outline half-width per row below the hip: bodice / hem down to the hem, then the leg's outer edge.
+  const t = layout.torso;
+  const hem = body.variants.hem === 'skirt' ? t.skirt : t.shorts;
+  const ankle = layout.rest.footR[1] - hip[1];
+  const footDx = layout.rest.footR[0] - hip[0];
+  const outline = (dy: number): number => {
+    if (dy <= hem.hemDy) return Math.max(hem.hemHalf, t.chestHalf) + 1;
+    const k = Math.min(1, Math.max(0, dy / ankle));
+    return t.leg.dx + t.leg.hipR + k * (footDx + t.leg.footR - t.leg.dx - t.leg.hipR) + 1;
+  };
+  const px = [...propPx(prop.mask, prop.at), ...propPx(hilt.mask, hiltAt)];
+  const side = Math.sign(hiltAt[0] + hs.w / 2) || 1;
+  const crossing = px.filter(([dx]) => dx * side < rule.axisGap);
+  if (crossing.length > 0)
+    out.push(
+      `${id}: front prop crosses the axis (${String(crossing.length)} px within ${String(rule.axisGap)} px or past it)`,
+    );
+  const worst = Math.max(...px.map(([dx, dy]) => Math.abs(dx) + 1 - outline(dy)));
+  if (worst > rule.maxOut)
+    out.push(`${id}: front prop reaches ${worst.toFixed(1)} px past the outline (≤ ${String(rule.maxOut)})`);
+  return out;
+}
+
 function adultPropProblems(body: Body): string[] {
   const layout = layoutOf(body);
   if (layout.id !== 'adult') return [];
   const out: string[] = [];
-  for (const [view, prop] of [
-    ['front', body.prop],
-    ['q34', body.views?.q34?.prop],
-  ] as const) {
-    if (!prop) continue;
+  if (body.prop) out.push(...adultFrontPropProblems(body, body.prop));
+  const prop = body.views?.q34?.prop;
+  if (prop) {
+    const rule = ADULT_PROP.q34;
     const { w, h } = maskSize(prop.mask);
     const len = Math.hypot(w, h - 1);
-    if (len < ADULT_PROP.minLen || len > ADULT_PROP.maxLen) {
-      out.push(
-        `${body.id}: ${view} prop spans ${len.toFixed(1)} px (adult ${String(ADULT_PROP.minLen)}…${String(ADULT_PROP.maxLen)})`,
-      );
+    if (len < rule.minLen || len > rule.maxLen) {
+      out.push(`${body.id}: q34 prop spans ${len.toFixed(1)} px (adult ${String(rule.minLen)}…${String(rule.maxLen)})`);
     }
     const top = layout.rest.hip[1] + prop.at[1];
-    if (top < ADULT_PROP.topRow)
-      out.push(`${body.id}: ${view} prop top row ${String(top)} above ${String(ADULT_PROP.topRow)}`);
+    if (top < rule.topRow) out.push(`${body.id}: q34 prop top row ${String(top)} above ${String(rule.topRow)}`);
   }
   return out;
 }

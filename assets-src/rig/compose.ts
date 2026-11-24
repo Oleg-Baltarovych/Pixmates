@@ -387,7 +387,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
       }
     }
     // Prop on the hip (behind the torso, hem, legs and arms; over the cloak, tail, back hair and empty px), then its
-    // dangle offset 1 px against the hip lag.
+    // dangle offset 1 px against the hip lag and its projected hilt.
     const prop = bodyParts.prop;
     if (prop) {
       const [px, py] = [Math.round(j.hip[0] + prop.at[0]), Math.round(j.hip[1] + prop.at[1])];
@@ -400,6 +400,21 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
         const d = prop.dangle;
         const dOpts = d.overHem ? { partId: PART_ID.prop, allow: NOT_ARM } : opts;
         stampMask(buf, body, d.mask, px + d.at[0] + swing, py + d.at[1], DEPTH_PROP, MAT.apron, locked, dOpts);
+      }
+      // A projected hilt pokes forward over the torso / hem / legs, under the arms.
+      if (prop.hilt) {
+        const hOpts = { partId: PART_ID.prop, allow: NOT_ARM };
+        stampMask(
+          buf,
+          body,
+          prop.hilt.mask,
+          px + prop.hilt.at[0],
+          py + prop.hilt.at[1],
+          DEPTH_TIES,
+          MAT.metal,
+          locked,
+          hOpts,
+        );
       }
     }
     const neckAcc = bodyParts.masks.neckAcc;

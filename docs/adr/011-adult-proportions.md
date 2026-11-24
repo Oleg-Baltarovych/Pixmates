@@ -94,3 +94,7 @@ the body proportions right; it can be bigger if needed».
   unchanged.
 - Adult prop slot scale: ≈ 34–36 px, hilt 8, guard 2, hilt top ≥ row 36, trailing down-back ≈ 25° (validated).
 - Adult long back hair ends at row ≈ 41 (mid-back); `hairScale` applies to width only.
+- 2026-11-24 (MA-45 motion round 2): the adult hip prop is projected per view — q34 keeps the 35-px 25° trailing
+  diagonal; front shows a 4–5 px hilt poking forward at the wearing hip and a near-vertical (≥ 70°) scabbard behind
+  the same thigh, tip ≤ row 56, never crossing the axis, ≤ 3 px past the outline; turn f0 uses the front projection
+  (`ADULT_PROP.front` / `.q34`, `Prop.hilt`; RIG.md «Layouts»).
