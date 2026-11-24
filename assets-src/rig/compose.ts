@@ -19,7 +19,7 @@ import { elbowOf, FIGURE_H, REST_Q34, resolveJoints, withBand } from './body.ts'
 import { darkerMask, tipToe } from './q34.ts';
 import { expressionParts, Q34_EXPRESSIONS, validateFace, type ExpressionId } from './face.ts';
 import { SOFT as style } from './style.ts';
-import type { ArmVariant, Body, BodyView, JointMap, PoseFrame, RigAnim, View } from './types.ts';
+import type { ArmVariant, Body, BodyView, FoxTail, JointMap, PoseFrame, RigAnim, ScarfEnds, View } from './types.ts';
 
 /** Body view of a frame (the frame is the single source of truth; default front). */
 export const bodyViewOf = (anim: RigAnim, frame: number): View => anim.frames[frame]?.view ?? 'front';
@@ -118,10 +118,58 @@ const FOX_TAIL_Q34: readonly Point[] = [
   [-15, -3],
 ];
 
-/** q34 fox tail points (frame px) for a back joint; the tip swings 1 px against the back-hair trail `hairDx`. */
-export function q34FoxTail(back: Point, hairDx = 0): Point[] {
-  return FOX_TAIL_Q34.map(([x, y], i) => [back[0] + x - (hairDx * i) / (FOX_TAIL_Q34.length - 1), back[1] + y]);
+/**
+ * q34 fox tail points (frame px) for a back joint and a centre line (default: dummy-b's); the tip swings 1 px
+ * against the back-hair trail `hairDx`.
+ */
+export function q34FoxTail(back: Point, hairDx = 0, line: readonly Point[] = FOX_TAIL_Q34): Point[] {
+  return line.map(([x, y], i) => [back[0] + x - (hairDx * i) / Math.max(1, line.length - 1), back[1] + y]);
 }
+
+/** Rig default fox tail (dummy-b): front chain and q34 radii; bodies override per view (`Body.foxTail`). */
+const FOX_TAIL_FRONT: NonNullable<FoxTail['front']> = {
+  radii: [1.6, 2.3, 2.6, 2.3, 1.5],
+  tipRadii: [1.9, 1.3],
+  length: 2.4,
+  gravity: [0.07, -0.05],
+  bend: [],
+};
+const FOX_TAIL_Q34_SHAPE = { points: FOX_TAIL_Q34, radii: [1.5, 1.8, 1.8, 1.6, 1.3], tipRadii: [1.5, 1.1] } as const;
+
+/** Scarf ends (`neckAcc: 'scarf'`): 2 segments each, ~2 px wide; never below chest + this many rows (kitsune.md). */
+const SCARF_SEGMENTS = 2;
+const SCARF_RADIUS = 0.95;
+export const SCARF_MAX_BELOW_CHEST = 5;
+/** q34: the ends trail at most this many px behind their nape root. */
+export const SCARF_MAX_TRAIL = 6;
+/** Root x of the second end (front: side by side under the knot; q34: one row lower at the nape). */
+const SCARF_SECOND: readonly [Point, Point] = [
+  [2, 0],
+  [0, 1],
+];
+/** Chain gravity per end: front = down, splayed 1 px apart; q34 = trailing back (−x), slightly down. */
+const SCARF_GRAVITY = {
+  front: [
+    [-0.025, 0.12],
+    [0.03, 0.12],
+  ],
+  q34: [
+    [-0.12, 0.035],
+    [-0.12, 0.06],
+  ],
+} as const satisfies Record<View, readonly [Point, Point]>;
+const DEPTH_SCARF = { front: 1.65, q34: 2.4 } as const;
+/** Tailored shorts: notch rows between the legs, leg-hem flare px; shin-wrap row shade (legs ramp). */
+const SHORTS_NOTCH = 1;
+const SHORTS_LEG_FLARE = 1;
+const WRAP_SHADE = 3;
+/** Part id of the far (q34) leg when `BodyView.farLegShade` is set (otherwise legs share id 3). */
+const FAR_LEG_ID = 13;
+/**
+ * Scarf-end part id: not torso/trim (7/8), so the arm-over-torso separator rule never treats a loose end the arm
+ * passes over as the bodice (the teal end and the indigo sleeve already differ in hue).
+ */
+const SCARF_ID = 12;
 
 /** Spade tail centre line from the back joint (px, radius). */
 const SPADE_TAIL: readonly StrokePoint[] = [
@@ -143,6 +191,8 @@ interface Chains {
   readonly lockL: readonly (readonly Point[])[];
   readonly lockR: readonly (readonly Point[])[];
   readonly tail: readonly (readonly Point[])[];
+  /** Per scarf end: per frame points (root + 2). */
+  readonly scarf: readonly (readonly (readonly Point[])[])[];
 }
 
 const add = (p: Point, dx: number, dy: number): Point => [p[0] + dx, p[1] + dy];
@@ -154,6 +204,15 @@ export interface RigRenderer {
   readonly renderLabeled: (anim: RigAnim, frame: number, ctx: RenderContext) => LabeledFrame;
   /** FX mark anchor (frame px) after squash. */
   readonly fxAnchor: (anim: RigAnim, frame: number) => Point;
+  /** Fox tail centre line (frame px, before squash) and stroke radii; undefined without a drawn fox tail. */
+  readonly tail: (
+    anim: RigAnim,
+    frame: number,
+  ) =>
+    | { readonly points: readonly Point[]; readonly radii: readonly number[]; readonly tipRadii: readonly number[] }
+    | undefined;
+  /** Scarf end centre lines (frame px, before squash); empty without a scarf. */
+  readonly scarfEnds: (anim: RigAnim, frame: number) => readonly (readonly Point[])[];
 }
 
 export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRenderer {
@@ -185,6 +244,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         hairFar: undefined,
         sleeveHairLine: undefined,
         hideFarShoulder: false,
+        farLegShade: undefined,
       };
     }
     if (!q34 || !headMasks.q34) throw new Error(`${body.id}: q34 poses need Body.views.q34 (ADR 010)`);
@@ -197,6 +257,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       hairFar: q34.masks.hairFar,
       sleeveHairLine: q34.sleeveHairLine,
       hideFarShoulder: q34.hideFarShoulder === true,
+      farLegShade: q34.farLegShade,
     };
   };
   const jointCache = new Map<string, readonly JointMap[]>();
@@ -213,6 +274,13 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     return j;
   };
 
+  const tailFront = body.foxTail?.front ?? FOX_TAIL_FRONT;
+  const tailQ34 = body.foxTail?.q34 ?? FOX_TAIL_Q34_SHAPE;
+  const scarfOf = (view: View): ScarfEnds => {
+    const ends = view === 'q34' ? q34?.scarf : body.scarf;
+    if (!ends) throw new Error(`${body.id}: neckAcc 'scarf' needs scarf ends in the ${view} view`);
+    return ends;
+  };
   const chainCache = new Map<string, Chains>();
   const chains = (anim: RigAnim): Chains => {
     const hit = chainCache.get(anim.name);
@@ -243,13 +311,85 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       tail:
         v.back === 'fox_tail'
           ? simulateChain(
-              anchors((j) => add(j.back, trailX, 1)),
-              { segments: 4, length: 2.4, gravity: [0.07 * trailX, -0.05], damping: 0.8, loop: anim.loop },
+              anchors((j) => add(j.back, trailX * (tailFront.root?.[0] ?? 1), tailFront.root?.[1] ?? 1)),
+              {
+                segments: tailFront.radii.length - 1,
+                length: tailFront.length,
+                gravity: [tailFront.gravity[0] * trailX, tailFront.gravity[1]],
+                damping: 0.8,
+                loop: anim.loop,
+              },
             ).frames
+          : [],
+      scarf:
+        v.neckAcc === 'scarf'
+          ? ([0, 1] as const).map((k) => {
+              const view: View = animFacing(anim) === 'right' ? 'q34' : 'front';
+              const lengthOf = (ends: ScarfEnds | undefined): number => ends?.lengths[k] ?? 0;
+              return simulateChain(
+                js.map((j, f) => {
+                  const ends = scarfOf(bodyViewOf(anim, f));
+                  const second = k === 1 ? SCARF_SECOND[bodyViewOf(anim, f) === 'q34' ? 1 : 0] : ([0, 0] as Point);
+                  const kk = kick(f);
+                  return [j.neck[0] + ends.at[0] + second[0] + kk[0], j.neck[1] + ends.at[1] + second[1] + kk[1]];
+                }),
+                {
+                  segments: SCARF_SEGMENTS,
+                  // The 2-px stroke adds ~1 px of cap: the drawn end is `length` px long.
+                  length: Math.max(0.01, (lengthOf(scarfOf(view)) - 1) / SCARF_SEGMENTS),
+                  gravity: SCARF_GRAVITY[view][k],
+                  damping: 0.75,
+                  loop: anim.loop,
+                },
+              ).frames;
+            })
           : [],
     };
     chainCache.set(anim.name, result);
     return result;
+  };
+
+  /** Fox tail centre line of a frame: the front chain (+ bend) or the q34 curve; none when tucked. */
+  const tail: RigRenderer['tail'] = (anim, frame) => {
+    const p = anim.frames[frame];
+    if (v.back !== 'fox_tail' || !p || p.tailTucked) return undefined;
+    const hairDx = p.hairDx ?? 0;
+    if (bodyViewOf(anim, frame) === 'q34') {
+      return {
+        points: q34FoxTail(joints(anim, frame).back, hairDx, tailQ34.points),
+        radii: tailQ34.radii,
+        tipRadii: tailQ34.tipRadii,
+      };
+    }
+    const raw = chains(anim).tail[frame];
+    if (!raw) return undefined;
+    const bend = tailFront.bend ?? [];
+    const points = raw.map((pt, i): Point => [
+      pt[0] - (hairDx * i) / Math.max(1, raw.length - 1) + (bend[i]?.[0] ?? 0),
+      pt[1] + (bend[i]?.[1] ?? 0),
+    ]);
+    return { points, radii: tailFront.radii, tipRadii: tailFront.tipRadii };
+  };
+  /** Scarf ends of a frame: capped at the chest row, ≤ SCARF_MAX_TRAIL px back in q34, lifted 1 px on `hairLift`. */
+  const scarfEnds: RigRenderer['scarfEnds'] = (anim, frame) => {
+    const p = anim.frames[frame];
+    if (v.neckAcc !== 'scarf' || !p) return [];
+    const j = joints(anim, frame);
+    const q = bodyViewOf(anim, frame) === 'q34';
+    const maxY = Math.floor(j.chest[1]) + SCARF_MAX_BELOW_CHEST;
+    const lift = p.hairLift === 1 ? 1 : 0;
+    return chains(anim).scarf.flatMap((perFrame) => {
+      const pts = perFrame[frame];
+      const root = pts?.[0];
+      if (!pts || !root) return [];
+      return [
+        pts.map((pt, i): Point => {
+          if (i === 0) return pt;
+          const x = q ? Math.max(root[0] - SCARF_MAX_TRAIL, pt[0]) : pt[0];
+          return [x, Math.min(maxY, pt[1] - lift)];
+        }),
+      ];
+    });
   };
 
   const part = (shape: Shape, material: Material, partId: number, depth: number): Part => ({
@@ -367,22 +507,29 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         return [j.back[0] + trailSide * x + (hipLag[0] - hairDx) * t, j.back[1] + y + hipLag[1] * t, r];
       });
       tailParts.push(part(stroke(tail), flat(MAT.shoe, body.ramps.tail, 2.2), TAIL_ID, 0.1));
-    } else if (v.back === 'fox_tail' && q) {
-      // q34 (art round MA-27c-2): the tail hangs down and back from the trailing hip, a slim shaft leading to a tip
-      // past the hair and skirt (never beside the near hand); the tip one ramp step under the front tip tone.
-      const pts = q34FoxTail(j.back, hairDx);
-      tailParts.push(
-        part(stroke(chainStroke(pts, [1.5, 1.8, 1.8, 1.6, 1.3])), flat(MAT.fur, body.ramps.tail, 3), 2, 0.1),
-        part(stroke(chainStroke(pts.slice(-2), [1.5, 1.1])), flat(MAT.fur, body.ramps.tailTip, 3), 2, 0.15),
-      );
     } else if (v.back === 'fox_tail') {
-      const raw = ch.tail[frame];
-      const pts = raw?.map((pt, i): Point => [pt[0] - (hairDx * i) / Math.max(1, raw.length - 1), pt[1]]);
-      if (pts) {
+      // q34 (art round MA-27c-2): the tail roots at the trailing hip, the tip one ramp step under the front tip tone.
+      const line = tail(anim, frame);
+      if (line) {
+        const tipN = line.tipRadii.length;
         tailParts.push(
-          part(stroke(chainStroke(pts, [1.6, 2.3, 2.6, 2.3, 1.5])), flat(MAT.fur, body.ramps.tail, 3), 2, 0.1),
-          part(stroke(chainStroke(pts.slice(-2), [1.9, 1.3])), flat(MAT.fur, body.ramps.tailTip, 4), 2, 0.15),
+          part(stroke(chainStroke(line.points, line.radii)), flat(MAT.fur, body.ramps.tail, 3), 2, 0.1),
+          part(
+            stroke(chainStroke(line.points.slice(-tipN), line.tipRadii)),
+            flat(MAT.fur, body.ramps.tailTip, q ? 3 : 4),
+            2,
+            0.15,
+          ),
         );
+        // Opt-in shine: a thin lit stroke inside the upper-left edge of the fur part (light from the top-left).
+        if (!q && tailFront.shine) {
+          const fur = line.points.slice(1, -tipN);
+          const shine = fur.map(([x, y], i): StrokePoint => {
+            const r = line.radii[i + 1] ?? 1;
+            return [x + 0.5 - r * 0.45, y + 0.5 - r * 0.4, 0.55];
+          });
+          if (shine.length >= 2) tailParts.push(part(stroke(shine), flat(MAT.fur, body.ramps.tail, 5), 2, 0.12));
+        }
       }
     }
     // Front: the tail hangs behind the hair. q34: it roots on the trailing side and its tip shows past the hair (A6).
@@ -390,7 +537,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     if (!q) back.push(...tailParts);
 
     // Hair behind the head (+ lag below the temples), side locks.
-    const stretch = HAIR_STRETCH[v.hairBack];
+    const stretch = body.hairBackStretch ?? HAIR_STRETCH[v.hairBack];
     // hairLift (jump up-beat): the hair below the temples and the side locks float 1 px up.
     const lag: Point = [prev.head[0] - j.head[0], p.hairLift === 1 ? -1 : prev.head[1] - j.head[1]];
     // q34 head: the back hair mass sits 2 px to the trailing side (2 px of it show behind the nape).
@@ -406,7 +553,8 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     // Side locks: below the root they trail the head by ≤ 1 px from the previous frame (walk, drag; art round 4).
     const trail: Point = [clamp1(lag[0]), clamp1(lag[1])];
     // q34 head: the far (screen-right) lock hides behind the cheek.
-    for (const lock of hv === 'q34' ? [ch.lockL[frame]] : [ch.lockL[frame], ch.lockR[frame]]) {
+    const locks = body.sideLocks === false ? [] : hv === 'q34' ? [ch.lockL[frame]] : [ch.lockL[frame], ch.lockR[frame]];
+    for (const lock of locks) {
       if (!lock) continue;
       const lagged = lock.map((pt, i): Point => (i === 0 ? pt : [pt[0] + trail[0], pt[1] + trail[1]]));
       back.push(part(stroke(chainStroke(lagged, [1.5, 1.25, 1.05, 0.8])), hairMat(2), 1, 0.2));
@@ -417,7 +565,9 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     // the knee past the edge to the foot.
     const legMat = flat(MAT.fur, body.ramps.legs, 3.6);
     // q34: the far leg (R) is one ramp step darker (depth) and drawn behind everything.
-    const farLegMat = flat(MAT.fur, body.ramps.legs, 2.6);
+    const farLegShade = q ? bodyParts.farLegShade : undefined;
+    const farLegMat = flat(MAT.fur, body.ramps.legs, farLegShade ?? 2.6);
+    const farLegId = farLegShade === undefined ? 3 : FAR_LEG_ID;
     const knees: Point[] = [];
     for (const [side, foot] of [
       [-1, j.footL],
@@ -426,7 +576,12 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       const top: StrokePoint = [j.hip[0] + side * (q ? 1.4 : 2.4), j.hip[1], 1.35];
       if (q) {
         (side === 1 ? far : back).push(
-          part(stroke([top, [foot[0], foot[1], 1.15]]), side === 1 ? farLegMat : legMat, 3, side === 1 ? 0.7 : 0.8),
+          part(
+            stroke([top, [foot[0], foot[1], 1.15]]),
+            side === 1 ? farLegMat : legMat,
+            side === 1 ? farLegId : 3,
+            side === 1 ? 0.7 : 0.8,
+          ),
         );
         continue;
       }
@@ -478,19 +633,38 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       );
       back.push(part(pet, lace(pet, 4), 4, 1.05));
     } else {
+      // Tailored (`Body.shorts`): raised hem; front adds a 1-px notch between the legs and a 1-px leg-hem flare.
+      const tailored = body.shorts;
+      const hemY = hip[1] + 1.2 - lift - (tailored?.raise ?? 0);
+      const legOut = tailored && !q ? SHORTS_LEG_FLARE : 0;
+      const notch: Point[] =
+        tailored && !q
+          ? [
+              [hip[0] + 0.5 + hemDx, hemY],
+              [hip[0] + 0.5 + hemDx, hemY - SHORTS_NOTCH],
+              [hip[0] - 0.5 + hemDx, hemY - SHORTS_NOTCH],
+              [hip[0] - 0.5 + hemDx, hemY],
+            ]
+          : [
+              [hip[0] + 0.6 + hemDx, hemY],
+              [hip[0] + hemDx, hemY - 1],
+              [hip[0] - 0.6 + hemDx, hemY],
+            ];
       const shorts = poly([
         [hip[0] - 5.4, hip[1] - 4.5],
         [hip[0] + 5.4 * farW, hip[1] - 4.5],
-        [hip[0] + 6 * farW + flare + hemDx, hip[1] + 1.2 - lift],
-        [hip[0] + 0.6 + hemDx, hip[1] + 1.2 - lift],
-        [hip[0] + hemDx, hip[1] + 0.2 - lift],
-        [hip[0] - 0.6 + hemDx, hip[1] + 1.2 - lift],
-        [hip[0] - 6 - flare - trailFlare + hemDx, hip[1] + 1.2 - lift],
+        [hip[0] + 6 * farW + flare + hemDx + legOut, hemY],
+        ...notch,
+        [hip[0] - 6 - flare - trailFlare + hemDx - legOut, hemY],
       ]);
       back.push(
         part(
           curveX(shorts, hip[0], 6),
-          cloth(MAT.apron, body.ramps.clothAlt, 3, { folds: 0.6, cell: 3, seed: `${body.id}:shorts` }),
+          cloth(MAT.apron, body.ramps.clothAlt, tailored?.shade ?? 3, {
+            folds: 0.6,
+            cell: 3,
+            seed: `${body.id}:shorts`,
+          }),
           4,
           1,
         ),
@@ -513,7 +687,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     const band = v.hem === 'skirt' ? -10.1 : -4.6;
     behind.push(
       part(
-        rect(Math.round(hip[0] - 5.4), Math.round(hip[1] + band), q ? 10 : 11, 1),
+        rect(Math.round(hip[0] - 5.4), Math.round(hip[1] + band), q ? 10 : 11, body.sash?.rows ?? 1),
         flat(MAT.trim, body.ramps.trim, 2.4),
         8,
         1.6,
@@ -534,6 +708,15 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       const isBack = order === 'arms_back' || order === (side === 'L' ? 'arm_l_back' : 'arm_r_back');
       if (isBack) back.push(...parts);
       else front.push(...parts);
+    }
+
+    // Scarf ends (neckAcc scarf): front = over the bodice under the knot, under the arms; q34 = trailing back from the
+    // nape over the near shoulder (drawn last, so the near puff never hides them).
+    for (const end of scarfEnds(anim, frame)) {
+      if (end.length < 2 || (end[0]?.[0] === end.at(-1)?.[0] && end[0]?.[1] === end.at(-1)?.[1])) continue;
+      (q ? front : behind).push(
+        part(stroke(chainStroke(end, [SCARF_RADIUS])), flat(MAT.trim, body.ramps.trim, 3), SCARF_ID, DEPTH_SCARF[bv]),
+      );
     }
 
     sleeveDir = toneOf(ctx, sleeveRamp, sleeveShade) > toneOf(ctx, body.ramps.cloth, BODICE_SHADE) ? 1 : -1;
@@ -598,6 +781,13 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     const neckAcc = bodyParts.masks.neckAcc;
     // Collar accessory = torso trim (part 8): the arm-over-torso pass and check cover the shoulder seam against it.
     if (neckAcc) stamp(neckAcc.mask, j.neck[0] + neckAcc.at[0], j.neck[1] + neckAcc.at[1], 1.7, MAT.trim, undefined, 8);
+    // Sash knot on the near hip (trim, never over an arm).
+    const sashKnot = q ? body.views?.q34?.sashKnot : body.sash?.knot;
+    if (sashKnot) {
+      const kx = Math.round(j.hip[0] + sashKnot.at[0]);
+      const ky = Math.round(j.hip[1] + sashKnot.at[1]);
+      stampMask(buf, body, sashKnot.mask, kx, ky, 1.7, MAT.trim, locked, { partId: 8, allow: NOT_ARM });
+    }
     const hairFar = headParts.hairFar;
     const hairFarPx = hairFar
       ? stampMask(
@@ -675,6 +865,38 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     } else {
       for (const foot of [j.footL, j.footR]) stamp(shoe, foot[0] - 2, foot[1] - 0.6, 0.9, MAT.shoe);
     }
+    // Shin wraps (`Body.shorts.wrapRow`): one darker legs-ramp row per shin.
+    const wrapRow = body.shorts?.wrapRow;
+    const legsRamp = ctx.palette.rampNames.indexOf(body.ramps.legs);
+    if (wrapRow !== undefined) {
+      for (const foot of [j.footL, j.footR]) {
+        const y = Math.round(foot[1]) - wrapRow;
+        for (let x = Math.round(foot[0]) - 2; x <= Math.round(foot[0]) + 2; x++) {
+          if (!buf.inBounds(x, y) || buf.get(x, y).material !== MAT.fur) continue;
+          const i = y * RIG_W + x;
+          if (buf.ramp[i] !== legsRamp || ((buf.partId[i] ?? 0) !== 3 && buf.partId[i] !== FAR_LEG_ID)) continue;
+          const shade = body.shorts?.wrapShade ?? WRAP_SHADE;
+          buf.shade[i] = shade;
+          locked.set(i, [legsRamp, shade]);
+        }
+      }
+    }
+    // Opt-in far-shin gap (`BodyView.farLegShade`): far-leg px touching the near leg take the legs ramp's shade 0.
+    if (farLegShade !== undefined) {
+      for (let i = 0; i < buf.width * buf.height; i++) {
+        if (buf.partId[i] !== FAR_LEG_ID || (buf.ramp[i] ?? -1) < 0) continue;
+        const x = i % RIG_W;
+        const y = (i - x) / RIG_W;
+        const touches = N4.some(([dx, dy]) => {
+          const u = x + dx;
+          const v = y + dy;
+          return buf.inBounds(u, v) && buf.partId[v * RIG_W + u] === 3 && (buf.ramp[v * RIG_W + u] ?? -1) >= 0;
+        });
+        if (!touches) continue;
+        buf.shade[i] = 0;
+        locked.set(i, [buf.ramp[i] ?? -1, 0]);
+      }
+    }
     // Seated: a 1-px darker crease under each knee bump, where the shin folds behind it.
     for (const [kx, ky] of knees) {
       const y = Math.round(ky + 1.1);
@@ -717,9 +939,12 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         ctx.palette.rampNames.indexOf(body.outfit.apron.ramp),
       );
     const cut = waistRow(j);
+    const labels = squashRows(labelImage(buf), cut, p.squash);
+    const squashed = squashRows(quantize(buf, ctx.palette), cut, p.squash);
+    const deep = ctx.palette.ramps.get(sleeveRamp)?.[0];
     return {
-      image: closeSeams(squashRows(quantize(buf, ctx.palette), cut, p.squash)),
-      labels: squashRows(labelImage(buf), cut, p.squash),
+      image: closeSeams(p.squash > 0 && deep !== undefined ? squashSeparator(squashed, labels, deep) : squashed),
+      labels,
     };
   };
   const render = (anim: RigAnim, frame: number, ctx: RenderContext): RgbaImage => renderLabeled(anim, frame, ctx).image;
@@ -734,7 +959,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     return [Math.round(j.fx[0]), Math.round(j.fx[1]) + (j.fx[1] < waistRow(j) ? squash : 0)];
   };
 
-  return { joints, render, renderLabeled, fxAnchor };
+  return { joints, render, renderLabeled, fxAnchor, tail, scarfEnds };
 }
 
 /**
@@ -808,6 +1033,30 @@ const LABEL_OF: Readonly<Partial<Record<number, number>>> = {
   7: ARM_LABEL.torso,
   8: ARM_LABEL.trim,
 };
+
+/**
+ * Squash removes rows at the waist, so a sleeve px can newly touch the bodice (MA-28, kitsune land f0): such px take
+ * the sleeve ramp's deepest tone, keeping the separator rule (RIG.md «arm over torso» ii) after squash.
+ */
+function squashSeparator(img: RgbaImage, labels: RgbaImage, deep: number): RgbaImage {
+  const { width: w, height: h } = img;
+  const data = new Uint8Array(img.data);
+  const lab = (x: number, y: number): number =>
+    x < 0 || y < 0 || x >= w || y >= h ? 0 : (labels.data[(y * w + x) * 4] ?? 0);
+  const torso = (l: number): boolean => l === ARM_LABEL.torso || l === ARM_LABEL.trim;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const l = lab(x, y);
+      if (l !== ARM_LABEL.sleeveL && l !== ARM_LABEL.sleeveR) continue;
+      if (!N4.some(([dx, dy]) => torso(lab(x + dx, y + dy)))) continue;
+      const i = (y * w + x) * 4;
+      data[i] = (deep >> 16) & 0xff;
+      data[i + 1] = (deep >> 8) & 0xff;
+      data[i + 2] = deep & 0xff;
+    }
+  }
+  return { ...img, data };
+}
 
 function labelImage(buf: IndexBuffer): RgbaImage {
   const data = new Uint8Array(buf.width * buf.height * 4);
@@ -1154,6 +1403,10 @@ export function createRigPack(body: Body, anims: readonly RigAnim[], frameH: num
     );
   }
   for (const [name, mask] of masks) if (mask) checkMask(mask, `${body.id}/${name}`);
+  if (body.variants.neckAcc === 'scarf') {
+    if (!body.scarf) throw new Error(`${body.id}: neckAcc 'scarf' needs Body.scarf (front ends)`);
+    if (usesView(anims, 'q34') && !q34?.scarf) throw new Error(`${body.id}: neckAcc 'scarf' needs views.q34.scarf`);
+  }
   const faceAtOf = (view: View, head: Body['head']): Point => {
     const rest = resolveJoints(body, poseFrame({}), frameH, view);
     return [rest.face[0] - (rest.head[0] + head.at[0]), rest.face[1] - (rest.head[1] + head.at[1])];

@@ -163,6 +163,43 @@ export interface Apron {
   readonly ties?: PlacedMask;
 }
 
+/**
+ * Per-body fox tail (`back: 'fox_tail'`, MA-28). Unset views keep the rig defaults (dummy-b's tail). Radii are per
+ * centre-line point, root first; the pale tip is a second stroke over the last `tipRadii.length` points.
+ */
+export interface FoxTail {
+  /** Front: a verlet chain from the back joint, `radii.length − 1` segments of `length` px. */
+  readonly front?: {
+    readonly radii: readonly number[];
+    readonly tipRadii: readonly number[];
+    readonly length: number;
+    /** Chain gravity per substep (x toward screen-right), sets the rest direction of the tube. */
+    readonly gravity: Point;
+    /** Px added to each simulated point (the brush S-curve, the tip curling back toward the body). */
+    readonly bend?: readonly Point[];
+    /** Chain root from the back joint, x toward the tail side (default [1, 1]). */
+    readonly root?: Point;
+    /** A thin lit shine stroke (tail ramp shade 5) along the upper-left edge of the fur part (kitsune, MA-28 r1). */
+    readonly shine?: true;
+  };
+  /** q34: a fixed centre line from the back joint (trailing = −x); the tip swings against `hairDx`. */
+  readonly q34?: {
+    readonly points: readonly Point[];
+    readonly radii: readonly number[];
+    readonly tipRadii: readonly number[];
+  };
+}
+
+/**
+ * Scarf ends (`neckAcc: 'scarf'`, MA-28): two 2-segment chains (2 px wide) hung from `at` (from the neck joint;
+ * front: under the knot; q34: at the nape, trailing). The knot and band are the authored neck_acc mask.
+ */
+export interface ScarfEnds {
+  readonly at: Point;
+  /** Length (px) of each end. */
+  readonly lengths: readonly [number, number];
+}
+
 /** Per-view authored parts (ADR 010): a body supplies them for every non-front view its poses use. */
 export interface BodyView {
   readonly head: PlacedMask & { readonly band: number };
@@ -191,6 +228,15 @@ export interface BodyView {
    * the torso). Needed when no back-hair mass covers that area (e.g. with `masks.hairFar`).
    */
   readonly hideFarShoulder?: true;
+  /**
+   * Opt-in (kitsune MA-28 r2): the far leg in this legs-ramp shade, with a 1-px outline (shade 0) where it touches the
+   * near leg, so two pale shins never merge into one patch on the walk contact frames.
+   */
+  readonly farLegShade?: number;
+  /** Sash knot in this view (from the hip joint); default none. */
+  readonly sashKnot?: PlacedMask;
+  /** Scarf ends in this view (required with `neckAcc: 'scarf'`). */
+  readonly scarf?: ScarfEnds;
   /** Rest offsets in this view (default: the body's front `tweaks`). */
   readonly tweaks?: Partial<Readonly<Record<Joint, Offset>>>;
 }
@@ -240,6 +286,31 @@ export interface Body {
    * sides. Default: none (the shared pose puts the fist under the chin of the standard head).
    */
   readonly chinHand?: Offset;
+  /**
+   * Back-hair length below the temples as a stretch factor (default: `hairBack` short 1 / long 1.45). Kitsune 0.55:
+   * a short mop ending at the nape (MA-28).
+   */
+  readonly hairBackStretch?: number;
+  /** Opt-out of the procedural side-lock chains: the head mask's own (short) locks only (kitsune, MA-28). */
+  readonly sideLocks?: false;
+  /**
+   * Tailored shorts (`hem: 'shorts'`, kitsune MA-28 r1): `shade` of the clothAlt ramp (default 3), hem raised
+   * `raise` rows; front view adds a 1-px notch between the legs and a 1-px outward flare at each leg hem. `wrapRow`:
+   * a darker shin-wrap row (legs ramp shade 3) this many rows above each foot joint.
+   */
+  readonly shorts?: {
+    readonly shade: number;
+    readonly raise: number;
+    readonly wrapRow: number;
+    /** Legs-ramp shade of the wrap row (default 3). */
+    readonly wrapShade?: number;
+  };
+  /** Waist sash: band height in rows (default 1) and a knot mask on the near hip (from the hip joint). */
+  readonly sash?: { readonly rows: number; readonly knot: PlacedMask };
+  /** Fox tail shape per view (default: the rig's dummy-b tail). */
+  readonly foxTail?: FoxTail;
+  /** Front scarf ends (required with `neckAcc: 'scarf'`). */
+  readonly scarf?: ScarfEnds;
   /** Rest offsets per joint (proportions), never per-animation forks. */
   readonly tweaks?: Partial<Readonly<Record<Joint, Offset>>>;
   /** Authored parts per non-front view; a body without `q34` fails the build when any pose uses q34. */

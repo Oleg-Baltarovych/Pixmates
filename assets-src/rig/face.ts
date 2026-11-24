@@ -31,6 +31,11 @@ export interface FacePart {
   readonly mask: Mask;
   /** Top-left relative to the face anchor. */
   readonly at: Point;
+  /**
+   * Eye masks with a 1-px pupil (kitsune, MA-28): the rows `irisShift` moves (the pupil's ink `x`/`X` moves with the
+   * iris px). Default: the rows holding a 2-px pupil `XX`.
+   */
+  readonly irisRows?: readonly number[];
 }
 
 export interface Expression {
@@ -59,22 +64,25 @@ export type ViewFaceLibrary = Omit<FaceLibrary, 'expressions'> & {
 };
 
 const IRIS = new Set(['c', 'C', 'i', 'I', 'k', 'K', 'X']);
+/** With `irisRows`: the 1-px pupil's lighter ink end (`x`) moves with the iris too. */
+const IRIS_1PX = new Set([...IRIS, 'x']);
 
 /**
  * Glance (art round MA-27c-2): the irises and pupils move 1 px toward screen-right inside each eye; the lash row,
  * the eye outline and the shine stay put. Only rows with a 2-px pupil (`XX`) below the lash row change, and in each
  * eye half (cols < 10, ≥ 10) the iris/pupil px rotate one position right among themselves (same px count).
  */
-export function irisShift(mask: Mask, half = 10): Mask {
+export function irisShift(mask: Mask, half = 10, rows?: readonly number[]): Mask {
   return mask.map((row, y) => {
-    if (y === 0 || !row.includes('XX')) return row;
+    const set = rows ? IRIS_1PX : IRIS;
+    if (rows ? !rows.includes(y) : y === 0 || !row.includes('XX')) return row;
     const out = row.split('');
     for (const [from, to] of [
       [0, half],
       [half, row.length],
     ] as const) {
       const pos: number[] = [];
-      for (let x = from; x < to; x++) if (IRIS.has(row.charAt(x))) pos.push(x);
+      for (let x = from; x < to; x++) if (set.has(row.charAt(x))) pos.push(x);
       if (pos.length < 2) continue;
       pos.forEach((x, k) => {
         out[x] = row.charAt(pos[(k - 1 + pos.length) % pos.length] ?? x);
@@ -107,7 +115,7 @@ export function expressionParts(lib: ViewFaceLibrary, id: ExpressionId, armsUp =
   const eyes = lib.eyes[e.eyes];
   const parts = [
     lib.cheeks[e.cheeks],
-    irisDx && eyes ? { ...eyes, mask: irisShift(eyes.mask) } : eyes,
+    irisDx && eyes ? { ...eyes, mask: irisShift(eyes.mask, 10, eyes.irisRows) } : eyes,
     e.brows === undefined ? undefined : lib.brows?.[e.brows],
     lib.mouths[mouth],
   ];
