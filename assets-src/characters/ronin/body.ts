@@ -113,12 +113,14 @@ export const RONIN: Body = {
   sash: { rows: 3, knot: { mask: [], at: [0, 0] } },
   hakama: { ramp: 'hair_umber', shade: 1, drop: 13 },
   skirtSplit: {
-    rows: 16,
+    // Split from ≈ 4 rows under the obi, a dark leg notch at the hem, 2 stiff pleats per leg, a narrower trapezoid.
+    rows: 24,
     shade: 0,
-    notch: 10,
-    hemHalf: 10,
-    pleats: { offsets: [3, 6], shade: 0, lit: 2 },
-    rim: { shade: 2, lit: 3 },
+    notch: 9,
+    notchShade: 0,
+    hemHalf: 9,
+    pleats: { offsets: [3, 6], shade: 0, lit: 4 },
+    rim: { shade: 2, lit: 4 },
     q34: { rows: 8, notch: 6, passNotch: 3, pleat: 0 },
   },
   skirtLace: false,
@@ -126,7 +128,7 @@ export const RONIN: Body = {
   prop: {
     mask: SWORD,
     at: [5, -1],
-    hilt: { mask: HILT, at: [-2, -3] },
+    hilt: { mask: HILT, at: [-3, -3] },
     dangle: { mask: CHARM, at: [3, 4], overHem: true },
   },
   hairBackStretch: 0.2,

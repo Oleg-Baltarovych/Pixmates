@@ -84,8 +84,8 @@ export const SHOE_Q34: Mask = ['..sp..', 'seppee', 'mbBBBL'];
  * (ink, 1 lit ash px) dropping 17 rows behind the screen-right thigh to row 56. Hilt (`Prop.hilt`, 5 × 3 from the prop
  * origin + (−2, −3), rows 36–38): brass kashira toward the axis, ink wrap with cream diamonds, ash-4 rim on top.
  */
-export const SWORD: Mask = ['vDv', '.Xw', ...Array.from({ length: 14 }, () => '.Xx'), '.XX', '.xX'];
-export const HILT: Mask = ['Bw...', 'XpXww', '..XpX'];
+export const SWORD: Mask = ['bLb', '.Xw', ...Array.from({ length: 14 }, () => '.Xx'), '.XX', '.xX'];
+export const HILT: Mask = ['BX...', '.pXw.', '..XpX'];
 
 /** Paper charm on the sageo (front dangle): 1-px oxblood cord, a 2 × 3 cream slip with 1 ink stroke. */
 export const CHARM: Mask = ['t.', 't.', 'Pq', 'Xq', 'pq'];
@@ -117,14 +117,15 @@ export function swordQ34(length = 35, angleDeg = 25, hilt = 8): Mask {
       put(x, y, 'w');
       put(x, y + 1, k % 2 === 0 ? 'p' : 'X');
     } else if (along < hilt + 3) {
-      put(x, y, 'v');
-      put(x, y + 1, 'v');
-      put(x, y + 2, 'V');
+      put(x, y, 'b');
+      put(x, y + 1, 'b');
+      put(x, y + 2, 'm');
     } else if (x === 0) {
       put(x, y, 'X');
       put(x, y + 1, 'X');
     } else {
-      put(x, y, Math.round(along) === hilt + 6 ? 'w' : 'x');
+      // Ash-4 rim along the lit top edge (reads on dark wallpapers), the tip ink.
+      put(x, y, x <= 1 ? 'x' : 'w');
       put(x, y + 1, 'X');
     }
   }
@@ -132,8 +133,8 @@ export function swordQ34(length = 35, angleDeg = 25, hilt = 8): Mask {
   const tk = Math.ceil(hilt * Math.cos(rad));
   const tx = w - 1 - tk - 1;
   const ty = Math.round(tk * Math.tan(rad)) - 1;
-  for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) put(tx + dx, ty + dy, 'v');
-  put(tx, ty, 'D');
+  for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) put(tx + dx, ty + dy, 'b');
+  put(tx, ty, 'L');
   return rows.map((r) => r.join(''));
 }
 export const SWORD_Q34: Mask = swordQ34();
