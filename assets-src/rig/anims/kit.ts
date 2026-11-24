@@ -25,6 +25,7 @@ export interface FrameInput {
   readonly hairDx?: -1 | 0 | 1;
   readonly irisDx?: 1;
   readonly tailTucked?: true;
+  readonly knees?: { readonly L?: Offset; readonly R?: Offset };
 }
 
 export function frame(p: FrameInput): PoseFrame {
@@ -48,5 +49,6 @@ export function frame(p: FrameInput): PoseFrame {
     ...(p.hairDx ? { hairDx: p.hairDx } : {}),
     ...(p.irisDx ? { irisDx: p.irisDx } : {}),
     ...(p.tailTucked ? { tailTucked: p.tailTucked } : {}),
+    ...(p.knees ? { knees: p.knees } : {}),
   };
 }

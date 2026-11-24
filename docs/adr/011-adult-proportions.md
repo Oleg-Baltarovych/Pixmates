@@ -86,3 +86,11 @@ the body proportions right; it can be bigger if needed».
   carry over; ramps get re-tuned for dark anchor + accent; opt-ins that no longer fit are deleted.
 - Cost: every signed-off character (`maid`, `kitsune`, `goth`, `witch`) is redrawn; `ronin` is redesigned; `knight`,
   `coder`, `vampire` are built directly in the adult style. M-ART grows by Phase 3 (plan §«D-19»); SPEC §13 risk row.
+
+## Note 2026-11-24 (MA-45, art-director motion round 1) — revises ADR 010 q34 rest for adult layouts
+- Adult q34 far shoulder at the far chest half − 1 (male axis +5, female +4; was rest −2), its cap clipped by default,
+  so the bodice covers it; legacy 48 × 56 keeps the ADR 010 numbers.
+- Adult q34 rest / turn f1 feet near −3, far +3, far 1 row higher (legacy: ±1 on one row). Walk contact frames
+  unchanged.
+- Adult prop slot scale: ≈ 34–36 px, hilt 8, guard 2, hilt top ≥ row 36, trailing down-back ≈ 25° (validated).
+- Adult long back hair ends at row ≈ 41 (mid-back); `hairScale` applies to width only.

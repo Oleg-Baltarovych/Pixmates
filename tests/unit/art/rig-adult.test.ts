@@ -188,15 +188,17 @@ describe('adult layout (MA-42 rest, frame, scaleRef)', () => {
 
 describe('adult q34 rest (ADR 010 rules on the adult layout)', () => {
   for (const build of ['male', 'female'] as const) {
-    it(`${build}: steady head 1 px behind the hip, face +1, shoulders −1 / −2 +1, tail −2, feet on one row`, () => {
+    it(`${build}: steady head 1 px behind the hip, face +1, far shoulder at chest half − 1, feet −3 / +3 (far 1 up)`, () => {
       const { rest, restQ34: q } = LAYOUT_ADULT[build];
       expect(q.head[0] - q.hip[0]).toBe(-1);
       expect(q.face[0] - rest.face[0]).toBe(1);
       for (const k of ['root', 'hip', 'chest', 'neck', 'seat'] as const) expect(q[k]).toEqual(rest[k]);
       expect(q.shoulderL[0]).toBe(rest.shoulderL[0] - 1);
-      expect(q.shoulderR[0]).toBe(rest.shoulderR[0] - 2);
+      // Adult note (MA-45): the far shoulder hides behind the bodice (male +9 → +5, female +7 → +4).
+      expect(q.shoulderR[0]).toBe(rest.shoulderR[0] - (build === 'male' ? 4 : 3));
       expect(q.shoulderR[1]).toBe(rest.shoulderR[1] + 1);
-      expect(q.footL[1]).toBe(q.footR[1]);
+      expect([q.footL[0] - q.hip[0], q.footR[0] - q.hip[0]]).toEqual([-3, 3]);
+      expect(q.footR[1]).toBe(q.footL[1] - 1);
       expect(q.back[0]).toBe(rest.hip[0] - 2);
     });
   }

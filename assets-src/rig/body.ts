@@ -134,6 +134,7 @@ export function kneeOf(
   legs: LegVariant,
   view: View,
   layout: RigLayout,
+  nudge?: { readonly dx: number; readonly dy: number },
 ): Point | undefined {
   const k = layout.knee;
   if (!k) return undefined;
@@ -143,7 +144,8 @@ export function kneeOf(
   const foot = joints[side === 'L' ? 'footL' : 'footR'];
   const bend = q ? k.bendQ34[legs] : k.bend[legs];
   const bx = q ? Math.max(bend[0], legs === 'stand' ? strideBend(layout, side, top, foot) : 0) : -s * bend[0];
-  return [top[0] + (foot[0] - top[0]) * k.thigh + bx, top[1] + (foot[1] - top[1]) * k.thigh + bend[1]];
+  const [nx, ny] = [nudge?.dx ?? 0, nudge?.dy ?? 0];
+  return [top[0] + (foot[0] - top[0]) * k.thigh + bx + nx, top[1] + (foot[1] - top[1]) * k.thigh + bend[1] + ny];
 }
 
 /**

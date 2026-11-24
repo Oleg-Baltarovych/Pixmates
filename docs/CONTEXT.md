@@ -92,7 +92,7 @@ Legend: — not started · 🚧 in progress · ✅ done (link key files when don
 - `better-sqlite3` 13 ships N-API prebuilds but still needs asar unpack; try `node:sqlite` first (Electron 45 = Node 24).
 - Playwright Test Agents do not support Electron → own `/e2e` skill with `_electron.launch()`.
 - AI SDK moves fast: read `node_modules/ai/docs` (ai-sdk skill) before writing AI code.
-- Adult pose tables (MA-45): `animsFor(body)` in `assets-src/rig/anims/adult.ts` — adult bodies MUST be built with it (legacy `ANIMS` render legacy offsets). `WALK_TRAVEL` is now per layout (`.legacy` 20, `.adult` 40 native px/s); M1 must pick by the pack's layout. Adult q34 far shoulder pokes out past the bodice (shoulder ±9 −2 vs chest half-far 5.6) — open q34 contour question.
+- Adult pose tables (MA-45): `animsFor(body)` in `assets-src/rig/anims/adult.ts` — adult bodies MUST be built with it (legacy `ANIMS` render legacy offsets). `WALK_TRAVEL` is now per layout (`.legacy` 20, `.adult` 40 native px/s); M1 must pick by the pack's layout. Art-director round 1 applied (contrapposto idles, fist-pump happy, crouch land, seated feet apart / crossed, neck / hip hands, `PoseFrame.knees`, adult q34 far shoulder = chest half − 1 + clip, q34 feet −3/+3, prop scale validation `ADULT_PROP`, long hair to row 41) — RIG.md «Layouts», ADR 011 note.
 
 ## 6. SPEC section index (`docs/SPEC.md`)
 §0 principles · §1 goals/non-goals, budgets · §2 stack · §3 architecture (3.1 windows, 3.2 IPC, 3.3 render budget) · §4 behavior (4.1 state machine + priorities + anti-spam, 4.2 physics/surfaces, 4.3 activities + cursor, 4.4 character switch, 4.5 mood) ·

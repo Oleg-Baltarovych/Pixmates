@@ -283,6 +283,34 @@ function cloakShades(body: Body): { name: string; s: number | undefined; ramp?: 
   ];
 }
 
+/**
+ * Adult hip-prop scale (MA-45 art round): a worn sword-like prop spans ≈ 34–36 px along its diagonal (mask bbox
+ * hypot, ±1 tolerance) and its top (the hilt) sits at or below row 36 at rest; checked per view.
+ */
+export const ADULT_PROP = { minLen: 33, maxLen: 37, topRow: 36 } as const;
+function adultPropProblems(body: Body): string[] {
+  const layout = layoutOf(body);
+  if (layout.id !== 'adult') return [];
+  const out: string[] = [];
+  for (const [view, prop] of [
+    ['front', body.prop],
+    ['q34', body.views?.q34?.prop],
+  ] as const) {
+    if (!prop) continue;
+    const { w, h } = maskSize(prop.mask);
+    const len = Math.hypot(w, h - 1);
+    if (len < ADULT_PROP.minLen || len > ADULT_PROP.maxLen) {
+      out.push(
+        `${body.id}: ${view} prop spans ${len.toFixed(1)} px (adult ${String(ADULT_PROP.minLen)}…${String(ADULT_PROP.maxLen)})`,
+      );
+    }
+    const top = layout.rest.hip[1] + prop.at[1];
+    if (top < ADULT_PROP.topRow)
+      out.push(`${body.id}: ${view} prop top row ${String(top)} above ${String(ADULT_PROP.topRow)}`);
+  }
+  return out;
+}
+
 /** Slot opt-ins: cloak (required with `back: 'cloak'`, bounds), prop per view, collar mask, skirt split. */
 function slotProblems(body: Body, usesQ34: boolean): string[] {
   const problems: string[] = [];
@@ -311,6 +339,7 @@ function slotProblems(body: Body, usesQ34: boolean): string[] {
     }
   }
   if (body.prop && usesQ34 && !body.views?.q34?.prop) problems.push(`${id}: Body.prop needs views.q34.prop`);
+  problems.push(...adultPropProblems(body));
   if (body.variants.neckAcc === 'collar') {
     if (!body.masks.neckAcc) problems.push(`${id}: neckAcc 'collar' needs masks.neckAcc`);
     if (usesQ34 && !body.views?.q34?.masks.neckAcc)

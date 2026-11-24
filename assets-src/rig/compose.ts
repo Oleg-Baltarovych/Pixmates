@@ -508,7 +508,8 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
     });
     // 2. Tone passes on the composed parts.
     if (v.back === 'spade_tail') tubeTones(buf);
-    if (q && q34?.hideFarShoulder) clipFarShoulder(buf, j.shoulderR[1]);
+    // Adult layouts clip the far shoulder cap by default (ADR 010/011 note, MA-45): the far arm emerges below it.
+    if (q && (q34?.hideFarShoulder === true || layoutOf(body).id === 'adult')) clipFarShoulder(buf, j.shoulderR[1]);
     const cuts = q ? q34?.hairBackCuts : undefined;
     if (cuts) {
       hairBackCuts(

@@ -104,13 +104,21 @@ export function buildBackHair(
   authoredBack = false,
 ): Part[] {
   const parts: Part[] = [];
-  const stretch = body.hairBackStretch ?? HAIR_STRETCH[body.variants.hairBack];
+  const layout = layoutOf(body);
   // Adult heads are smaller than the 30-px legacy head: the outline scales about the head joint.
-  const hs = layoutOf(body).hairScale;
+  const hs = layout.hairScale;
+  const tipRow = layout.longHairTipRow;
+  const outline = tucked ? HAIR_BACK_Q34_TUCKED : HAIR_BACK;
+  // Long adult hair: the part under the head reaches `longHairTipRow` at rest (scale narrows it, never shortens it).
+  const maxY = Math.max(...outline.map(([, uy]) => uy * hs));
+  const longStretch =
+    tipRow !== undefined && body.variants.hairBack === 'long' && maxY > 7
+      ? (tipRow - layout.rest.head[1] - 7) / (maxY - 7)
+      : undefined;
+  const stretch = body.hairBackStretch ?? longStretch ?? HAIR_STRETCH[body.variants.hairBack];
   const lag: Point = [prev.head[0] - j.head[0], p.hairLift === 1 ? -1 : prev.head[1] - j.head[1]];
   const hx = j.head[0] + (headView === 'q34' ? -2 : 0);
-  const hairOutline = tucked ? HAIR_BACK_Q34_TUCKED : HAIR_BACK;
-  const hair = hairOutline.map(([ux, uy]): [number, number] => {
+  const hair = outline.map(([ux, uy]): [number, number] => {
     const [x, y] = hs === 1 ? [ux, uy] : [ux * hs, uy * hs];
     if (y <= 7) return [x + hx, y + j.head[1]];
     const t = (y - 7) / 9.6;
@@ -424,7 +432,14 @@ export function buildLegs(
     const top: StrokePoint = [j.hip[0] + side * (q ? lg.dxQ : lg.dx), j.hip[1], lg.hipR];
     // Two-segment legs (adult): thigh → knee → shin, the knee from `kneeOf` (the seated knee too).
     const knee = layout.knee
-      ? kneeOf(j, side === -1 ? 'L' : 'R', p.parts.legs, q ? 'q34' : 'front', layout)
+      ? kneeOf(
+          j,
+          side === -1 ? 'L' : 'R',
+          p.parts.legs,
+          q ? 'q34' : 'front',
+          layout,
+          p.knees?.[side === -1 ? 'L' : 'R'],
+        )
       : undefined;
     if (knee) {
       const farLeg = q && side === 1;

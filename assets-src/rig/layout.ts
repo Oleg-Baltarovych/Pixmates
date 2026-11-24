@@ -132,6 +132,11 @@ export interface RigLayout {
    * takes `farLegShade` or one step under the near leg.
    */
   readonly farArmStep?: number;
+  /**
+   * Rest row of the long back-hair tips (`hairBack: 'long'` without `Body.hairBackStretch`): the outline below the
+   * head is stretched to reach it, so `hairScale` only narrows long hair (adult: mid-back, rows 38–44).
+   */
+  readonly longHairTipRow?: number;
 }
 
 // ---- Legacy 48 × 56 (pre-D-19 numbers, unchanged) -------------------------------------------------------------------
@@ -198,6 +203,10 @@ const ARMS_LEGACY: Readonly<Record<ArmVariant, ArmShape>> = {
   knees: { elbow: [-1.4, 3.4], hand: [-0.6, 6.8] },
   talk: { elbow: [-2.4, 2.6], hand: [-3.4, 3.6] },
   edge: { elbow: [-1.8, 3.6], hand: [-3.0, 7.8] },
+  // Adult-only variants (no legacy table uses them); legacy copies keep the record total.
+  pump: { elbow: [-4.6, -1.6], hand: [-9.4, -5.0] },
+  neck: { elbow: [-3.4, 1.4], hand: [-6.4, 2.4] },
+  hip: { elbow: [-1.4, 3.4], hand: [-0.6, 6.8] },
 };
 
 const ARMS_Q34_LEGACY: Readonly<Partial<Record<ArmVariant, ArmShape>>> = {
@@ -299,14 +308,15 @@ const FOOT_Y = 67.6;
 
 /** Two-segment adult arms: upper ≈ 10, forearm ≈ 9 + half the 3-px fist; the elbow always bends a little. */
 const ARMS_ADULT: Readonly<Record<ArmVariant, ArmShape>> = {
-  down: { elbow: [-1.4, 9.9], hand: [-1.6, 20.4] },
+  // Elbow 1 px off the torso, hand 1 px off the thigh (negative space; shows the female waist).
+  down: { elbow: [-2.4, 9.9], hand: [-2.6, 20.4] },
   swing_fwd: { elbow: [-0.6, 9.9], hand: [0.4, 20.2] },
   swing_back: { elbow: [-1.6, 9.8], hand: [-4.6, 19.6] },
-  hang: { elbow: [-0.6, 10], hand: [-2.6, 20.4] },
+  hang: { elbow: [-1.1, 10], hand: [-3.6, 20.4] },
   // Sleep (seated, slumped): the hand rests on the foreshortened thigh, just above the knee row.
   limp: { elbow: [-1.2, 9.8], hand: [2.2, 17] },
   // Think: forearm across the waist, the fist under the other (chin) elbow.
-  fold: { elbow: [0.8, 9.7], hand: [11.5, 10] },
+  fold: { elbow: [0.8, 9.7], hand: [11.5, 10.5] },
   // Raised hands stay outside the head and below row 2 at the happy apex (root −4).
   up: { elbow: [-7, -6.5], hand: [-11.5, -14] },
   wave_a: { elbow: [-7.5, -4], hand: [-10, -13] },
@@ -314,11 +324,18 @@ const ARMS_ADULT: Readonly<Record<ArmVariant, ArmShape>> = {
   hug: { elbow: [-1.2, 9.8], hand: [5, 14] },
   flail: { elbow: [-7.5, -3], hand: [-15, -8] },
   out: { elbow: [-7.4, 6.6], hand: [-12.5, 13.5] },
-  // Elbow propped on the folded forearm (x ≈ axis + 5), the fist under the chin.
-  chin: { elbow: [4, 9.5], hand: [6.5, -1] },
+  // Forearm vertical, the elbow propped on the folded forearm, the fist raised to the jaw corner (two 10-px segments
+  // put the elbow on row ≈ 32, not lower).
+  chin: { elbow: [5.5, 8.8], hand: [6.5, -2] },
   chest: { elbow: [-1.4, 9.6], hand: [4.5, 7.5] },
   knees: { elbow: [-1.6, 9.8], hand: [-0.4, 19] },
   talk: { elbow: [-1.6, 9.6], hand: [-6, 15] },
+  // Fist pump (happy): elbow out on the shoulder row, the fist up at row ≈ 14 beside the head.
+  pump: { elbow: [-6, 0], hand: [-5, -9.2] },
+  // Hand to the back of the neck (behind the head mask), elbow out at row ≈ 18.
+  neck: { elbow: [-5, -5.2], hand: [4, -6.2] },
+  // Hand on the hip, elbow out.
+  hip: { elbow: [-4, 8], hand: [1.5, 15.5] },
   // Hands on the edge beside the hips (the seat row, hip + 1…2).
   edge: { elbow: [-1.2, 9.7], hand: [-3.6, 18.6] },
 };
@@ -357,7 +374,9 @@ function adultLayout(build: BodyBuild): RigLayout {
     footR: [AXIS + b.footDx, FOOT_Y],
   };
   // ADR 010 rules: head joint 1 px behind the hip axis (steady head), face anchor 1 px toward the facing, near
-  // shoulder 1 px out, far shoulder 2 px in and 1 row lower, tail root 2 px trailing, feet 1 px either side.
+  // shoulder 1 px out, tail root 2 px trailing. Adult note (MA-45): the far shoulder sits at the far chest half − 1
+  // (male +5, female +4; 1 row lower) so the bodice covers it, and the feet stand near −3 / far +3, far 1 row higher.
+  const farShoulderX = AXIS + Math.round(b.chestHalfFar) - 1;
   const restQ34: JointMap = {
     ...rest,
     head: [AXIS - 1, 13],
@@ -366,11 +385,11 @@ function adultLayout(build: BodyBuild): RigLayout {
     fx: [AXIS + 7, 7],
     back: [AXIS - 2, 33],
     shoulderL: [AXIS - b.shoulderDx - 1, SHOULDER_Y],
-    shoulderR: [AXIS + b.shoulderDx - 2, SHOULDER_Y + 1],
+    shoulderR: [farShoulderX, SHOULDER_Y + 1],
     handL: [AXIS - b.shoulderDx - 0.1, SHOULDER_Y + 20.3],
-    handR: [AXIS + b.shoulderDx - 1.1, SHOULDER_Y + 21.3],
-    footL: [AXIS - 1, FOOT_Y],
-    footR: [AXIS + 1, FOOT_Y],
+    handR: [farShoulderX + 0.9, SHOULDER_Y + 21.3],
+    footL: [AXIS - 3, FOOT_Y],
+    footR: [AXIS + 3, FOOT_Y - 1],
   };
   return {
     id: 'adult',
@@ -427,6 +446,7 @@ function adultLayout(build: BodyBuild): RigLayout {
     cloakHemMax: 12,
     irisHalf: 6,
     farArmStep: 1,
+    longHairTipRow: 41,
     face: {
       faceH: 12,
       eyeRows: [2, 3],

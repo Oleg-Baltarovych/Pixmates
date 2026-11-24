@@ -52,6 +52,23 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
   arms come from `ARMS_ADULT` (talk / edge / out re-bent, think fold → chin elbow, q34 `edge`, `limp`, `chin`).
   Adult folded knees (sit, curl) get the crease pass. Female dummy head `ADULT_HEAD_FEMALE` (narrower jaw); the male
   dummy carries a hip prop. Every adult frame keeps rows 0–1 clear.
+- **Adult rules (MA-45 art-director round 1; ADR 011 note).** q34 rest: far shoulder x = axis + round(chest half
+  far) − 1 (male +5 = rest −4, female +4 = rest −3, 1 row lower), the far shoulder cap clipped by default on adult
+  layouts (`hideFarShoulder` implied; the far arm emerges below it, still visible on the walk swing); q34 rest and
+  turn f1 feet near −3 / far +3, far 1 row higher (walk contact frames unchanged: stride x about the axis on the
+  ground row). Per-frame knee nudges `PoseFrame.knees` (two-segment only). Long back hair (`hairBack: 'long'`, no
+  `hairBackStretch`) reaches `RigLayout.longHairTipRow` (adult 41, mid-back) — `hairScale` narrows, never shortens.
+  **Prop slot scale** (validated, `ADULT_PROP`): ≈ 34–36 px along its diagonal (hilt 8, guard 2), hilt top ≥ row 36,
+  blade trailing down-back ≈ 25° to row ≈ 52, never parallel to and beside a forearm (review rule; the think chin fist
+  goes on the side without the prop). Dummy sword: `adultSword()` (35 px, 25°).
+- **Adult poses (round 1):** idle_a contrapposto (hip +1 toward the weight leg, weight foot axis +5, free −8, free
+  shoulder +1 row, head on the axis), idle_b shifts the weight over 2 frames and holds; `down` arms 1 px off torso
+  and thigh; happy = fist pump (`pump`), no jump (crouch with knees out 1, root −1 on the toes); land hip +3 / +2 / +1
+  with knees out 2 and arms `out` low; drag shoulders −3, head +1, left knee up 2, feet 1 row apart; sit_edge / sleep
+  male knees ±5 / feet ±7 (near foot 2 lower), female knees ±2 with crossed ankles; sleep head o(2, 3) on the collar,
+  far hand 2 px toward the edge; think chin fist left, forearm vertical (elbow row ≈ 32: two 10-px segments cannot
+  reach 36); worried `neck` + `hip` hands; petted `neck` + down; walk passing swing foot 2 px behind the planted ankle,
+  lifted 3, knee 2 px ahead (`PASS_KNEE`).
 - Sheets: `pnpm sprites:sheet --adult` → `reports/sprites/rig-adult-<build>/sheet-x1.png`, `sheet-x4.png` (all 16
   anims; white + dark) + `walk`, `turn`, `walk-mirrored` `.apng.png` (×4).
 

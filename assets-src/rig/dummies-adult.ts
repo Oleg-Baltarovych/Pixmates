@@ -6,7 +6,6 @@ import type { Point } from '../lib/chain.ts';
 import type { Mask, Outfit } from '../lib/mask.ts';
 import type { PackDef } from '../lib/types.ts';
 import { animsFor } from './anims/adult.ts';
-import { SWORD, SWORD_Q34 } from '../characters/ronin/masks.ts';
 import { createRigPack } from './compose.ts';
 import { irisShift, type FaceLibrary, type FacePart, type ViewFaceLibrary } from './face.ts';
 import type { Body, BodyView } from './types.ts';
@@ -65,6 +64,29 @@ export const ADULT_HEAD_FEMALE: Mask = [
   '.....seeeeS.....',
   '.......sS.......',
 ];
+
+/**
+ * Adult worn sword (prop slot scale, MA-45): 35 px along a 25° diagonal, hilt (8 px, wrap `X` under a `w` edge) at
+ * the top right, a 2-px guard `r`, then the scabbard (`d` top edge, `v` underside) trailing down to the tip `V`.
+ */
+export function adultSword(length = 35, angleDeg = 25, hilt = 8, guard = 2): Mask {
+  const rad = (angleDeg * Math.PI) / 180;
+  const w = Math.round(length * Math.cos(rad));
+  const h = Math.round(length * Math.sin(rad)) + 2;
+  const rows = Array.from({ length: h }, () => Array.from({ length: w }, () => '.'));
+  for (let x = w - 1; x >= 0; x--) {
+    const along = (w - 1 - x) / Math.cos(rad);
+    const y = Math.round((w - 1 - x) * Math.tan(rad));
+    const [top, bottom] =
+      along < hilt ? ['w', 'X'] : along < hilt + guard ? ['r', 'r'] : x === 0 ? ['V', 'V'] : ['d', 'v'];
+    const r0 = rows[y];
+    const r1 = rows[y + 1];
+    if (r0) r0[x] = top;
+    if (r1) r1[x] = bottom;
+  }
+  return rows.map((r) => r.join(''));
+}
+const ADULT_SWORD = adultSword();
 
 /** q34 head (facing screen-right): back hair mass on the trailing side, ear at col 5, the profile on the right. */
 export const ADULT_HEAD_Q34: Mask = [
@@ -190,8 +212,8 @@ export const ADULT_MALE: Body = {
   head: { mask: ADULT_HEAD, at: ADULT_HEAD_AT, band: ADULT_BAND },
   face: ADULT_FACE,
   masks: { shoe: ADULT_SHOE, neckAcc: { mask: ADULT_COLLAR, at: [-5, 1] } },
-  // Hip prop on an adult body (slot check, MA-45): the sheathed sword masks of the ronin pack, hilt up at the left hip.
-  prop: { mask: SWORD, at: [-15, -12] },
+  // Hip prop at adult scale (MA-45): hilt top on row 36 at the right hip, the scabbard trailing down-left to row 52.
+  prop: { mask: ADULT_SWORD, at: [-21, -4] },
   cloak: {
     ramp: 'hair_plum',
     shade: 2,
@@ -204,7 +226,7 @@ export const ADULT_MALE: Body = {
     bands: [],
   },
   views: {
-    q34: { ...adultQ34({ neckAcc: { mask: ADULT_COLLAR, at: [-5, 1] } }), prop: { mask: SWORD_Q34, at: [-12, -12] } },
+    q34: { ...adultQ34({ neckAcc: { mask: ADULT_COLLAR, at: [-5, 1] } }), prop: { mask: ADULT_SWORD, at: [-23, -4] } },
   },
 };
 

@@ -76,7 +76,13 @@ export type ArmVariant =
   | 'edge'
   | 'hang'
   | 'limp'
-  | 'fold';
+  | 'fold'
+  /** Adult fist pump (happy): elbow out on the shoulder row, the fist up beside the head. */
+  | 'pump'
+  /** Adult hand to the back of the neck (worried, petted), elbow out. */
+  | 'neck'
+  /** Adult hand on the hip, elbow out (worried). */
+  | 'hip';
 
 /** `stand` = feet planted on the ground row (root motion does not move them); the rest hang from the hip. */
 export type LegVariant = 'stand' | 'dangle' | 'sit' | 'curl';
@@ -128,6 +134,8 @@ export interface PoseFrame {
    * the hem near the centre, a fox tail is hidden. Avoids the tail jumping sides between the front and q34 frames.
    */
   readonly tailTucked?: true;
+  /** Two-segment knees only (adult): extra knee offset per leg in frame px (x = screen, y = down). */
+  readonly knees?: { readonly L?: Offset; readonly R?: Offset };
 }
 
 export interface RigAnim {
