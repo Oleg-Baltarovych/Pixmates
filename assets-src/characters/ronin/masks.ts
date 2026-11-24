@@ -37,33 +37,34 @@ export const HEAD: Mask = [
  * outline beside the temples (head mask rows 6–8); the rest of the short hair is the head mask itself (no bob).
  */
 export const HAIR_BACK: Mask = ['J..............J', 'jJ............Jj', '.J............J.'];
-/** q34 back hair (from the head joint − (9, 0)): a short swept-back nape flick behind the skull, never a bob. */
-export const HAIR_BACK_Q34: Mask = ['J.', 'jJ', 'Jj', '.J'];
+/** q34 back hair (from the head joint − (9, 4)): one swept-back spike behind the crown, never a bob or nape mass. */
+export const HAIR_BACK_Q34: Mask = ['J.', 'jJ'];
 /** Last head row the forehead hair-shadow band (`withBand`) may use. */
 export const BAND = 4;
 
 /**
- * q34 head (facing screen-right), same 16 × 16 placement: the tuft 1 px toward the back, swept-back hair mass on the
- * trailing side, 2 strands on the facing brow, the back jaw edge in skin shade 1 (`z`, never an ink column — reads as
- * stubble), the facing contour tapering ≤ 1 px per row to a 1-px chin point.
+ * q34 head (facing screen-right), same 16 × 16 placement: the tuft 1 px toward the back, short swept-back hair cut
+ * above and behind the ear (the ear at cols 5–6 and the temple show, no bob over them), the facing contour tapering
+ * ≤ 1 px per row from the lash row to a 1-px chin point, a jaw corner at col 7–8 with a 1-px skin-1 under-jaw shade
+ * (`z`, never ink: no stubble read).
  */
 export const HEAD_Q34: Mask = [
-  '.....yh.........',
-  '...JjTTjjjJJ....',
-  '.JjhhhhhhhhjjJ..',
-  'JjhhhHyyHhhhhjJ.',
-  'JhhhHhhhhhhhhhjJ',
-  'JhhhhhhjhEhHEhhJ',
-  'JhhhhhjeEEhEhEeJ',
-  'JhhhhjeEEEEEEEEe',
-  'jhhhhjeEEEEEEEEe',
-  'JjhhhzeEEEEEEEEe',
-  '.jhhhjeEEEEEEEEE',
-  '.Jjhh.seEEEEEEEe',
-  '..Jjj.seEEEEEEe.',
-  '...J..zseEEEEe..',
-  '.......zeeeeS...',
-  '...........S....',
+  '......yh........',
+  '......TT........',
+  '...JjjhhjjJJ....',
+  '.JjhhHyyHhhhjJ..',
+  'JjhhHhhhhhhhhhJ.',
+  '.JjhhhjeEEehhJ..',
+  'JjhhhhjeEEEEEe..',
+  '.JjhhhjeEEEEEEe.',
+  '..JjhhjeEEEEEEEe',
+  '...Jjszeeeeeeeee',
+  '...Jjszeeeeeeeee',
+  '....J.zeeeeeeeee',
+  '.......zeeeeeeee',
+  '........zseeees.',
+  '.........zseeS..',
+  '............S...',
 ];
 
 /**

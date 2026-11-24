@@ -74,14 +74,15 @@ export const RONIN_FACE: FaceLibrary = {
   },
 };
 
-/** q34 face (neutral + blink): near eye 4 px, far eye 2 px, the stern brow, the nose shadow on the profile. */
+/** q34 face (neutral + blink): a narrow 2-row near eye (lid cuts the iris), a 2-px far eye, the dark brow angled down
+ * to the nose 1 px clear of the lid, a closed skin-0 mouth line, the nose shadow on the profile. */
 export const RONIN_FACE_Q34: ViewFaceLibrary = {
   eyes: {
-    open: part(['....xXXX.xX.', '.....KCc.C..'], 0, 3),
-    closed: part(['....xXXX.xX.'], 0, 4),
+    open: part(['.....XXx.xX.', '......KC.C..'], 0, 3),
+    closed: part(['.....XXx.xX.'], 0, 4),
   },
-  brows: { stern: part(['....JJ....J.', '......JJ.J..'], 0, 1) },
-  mouths: { flat: part(['.......xx...'], 0, 8) },
+  brows: { stern: part(['....JJ......', '......JJ.J..'], 0, 0) },
+  mouths: { flat: part(['.......ZZ...'], 0, 8) },
   cheeks: { none: part([], 0, 6) },
   nose: part(['S', 's'], 10, 5),
   expressions: {

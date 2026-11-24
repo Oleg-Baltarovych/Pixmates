@@ -80,7 +80,7 @@ const RONIN_Q34: BodyView = {
   masks: {
     shoe: SHOE_Q34,
     neckAcc: { mask: COLLAR_Q34, at: [-5, 1] },
-    hairBack: { mask: HAIR_BACK_Q34, at: [-9, 0] },
+    hairBack: { mask: HAIR_BACK_Q34, at: [-9, -4] },
   },
   prop: { mask: SWORD_Q34, at: [-23, -4], dangle: { mask: CHARM_Q34, at: [19, 8], overHem: true } },
   farLegShade: 0,
