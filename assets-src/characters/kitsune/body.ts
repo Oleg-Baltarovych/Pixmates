@@ -132,7 +132,8 @@ export const KITSUNE: Body = {
   // Short boy's mop: back hair ends at the nape, no procedural side-lock chains (the head mask's locks end mid-cheek).
   hairBackStretch: 0.2,
   // Tailored shorts 1 indigo step under the top, hem raised 2 rows; a darker wrap row on each shin.
-  shorts: { shade: 2, raise: 2, wrapRow: 2, wrapShade: 4 },
+  shorts: { shade: 2, raise: 2 },
+  shinWrap: { row: 2, shade: 4 },
   sash: { rows: 2, knot: { mask: SASH_KNOT, at: [-4, -3.5] } },
   // The global outline next to the side mask in the hair outline ramp (no tan halo).
   hornOutline: 'fur_ash',

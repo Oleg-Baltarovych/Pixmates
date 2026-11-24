@@ -38,7 +38,7 @@ const assertWidth = (mask: Mask, w: number, what: string, blankRows = false): vo
  * q34 head from a front head: the content from the face anchor column moves 2 px toward the facing, the far side
  * lock disappears behind the cheek, and 2 px of hair fill in on the near side (fuller near lock, back of the head).
  * The jaw on the facing side tapers 1 px per row over the last 3 skin rows and ends in a 1-px chin point 1 px in
- * front of the face centre (art round MA-27c-1 A7).
+ * front of the face centre.
  */
 export function deriveQ34Head(front: Mask): Mask {
   assertWidth(front, HEAD_W, 'deriveQ34Head');

@@ -12,7 +12,7 @@ import {
   RIG_H,
   squashRows,
 } from '../../../assets-src/rig/compose.ts';
-import { EXPRESSIONS, validateFace, type FaceLibrary } from '../../../assets-src/rig/face.ts';
+import { EXPRESSIONS, irisShift, validateFace, type FaceLibrary } from '../../../assets-src/rig/face.ts';
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
 import { frame } from '../../../assets-src/rig/anims/kit.ts';
 import { DUMMY_A, DUMMY_B, DUMMY_FACE, DUMMY_HEAD, MAID_PREVIEW } from '../../../assets-src/rig/dummies.ts';
@@ -444,5 +444,21 @@ describe('arm over torso (RIG.md rule, art round 5 c1/c2)', () => {
     expect(fist).toBeGreaterThanOrEqual(12);
     // No arm px above the fist's top row (the old cheek fist read as a scar).
     for (let y = 0; y < hy - 1; y++) for (let x = 0; x < labels.width; x++) expect(at(x, y)).not.toBe(ARM_LABEL.endR);
+  });
+});
+
+describe('irisShift', () => {
+  it('2-px pupil mode: rows holding `XX` below the lash rotate iris + pupil 1 px right per eye half', () => {
+    const m = ['XXXX', 'cXXC', 'cccc'];
+    expect(irisShift(m, 4)).toEqual(['XXXX', 'CcXX', 'cccc']);
+  });
+  it('1-px pupil mode: exactly the listed rows shift, and the pupil ink (x) moves with the iris', () => {
+    const m = ['XXXX', 'cxCc', 'cXcc'];
+    expect(irisShift(m, 4, [1])).toEqual(['XXXX', 'ccxC', 'cXcc']);
+    // Without the rows the 1-px pupil row has no `XX`, so it would not move.
+    expect(irisShift(m, 4)).toEqual(m);
+  });
+  it('shifts each eye half on its own', () => {
+    expect(irisShift(['..', 'cxcx'], 2, [1])).toEqual(['..', 'xcxc']);
   });
 });

@@ -32,7 +32,7 @@ export interface FacePart {
   /** Top-left relative to the face anchor. */
   readonly at: Point;
   /**
-   * Eye masks with a 1-px pupil (kitsune, MA-28): the rows `irisShift` moves (the pupil's ink `x`/`X` moves with the
+   * Eye masks with a 1-px pupil: the rows `irisShift` moves (the pupil's ink `x`/`X` moves with the
    * iris px). Default: the rows holding a 2-px pupil `XX`.
    */
   readonly irisRows?: readonly number[];
@@ -68,9 +68,11 @@ const IRIS = new Set(['c', 'C', 'i', 'I', 'k', 'K', 'X']);
 const IRIS_1PX = new Set([...IRIS, 'x']);
 
 /**
- * Glance (art round MA-27c-2): the irises and pupils move 1 px toward screen-right inside each eye; the lash row,
- * the eye outline and the shine stay put. Only rows with a 2-px pupil (`XX`) below the lash row change, and in each
- * eye half (cols < 10, ≥ 10) the iris/pupil px rotate one position right among themselves (same px count).
+ * Glance: the irises and pupils move 1 px toward screen-right inside each eye; the lash row, the eye outline and
+ * the shine stay put. In each eye half (cols < `half`, ≥ `half`) the iris/pupil px rotate one position right among
+ * themselves (same px count). Two modes: without `rows`, every row below row 0 holding a 2-px pupil (`XX`) shifts
+ * (iris letters + `X`); with `rows` (1-px pupils, `FacePart.irisRows`), exactly those rows shift and the pupil's
+ * lighter ink end `x` moves with the iris too.
  */
 export function irisShift(mask: Mask, half = 10, rows?: readonly number[]): Mask {
   return mask.map((row, y) => {

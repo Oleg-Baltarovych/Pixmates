@@ -16,7 +16,6 @@ const part = (mask: Mask, x: number, y: number, irisRows?: readonly number[]): F
 /** Rows of the open eye whose iris + 1-px pupil move on a glance / eyes-lead frame (below the lash). */
 const IRIS_ROWS = [3, 4, 5] as const;
 
-/** Flick, sloping lash (outer end 1 row higher), 4 × 4 iris with the pupil set inward. */
 /** Arched lid (centre 2 px 1 row up, outer flick kept) over a full 4 × 4 iris, its top row the darkest iris tone. */
 const OPEN: Mask = [
   '.X..XX........XX..X.',

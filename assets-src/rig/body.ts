@@ -107,7 +107,7 @@ export const ARMS: Readonly<Record<ArmVariant, { readonly elbow: Point; readonly
   // Thinking fist UNDER the chin, below the mouth (fist centre = hand joint, frame x ≈ 25 / 23, the row under the jaw):
   // stamped after the head (compose) with its cuff on the forearm side; the forearm runs from the elbow up across the
   // bow/bib. A body whose head or neck differs nudges the hand with `Body.chinHand` (never per-animation forks).
-  // LATER (art round MA-27-3): the fist sits 1 px toward its own arm (4.2 → 3.2), off the jaw line.
+  // LATER: the fist sits 1 px toward its own arm (4.2 → 3.2), off the jaw line.
   chin: { elbow: [-1.8, 4.6], hand: [3.2, 1.85] },
   chest: { elbow: [-1.0, 3.4], hand: [2.0, 4.2] },
   knees: { elbow: [-1.4, 3.4], hand: [-0.6, 6.8] },

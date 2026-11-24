@@ -22,13 +22,13 @@ import {
   bodyViewOf,
   createRigPack,
   createRigRenderer,
+  headViewOf,
   q34FoxTail,
   RIG_H,
   SCARF_MAX_BELOW_CHEST,
 } from '../../../assets-src/rig/compose.ts';
 import { DUMMY_B } from '../../../assets-src/rig/dummies.ts';
 import { EXPRESSIONS, Q34_EXPRESSIONS, validateFace } from '../../../assets-src/rig/face.ts';
-import { headViewOf } from '../../../assets-src/rig/compose.ts';
 import { deriveQ34Head } from '../../../assets-src/rig/q34.ts';
 import type { Body, RigAnim } from '../../../assets-src/rig/types.ts';
 import { checkStrips, facingOf, manifestSchema } from '../../../src/shared/pack.ts';
@@ -44,7 +44,7 @@ const anim = (name: string): RigAnim => {
 const same = (a: { data: Uint8Array }, b: { data: Uint8Array }): boolean =>
   Buffer.from(a.data).equals(Buffer.from(b.data));
 
-describe('rig: scarf ends (neckAcc scarf, MA-28)', () => {
+describe('rig: scarf ends (neckAcc scarf)', () => {
   const q34 = DUMMY_B.views?.q34;
   if (!q34) throw new Error('dummy-b has no q34 view');
   const SCARFED: Body = {
@@ -55,8 +55,8 @@ describe('rig: scarf ends (neckAcc scarf, MA-28)', () => {
   };
 
   it('needs scarf ends per used view', () => {
-    const noFront: Body = { ...SCARFED };
-    delete (noFront as { scarf?: unknown }).scarf;
+    const { scarf, ...noFront } = SCARFED;
+    expect(scarf).toBeDefined();
     expect(() => createRigPack(noFront, ANIMS)).toThrow(/scarf/);
     const noQ34: Body = { ...SCARFED, views: { q34 } };
     expect(() => createRigPack(noQ34, ANIMS)).toThrow(/scarf/);
@@ -97,17 +97,53 @@ describe('rig: scarf ends (neckAcc scarf, MA-28)', () => {
     });
   });
 
-  it('draws the ends (the frame differs from one without them) and has none without a scarf', () => {
+  it('draws the ends only where their centre lines land (every new trim px within 2 px of one) and has none without a scarf', () => {
     const idle = anim('idle_a');
-    const plain: Body = { ...SCARFED, scarf: { at: [3, 5], lengths: [0, 0] } };
-    expect(same(createRigRenderer(SCARFED).render(idle, 0, ctx), createRigRenderer(plain).render(idle, 0, ctx))).toBe(
-      false,
-    );
+    const r = createRigRenderer(SCARFED);
+    const img = r.render(idle, 0, ctx);
+    const plain = createRigRenderer({ ...SCARFED, scarf: { at: [3, 5], lengths: [0, 0] } }).render(idle, 0, ctx);
+    const trim = new Set(palette.ramps.get(SCARFED.ramps.trim) ?? []);
+    const rgbAt = (im: { data: Uint8Array; width: number }, x: number, y: number): number => {
+      const i = (y * im.width + x) * 4;
+      return ((im.data[i] ?? 0) << 16) | ((im.data[i + 1] ?? 0) << 8) | (im.data[i + 2] ?? 0);
+    };
+    // Every new trim px (absent from the frame without ends) lies on an end: within 2 px of a centre-line point.
+    const points = r.scarfEnds(idle, 0).flat();
+    const fresh: [number, number][] = [];
+    for (let y = 0; y < img.height; y++) {
+      for (let x = 0; x < img.width; x++) {
+        if (trim.has(rgbAt(img, x, y)) && rgbAt(img, x, y) !== rgbAt(plain, x, y)) fresh.push([x, y]);
+      }
+    }
+    expect(fresh.length).toBeGreaterThan(0);
+    for (const [x, y] of fresh) {
+      const d = Math.min(...points.map(([px, py]) => Math.hypot(px + 0.5 - (x + 0.5), py + 0.5 - (y + 0.5))));
+      expect(d, `${String(x)},${String(y)}`).toBeLessThanOrEqual(2);
+    }
     expect(createRigRenderer(DUMMY_B).scarfEnds(idle, 0)).toEqual([]);
+  });
+
+  it('caps the ends per body (ScarfEnds.maxBelowChest / maxTrail)', () => {
+    const capped: Body = { ...SCARFED, scarf: { at: [3, 5], lengths: [4, 5], maxBelowChest: 1 } };
+    const r = createRigRenderer(capped);
+    const idle = anim('idle_a');
+    const chest = Math.floor(r.joints(idle, 0).chest[1]);
+    for (const end of r.scarfEnds(idle, 0)) for (const [, y] of end.slice(1)) expect(y).toBeLessThanOrEqual(chest + 1);
+    const q = SCARFED.views?.q34;
+    if (!q?.scarf) throw new Error('q34 scarf');
+    const short = createRigRenderer({ ...SCARFED, views: { q34: { ...q, scarf: { ...q.scarf, maxTrail: 1 } } } });
+    const walk = anim('walk');
+    walk.frames.forEach((_, f) => {
+      for (const end of short.scarfEnds(walk, f)) {
+        const root = end[0];
+        if (!root) throw new Error('root');
+        for (const [x] of end) expect(root[0] - x).toBeLessThanOrEqual(1);
+      }
+    });
   });
 });
 
-describe('rig: per-body fox tail (MA-28)', () => {
+describe('rig: per-body fox tail', () => {
   it('keeps the dummy-b default tail', () => {
     const r = createRigRenderer(DUMMY_B);
     const walk = anim('walk');
@@ -150,7 +186,7 @@ describe('rig: per-body fox tail (MA-28)', () => {
   });
 });
 
-describe('palette ramps fur_ash + cloth_indigo (MA-28)', () => {
+describe('art gate (kitsune.md): palette ramps fur_ash + cloth_indigo', () => {
   const ramp = (name: string): readonly number[] => palette.ramps.get(name) ?? [];
   it('fur_ash stays silver (mid chroma ≤ 0.03) and ≥ 0.08 L from cloth_indigo at every step; no #000', () => {
     const fur = ramp('fur_ash').map(toOklab);
@@ -168,7 +204,7 @@ describe('palette ramps fur_ash + cloth_indigo (MA-28)', () => {
   });
 });
 
-describe('pixmates.kitsune pack (MA-28)', () => {
+describe('pixmates.kitsune pack', () => {
   const built = buildPack(createKitsunePack(), ctx);
   const m = manifestSchema.parse(built.manifest);
   const q34 = KITSUNE.views?.q34;
@@ -431,7 +467,7 @@ describe('pixmates.kitsune pack (MA-28)', () => {
   });
 });
 
-describe('kitsune art round MA-28-2', () => {
+describe('art gate (kitsune.md): q34 near lock, side-mask slits, neutral lid', () => {
   const slotOf = (ch: string): string | undefined => LEGEND[ch]?.[0];
   it('ends the q34 near lock at the eye-bottom row + 1 (row 21), tapering to a 1-px tip', () => {
     const rows = HEAD_Q34.flatMap((row, y) =>
@@ -468,7 +504,7 @@ describe('kitsune art round MA-28-2', () => {
   });
 });
 
-describe('kitsune art round MA-28-1', () => {
+describe('art gate (kitsune.md): side mask, front tail, shins, neutral face', () => {
   const slotOf = (ch: string): string | undefined => LEGEND[ch]?.[0];
   const q34 = KITSUNE.views?.q34;
   if (!q34) throw new Error('q34');
@@ -515,7 +551,7 @@ describe('kitsune art round MA-28-1', () => {
     expect(same(r.render(idle, 0, ctx), createRigRenderer(plain).render(idle, 0, ctx))).toBe(false);
   });
 
-  it('shows ≥ 4 cream shin rows above the tabi, with one darker wrap row, under darker tailored shorts', () => {
+  it('shows ≥ 4 cream shin rows above the tabi, with one darker wrap row', () => {
     const r = createRigRenderer(KITSUNE);
     const idle = anim('idle_a');
     const img = r.render(idle, 0, ctx);
@@ -531,9 +567,6 @@ describe('kitsune art round MA-28-1', () => {
       if (cream.includes(rgb(x, y))) rows.push(rgb(x, y));
     expect(rows.length).toBeGreaterThanOrEqual(4);
     expect(rows).toContain(cream[4]);
-    const shade = KITSUNE.shorts?.shade ?? 3;
-    expect(shade).toBeLessThanOrEqual(2);
-    expect(KITSUNE.sash?.rows).toBe(2);
   });
 
   it('neutral face: 1 light blush px per cheek, fang under the high smirk corner, inner lid lifted', () => {

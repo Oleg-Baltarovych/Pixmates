@@ -124,7 +124,7 @@ export interface PoseFrame {
   /** Eyes lead: the irises move 1 px toward screen-right on this frame (turn f0), lashes and shine stay. */
   readonly irisDx?: 1;
   /**
-   * The tail is tucked behind the skirt on this frame (turn f0, art round MA-27d-1): no tube; a spade tip shows under
+   * The tail is tucked behind the skirt on this frame (turn f0): no tube; a spade tip shows under
    * the hem near the centre, a fox tail is hidden. Avoids the tail jumping sides between the front and q34 frames.
    */
   readonly tailTucked?: true;
@@ -154,7 +154,7 @@ export interface BodyVariants {
   readonly sleeves: 'short' | 'long';
 }
 
-/** Maid apron: bib mask on the bodice + front panel; `dx` shifts the panel off the hip centre (q34: toward facing). */
+/** Apron: bib mask on the bodice + front panel; `dx` shifts the panel off the hip centre (q34: toward facing). */
 export interface Apron {
   readonly bib: PlacedMask;
   readonly panelW: number;
@@ -164,7 +164,7 @@ export interface Apron {
 }
 
 /**
- * Per-body fox tail (`back: 'fox_tail'`, MA-28). Unset views keep the rig defaults (dummy-b's tail). Radii are per
+ * Per-body fox tail (`back: 'fox_tail'`). Unset views keep the rig defaults (dummy-b's tail). Radii are per
  * centre-line point, root first; the pale tip is a second stroke over the last `tipRadii.length` points.
  */
 export interface FoxTail {
@@ -179,7 +179,7 @@ export interface FoxTail {
     readonly bend?: readonly Point[];
     /** Chain root from the back joint, x toward the tail side (default [1, 1]). */
     readonly root?: Point;
-    /** A thin lit shine stroke (tail ramp shade 5) along the upper-left edge of the fur part (kitsune, MA-28 r1). */
+    /** A thin lit shine stroke (tail ramp shade 5) along the upper-left edge of the fur part. */
     readonly shine?: true;
   };
   /** q34: a fixed centre line from the back joint (trailing = −x); the tip swings against `hairDx`. */
@@ -191,13 +191,17 @@ export interface FoxTail {
 }
 
 /**
- * Scarf ends (`neckAcc: 'scarf'`, MA-28): two 2-segment chains (2 px wide) hung from `at` (from the neck joint;
+ * Scarf ends (`neckAcc: 'scarf'`): two 2-segment chains (2 px wide) hung from `at` (from the neck joint;
  * front: under the knot; q34: at the nape, trailing). The knot and band are the authored neck_acc mask.
  */
 export interface ScarfEnds {
   readonly at: Point;
   /** Length (px) of each end. */
   readonly lengths: readonly [number, number];
+  /** End points never go below the chest row + this many rows (default `SCARF_MAX_BELOW_CHEST`, 5). */
+  readonly maxBelowChest?: number;
+  /** q34: end points trail at most this many px behind their nape root (default `SCARF_MAX_TRAIL`, 6). */
+  readonly maxTrail?: number;
 }
 
 /** Per-view authored parts (ADR 010): a body supplies them for every non-front view its poses use. */
@@ -219,7 +223,7 @@ export interface BodyView {
   readonly apron?: Apron;
   /**
    * Opt-in: hair px touching the near (L) sleeve take this ramp's shade 1, a 1-px line so a sleeve puff never melts
-   * into a near lock of a similar value (maid: plum against lilac).
+   * into a near lock of a similar value (e.g. a plum sleeve against lilac hair).
    */
   readonly sleeveHairLine?: RampName;
   /**
@@ -229,7 +233,7 @@ export interface BodyView {
    */
   readonly hideFarShoulder?: true;
   /**
-   * Opt-in (kitsune MA-28 r2): the far leg in this legs-ramp shade, with a 1-px outline (shade 0) where it touches the
+   * Opt-in: the far leg in this legs-ramp shade (0..5, part id `FAR_LEG_ID`), with shade-0 px where it touches the
    * near leg, so two pale shins never merge into one patch on the walk contact frames.
    */
   readonly farLegShade?: number;
@@ -274,7 +278,7 @@ export interface Body {
     readonly spade?: Mask;
   };
   /**
-   * Maid apron (clothAlt ramp): `bib` is an authored mask on the bodice (`at` from the neck joint; torso part, so the
+   * Apron (clothAlt ramp): `bib` is an authored mask on the bodice (`at` from the neck joint; torso part, so the
    * arm-over-torso pass and check treat it as torso; drawn under `neckAcc`); the front panel is `panelW` px wide on
    * the skirt from the waist band to 1 row above the hem, with a 1-px frill on its sides and bottom.
    */
@@ -287,24 +291,22 @@ export interface Body {
    */
   readonly chinHand?: Offset;
   /**
-   * Back-hair length below the temples as a stretch factor (default: `hairBack` short 1 / long 1.45). Kitsune 0.55:
-   * a short mop ending at the nape (MA-28).
+   * Back-hair length below the temples as a stretch factor (default: `hairBack` short 1 / long 1.45); a small
+   * factor (e.g. 0.2) gives a short mop ending at the nape.
    */
   readonly hairBackStretch?: number;
-  /** Opt-out of the procedural side-lock chains: the head mask's own (short) locks only (kitsune, MA-28). */
-  readonly sideLocks?: false;
+  /** Procedural side-lock chains (default true); false = the head mask's own (short) locks only. */
+  readonly sideLocks?: boolean;
   /**
-   * Tailored shorts (`hem: 'shorts'`, kitsune MA-28 r1): `shade` of the clothAlt ramp (default 3), hem raised
-   * `raise` rows; front view adds a 1-px notch between the legs and a 1-px outward flare at each leg hem. `wrapRow`:
-   * a darker shin-wrap row (legs ramp shade 3) this many rows above each foot joint.
+   * Tailored shorts (`hem: 'shorts'`): `shade` of the clothAlt ramp (0..5, default 3), hem raised `raise` rows;
+   * the front view adds a 1-px notch between the legs and a 1-px outward flare at each leg hem.
    */
-  readonly shorts?: {
-    readonly shade: number;
-    readonly raise: number;
-    readonly wrapRow: number;
-    /** Legs-ramp shade of the wrap row (default 3). */
-    readonly wrapShade?: number;
-  };
+  readonly shorts?: { readonly shade: number; readonly raise: number };
+  /**
+   * Shin wraps: a darker legs-ramp row `row` rows above each foot joint, in `shade` (0..5, default 3); only leg px
+   * (near and far) are painted.
+   */
+  readonly shinWrap?: { readonly row: number; readonly shade?: number };
   /** Waist sash: band height in rows (default 1) and a knot mask on the near hip (from the hip joint). */
   readonly sash?: { readonly rows: number; readonly knot: PlacedMask };
   /** Fox tail shape per view (default: the rig's dummy-b tail). */
