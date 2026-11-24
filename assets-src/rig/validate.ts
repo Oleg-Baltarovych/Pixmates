@@ -8,7 +8,7 @@ import MASTER from '../palettes/master.json' with { type: 'json' };
 import { frame as poseFrame } from './anims/kit.ts';
 import { resolveJoints } from './body.ts';
 import { layoutOf } from './layout.ts';
-import { BREATH_GLOW, dressShadeOf, HEM_LIFT_MAX, hemLiftOf } from './chains.ts';
+import { BREATH_GLOW, dressShadeOf, HEM_LIFT_MAX, hemLiftOf, skirtRampOf } from './chains.ts';
 import { EXPRESSIONS, Q34_EXPRESSIONS, validateFace, type ExpressionId } from './face.ts';
 import { FISTS, fistKindOf } from './passes.ts';
 import type { Body, BodyView, Prop, RigAnim, View } from './types.ts';
@@ -106,13 +106,16 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
     { name: 'sleeve.shade', s: body.sleeve?.shade, ramp: sleeveRamp },
     ...(body.cuff ? [{ name: 'cuff.shade', s: body.cuff.shade, ramp: body.cuff.ramp, int: true as const }] : []),
     { name: 'sleeveRim', s: body.sleeveRim, ramp: sleeveRamp, int: true },
-    { name: 'skirtSplit.shade', s: body.skirtSplit?.shade, ramp: body.ramps.cloth, int: true },
-    { name: 'skirtSplit.notchShade', s: body.skirtSplit?.notchShade, ramp: body.ramps.cloth, int: true },
-    { name: 'skirtSplit.pleats.shade', s: body.skirtSplit?.pleats?.shade, ramp: body.ramps.cloth, int: true },
-    { name: 'skirtSplit.pleats.lit', s: body.skirtSplit?.pleats?.lit, ramp: body.ramps.cloth, int: true },
-    { name: 'skirtSplit.rim.shade', s: body.skirtSplit?.rim?.shade, ramp: body.ramps.cloth, int: true },
-    { name: 'skirtSplit.rim.lit', s: body.skirtSplit?.rim?.lit, ramp: body.ramps.cloth, int: true },
-    { name: 'skirtSplit.q34.pleat', s: body.skirtSplit?.q34?.pleat, ramp: body.ramps.cloth, int: true },
+    ...(body.hakama
+      ? [{ name: 'hakama.shade', s: body.hakama.shade, ramp: body.hakama.ramp, int: true as const }]
+      : []),
+    { name: 'skirtSplit.shade', s: body.skirtSplit?.shade, ramp: skirtRampOf(body), int: true },
+    { name: 'skirtSplit.notchShade', s: body.skirtSplit?.notchShade, ramp: skirtRampOf(body), int: true },
+    { name: 'skirtSplit.pleats.shade', s: body.skirtSplit?.pleats?.shade, ramp: skirtRampOf(body), int: true },
+    { name: 'skirtSplit.pleats.lit', s: body.skirtSplit?.pleats?.lit, ramp: skirtRampOf(body), int: true },
+    { name: 'skirtSplit.rim.shade', s: body.skirtSplit?.rim?.shade, ramp: skirtRampOf(body), int: true },
+    { name: 'skirtSplit.rim.lit', s: body.skirtSplit?.rim?.lit, ramp: skirtRampOf(body), int: true },
+    { name: 'skirtSplit.q34.pleat', s: body.skirtSplit?.q34?.pleat, ramp: skirtRampOf(body), int: true },
     ...cloakShades(body),
     ...outlines.flatMap((o) => [
       { name: `silhouetteOutline.${o.ramp}.lit`, s: o.lit, ramp: o.ramp, int: true as const },
@@ -253,12 +256,14 @@ function headAccProblems(body: Body, frameH: number): string[] {
 
 /** `Body.skirtSplit.rows` upper bound (the split stays in the lower hem). */
 export const SKIRT_SPLIT_MAX = 12;
+/** `Body.hakama.drop` upper bound (extra standing hem rows). */
+export const HAKAMA_DROP_MAX = 16;
 /** `Body.skirtSplit.hemHalf` bounds (px from the hip axis): at least the waist half-width, at most the default bell. */
 export const SKIRT_HEM_HALF_RANGE = [6, 10] as const;
 /** `Body.sash.dy` upper bound (whole rows under the default waist band). */
 export const SASH_DY_MAX = 3;
 /** `Body.cloak` bounds: hem rows below the hip, `maxTrail` px, lobes per side. */
-export const CLOAK_MAX = { hemRow: 6, maxTrail: 4, lobes: 4 } as const;
+export const CLOAK_MAX = { hemRow: 6, maxTrail: 4, lobes: 4, wisps: 3, wispLength: 3 } as const;
 
 /** Cloak shade opt-ins (whole, within their ramps). */
 function cloakShades(body: Body): { name: string; s: number | undefined; ramp?: RampName; int: true }[] {
@@ -269,6 +274,7 @@ function cloakShades(body: Body): { name: string; s: number | undefined; ramp?: 
     { name: 'cloak.litShade', s: c.litShade, ramp: c.ramp, int: true },
     { name: 'cloak.hem.curlShade', s: c.hem.curlShade, ramp: c.ramp, int: true },
     { name: 'cloak.innerShade', s: c.innerShade, ramp: c.ramp, int: true },
+    { name: 'cloak.hem.wisps.tipShade', s: c.hem.wisps?.tipShade, ramp: c.ramp, int: true },
     ...c.bands.map((b, i) => ({
       name: `cloak.bands[${String(i)}].shade`,
       s: b.shade,
@@ -399,6 +405,16 @@ function slotProblems(body: Body, usesQ34: boolean): string[] {
       problems.push(`${id}: cloak.maxTrail must be a whole 0..${String(CLOAK_MAX.maxTrail)}`);
     if (!whole(c.hem.lobes, 0, CLOAK_MAX.lobes))
       problems.push(`${id}: cloak.hem.lobes must be a whole 0..${String(CLOAK_MAX.lobes)}`);
+    const wisps = c.hem.wisps;
+    if (
+      wisps &&
+      (!whole(wisps.count, 1, CLOAK_MAX.wisps) ||
+        !whole(wisps.length, 1, CLOAK_MAX.wispLength) ||
+        !whole(wisps.span, wisps.count * wisps.length, c.widths.hem))
+    )
+      problems.push(
+        `${id}: cloak.hem.wisps needs count 1..${String(CLOAK_MAX.wisps)}, length 1..${String(CLOAK_MAX.wispLength)}, span count × length..hem`,
+      );
     if (!whole(c.hem.curl, 0, 3) || !whole(c.hem.cornerDrop, 0, 3))
       problems.push(`${id}: cloak corner curl / drop must be whole 0..3`);
     const maxHalf = layoutOf(body).w / 2 - 2;
@@ -419,8 +435,8 @@ function slotProblems(body: Body, usesQ34: boolean): string[] {
   }
   const split = body.skirtSplit;
   if (split) {
-    if (!whole(split.rows, 1, SKIRT_SPLIT_MAX))
-      problems.push(`${id}: skirtSplit.rows must be a whole 1..${String(SKIRT_SPLIT_MAX)}`);
+    const splitMax = SKIRT_SPLIT_MAX + (body.hakama?.drop ?? 0);
+    if (!whole(split.rows, 1, splitMax)) problems.push(`${id}: skirtSplit.rows must be a whole 1..${String(splitMax)}`);
     if (body.variants.hem !== 'skirt') problems.push(`${id}: skirtSplit needs hem 'skirt'`);
     if (!whole(split.notch, 0, split.rows)) problems.push(`${id}: skirtSplit.notch must be a whole 0..rows`);
     const [lo, hi] = SKIRT_HEM_HALF_RANGE;
@@ -435,6 +451,8 @@ function slotProblems(body: Body, usesQ34: boolean): string[] {
   if (!whole(body.sash?.dy, 0, SASH_DY_MAX)) {
     problems.push(`${id}: sash.dy must be a whole 0..${String(SASH_DY_MAX)}`);
   }
+  if (body.hakama && (body.variants.hem !== 'skirt' || !whole(body.hakama.drop, 0, HAKAMA_DROP_MAX)))
+    problems.push(`${id}: hakama needs hem 'skirt' and a whole drop 0..${String(HAKAMA_DROP_MAX)}`);
   if (body.skirtLace === false && body.variants.hem !== 'skirt') problems.push(`${id}: skirtLace needs hem 'skirt'`);
   return problems;
 }

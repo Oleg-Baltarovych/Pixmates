@@ -1,12 +1,10 @@
-// ronin face library (MA-29b, docs/art/ronin.md §4; format in rig/face.ts). Parts sit on the face anchor (head mask
-// col 5, row 12); masks are 20 px wide, the eyes mirrored about the face centre (cols 9|10) except the shine, which is
-// top-left in both eyes. Jade eyes, calm gentle tareme: a thin 1-px lash straight across whose outer end dips 1 row
-// (never an up-flick), a full 4 × 4 iris (darkest row on top), a 2 × 2 jade-0 pupil (pale, luminous — not ink), a
-// 1 × 2 cream highlight top-left, a 1-px jade-5 lower highlight (the "spirit" glow) and an outer cream sclera sliver.
-// Neutral = composed closed mouth (2-px ink on the axis + a skin-2 softener each side), one blush px per cheek, brows
-// hidden. Signatures: happy serene closed flat lines with drooped outer ends + 3-px smile + `fFFf`; petted slow-closed
-// eyes, tiny smile, full blush; think both eyes closed (meditation), flat mouth; startle lash lifted 1 row, 1 × 1
-// pupils, sclera both sides, small `o`; worried 2-px brows inner ends up (only here), wavy mouth.
+// ronin face library — adult redesign MA-46 (ADR 011 adult face rules, ART-BIBLE §11.0; format in rig/face.ts).
+// Parts sit on the face anchor (head mask col 2, row 5); masks are 12 px wide, mirrored about the face centre
+// (cols 5|6). A stern ~25-year-old: tsurime half-lid (a heavy ink lid, the inner corner lighter), brows angled down to
+// the nose, dark jade-0 pupils with a jade-1 rim and a 1-px jade-5 glint, a cream sclera px outside; a 3-px flat
+// mouth; a skin nose shadow; clean-shaven; no blush outside petted. Signatures (ronin.md): happy = serene closed
+// eyes with drooped outer ends + a small closed smile; think = meditation (eyes closed, level brows, flat mouth);
+// worried = the inner brow ends lifted.
 import type { FaceLibrary, FacePart, ViewFaceLibrary } from '../../rig/face.ts';
 import { irisShift } from '../../rig/face.ts';
 import type { Mask } from '../../lib/mask.ts';
@@ -14,121 +12,80 @@ import type { Mask } from '../../lib/mask.ts';
 const part = (mask: Mask, x: number, y: number, irisRows?: readonly number[]): FacePart =>
   irisRows ? { mask, at: [x, y], irisRows } : { mask, at: [x, y] };
 
-/** Rows of the open eye whose iris + pupil move on a glance / eyes-lead frame (the lash-dip row stays). */
-const IRIS_ROWS = [2, 3] as const;
+/** Rows of the open eye whose pupil + glint move on a glance. */
+const IRIS_ROWS = [1] as const;
+/** Glance split column (`RigLayout.irisHalf`, adult 6). */
+const EYE_HALF = 6;
 
-/** Open: lash row 0 (outer end 1 row down on row 1), iris rows 1–4. */
-const OPEN: Mask = [
-  '...XXXXX....XXXXX...',
-  '..XPccc......PcccX..',
-  '..pPCCi......PCCip..',
-  '..piCCI......iCCIp..',
-  '...IkKI......IkKI...',
-];
-/** Startle: the lash lifted 1 row (placed 1 row higher), 1 × 1 pupils, sclera both sides of the iris. */
-const STARTLE: Mask = [
-  '...XXXXX....XXXXX...',
-  '..pPcccp....pPcccp..',
-  '..pPiCip....pPiCip..',
-  '..piiiIp....piiiIp..',
-  '...IkKI......IkKI...',
-];
-/** Wince: the screen-right eye squeezed shut (`<`), the other open. */
-const WINCE: Mask = [
-  '...XXXXX............',
-  '..XPccc.....XXx.....',
-  '..pPCCi.......XX....',
-  '..piCCI.....XXx.....',
-  '...IkKI.............',
-];
-/** Closed (blink, sleep, think, petted): the lash line with its drooped outer ends. */
-const CLOSED: Mask = ['...XXXXX....XXXXX...', '..x..............x..'];
+/** Open: the heavy half-lid (outer end ink 0, inner end ink 1), then sclera · glint · pupil · rim. */
+const OPEN: Mask = ['.XXXx..xXXX.', '.pKCc..cCKp.'];
 
 export const RONIN_FACE: FaceLibrary = {
   eyes: {
     open: part(OPEN, 0, 3, IRIS_ROWS),
-    /** Worried: the whole eye 1 px lower under the raised inner brows. */
     low: part(OPEN, 0, 4, IRIS_ROWS),
-    closed: part(CLOSED, 0, 5),
-    half: part(['...XXXXX....XXXXX...', '..XiCCi......iCCiX..', '...IkKI......IkKI...'], 0, 5),
-    /** Happy: serene closed flat lines, outer ends drooped (not ^^, not arcs). */
-    serene: part(['...XXXX......XXXX...', '..X..............X..'], 0, 5),
-    startle: part(STARTLE, 0, 2),
-    wince: part(WINCE, 0, 3),
-    /** Glance: neutral with the iris + pupil 1 px toward screen-right (lash, dip, outline and shine stay). */
-    side: part(irisShift(OPEN, 10, IRIS_ROWS), 0, 3, IRIS_ROWS),
+    side: part(irisShift(OPEN, EYE_HALF, IRIS_ROWS), 0, 3, IRIS_ROWS),
+    closed: part(['.XXXx..xXXX.'], 0, 4),
+    half: part(['.xXXx..xXXx.', '..KC....CK..'], 0, 4),
+    /** Serene closed lines, the outer ends drooped (not ^^, not arcs). */
+    serene: part(['..XXX..XXX..', '.x........x.'], 0, 4),
+    startle: part(['.xXXx..xXXx.', '.pKCp..pCKp.', '..pp....pp..'], 0, 3),
+    wince: part(['.XXXx..x....', '.pKCc...xXX.', '.......x....'], 0, 3),
+    petted: part(['..XX....XX..', '.x..x..x..x.'], 0, 3),
   },
   brows: {
-    /** Worried: 2-px brows, inner ends up (the only expression with brows). */
-    worried: part(['......X......X......', '.....x........x.....'], 0, 1),
+    /** Stern: outer ends high, sloping down to the nose (2 rows). */
+    stern: part(['.jj......jj.', '...jJ..Jj...'], 0, 1),
+    /** Worried (only here): the inner ends lifted. */
+    worried: part(['...Jj..jJ...', '.jj......jj.'], 0, 1),
+    up: part(['.jjJj..jJjj.'], 0, 1),
+    /** Meditation: level, calm. */
+    level: part(['.jjJj..jJjj.'], 0, 2),
   },
   mouths: {
-    /** Composed closed mouth: 2-px ink on the axis, a skin-2 softener each side. */
-    calm: part(['........sXXs........'], 0, 10),
-    /** Small 3-px smile (corners up in light ink). */
-    smile: part(['........x..x........', '.........XX.........'], 0, 10),
-    /** Tiny smile (petted). */
-    tiny: part(['........x..x........', '.........xx.........'], 0, 10),
-    flat: part(['........xXXx........'], 0, 10),
-    talk_a: part(['.........XX.........', '.........xx.........'], 0, 10),
-    talk_b: part(['........xXXx........', '.........XX.........'], 0, 10),
-    talk_c: part(['........XXXX........', '........XxxX........', '.........XX.........'], 0, 10),
-    /** Worried: a wavy 4-px line. */
-    wavy: part(['........x.x.........', '.........X.X........'], 0, 10),
-    /** Startle: a small `o`. */
-    small_o: part(['.........XX.........', '.........XX.........'], 0, 10),
-    sleepy: part(['.........xx.........'], 0, 10),
-    /** Wince: gritted teeth. */
-    gritted: part(['........XPPX........', '.........XX.........'], 0, 10),
+    flat: part(['....xXXx....'], 0, 8),
+    talk_a: part(['.....xXx....', '......z.....'], 0, 8),
+    talk_b: part(['.....XXX....', '......x.....'], 0, 8),
+    talk_c: part(['.....xXx....', '.....XzX....', '......x.....'], 0, 8),
+    serene: part(['....x...x...', '.....xXx....'], 0, 8),
+    frown: part(['.....xXx....', '....x...x...'], 0, 8),
+    small_o: part(['.....xx.....', '.....xx.....'], 0, 8),
   },
   cheeks: {
-    none: part([], 0, 9),
-    /** Neutral family: 1 light px per cheek. */
-    light: part(['...f............f...'], 0, 9),
-    soft: part(['..fFFf........fFFf..'], 0, 9),
-    strong: part(['..FFFF........FFFF..', '..fFFf........fFFf..'], 0, 9),
+    none: part([], 0, 6),
+    blush: part(['.FF......FF.'], 0, 6),
   },
+  nose: part(['S', 's'], 6, 5),
   expressions: {
-    neutral: { eyes: 'open', mouth: 'calm', cheeks: 'light' },
-    blink: { eyes: 'closed', mouth: 'calm', cheeks: 'light' },
-    half: { eyes: 'half', mouth: 'calm', cheeks: 'light' },
-    talk_a: { eyes: 'open', mouth: 'talk_a', cheeks: 'light' },
-    talk_b: { eyes: 'open', mouth: 'talk_b', cheeks: 'light' },
-    talk_c: { eyes: 'open', mouth: 'talk_c', cheeks: 'light' },
-    happy: { eyes: 'serene', mouth: 'smile', cheeks: 'soft' },
-    worried: { eyes: 'low', brows: 'worried', mouth: 'wavy', cheeks: 'none' },
-    think: { eyes: 'closed', mouth: 'flat', cheeks: 'light' },
-    sleep: { eyes: 'closed', mouth: 'sleepy', cheeks: 'light' },
-    startle: { eyes: 'startle', mouth: 'small_o', cheeks: 'none' },
-    petted: { eyes: 'closed', mouth: 'tiny', cheeks: 'strong' },
-    wince: { eyes: 'wince', mouth: 'gritted', cheeks: 'soft' },
-    glance: { eyes: 'side', mouth: 'calm', cheeks: 'light' },
+    neutral: { eyes: 'open', brows: 'stern', mouth: 'flat', cheeks: 'none' },
+    blink: { eyes: 'closed', brows: 'stern', mouth: 'flat', cheeks: 'none' },
+    half: { eyes: 'half', brows: 'stern', mouth: 'talk_a', cheeks: 'none' },
+    talk_a: { eyes: 'open', brows: 'stern', mouth: 'talk_a', cheeks: 'none' },
+    talk_b: { eyes: 'open', brows: 'stern', mouth: 'talk_b', cheeks: 'none' },
+    talk_c: { eyes: 'open', brows: 'stern', mouth: 'talk_c', cheeks: 'none' },
+    happy: { eyes: 'serene', mouth: 'serene', cheeks: 'none' },
+    worried: { eyes: 'low', brows: 'worried', mouth: 'frown', cheeks: 'none' },
+    think: { eyes: 'closed', brows: 'level', mouth: 'flat', cheeks: 'none' },
+    sleep: { eyes: 'closed', mouth: 'small_o', cheeks: 'none' },
+    startle: { eyes: 'startle', brows: 'up', mouth: 'talk_c', cheeks: 'none' },
+    petted: { eyes: 'petted', mouth: 'serene', cheeks: 'blush' },
+    wince: { eyes: 'wince', brows: 'worried', mouth: 'flat', cheeks: 'none' },
+    glance: { eyes: 'side', brows: 'stern', mouth: 'flat', cheeks: 'none' },
   },
 };
 
-// ── q34 (neutral + blink): near (left) eye = the front eye, the far eye 1 px narrower (3-px iris, no outer sclera);
-// mouth 1 px toward the facing; blush on the near cheek.
-const OPEN_Q34: Mask = [
-  '...XXXXX....XXXX....',
-  '..XPccc......PccX...',
-  '..pPCCi......PCC....',
-  '..piCCI......iCC....',
-  '...IkKI......IkK....',
-];
-
+/** q34 face (neutral + blink): near eye 4 px, far eye 2 px, the stern brow, the nose shadow on the profile. */
 export const RONIN_FACE_Q34: ViewFaceLibrary = {
   eyes: {
-    open: part(OPEN_Q34, 0, 3, IRIS_ROWS),
-    closed: part(['...XXXXX....XXXX....', '..x.............x...'], 0, 5),
+    open: part(['....xXXX.xX.', '....pKCc.C..'], 0, 3),
+    closed: part(['....xXXX.xX.'], 0, 4),
   },
-  mouths: {
-    calm: part(['.........sXXs.......'], 0, 10),
-  },
-  cheeks: {
-    light: part(['...f................'], 0, 9),
-  },
+  brows: { stern: part(['....jj....j.', '......jJ.J..'], 0, 1) },
+  mouths: { flat: part(['......xXX...'], 0, 8) },
+  cheeks: { none: part([], 0, 6) },
+  nose: part(['S', 's'], 10, 5),
   expressions: {
-    neutral: { eyes: 'open', mouth: 'calm', cheeks: 'light' },
-    blink: { eyes: 'closed', mouth: 'calm', cheeks: 'light' },
+    neutral: { eyes: 'open', brows: 'stern', mouth: 'flat', cheeks: 'none' },
+    blink: { eyes: 'closed', brows: 'stern', mouth: 'flat', cheeks: 'none' },
   },
 };

@@ -247,6 +247,17 @@ export interface Cloak {
     readonly curl?: number;
     /** Shade of the 1-px curl line above each lobe dip (default none). */
     readonly curlShade?: number;
+    /**
+     * Opt-in (MA-46): `count` regular tapered tongues per side hanging under the hem, evenly spaced over the outer
+     * `span` px of each side (so they clear a hem / skirt in front), each `length` rows (≤ `CLOAK_MAX.wispLength`)
+     * narrowing 1 px per row (3 → 2 → 1); `tipShade` on the last row.
+     */
+    readonly wisps?: {
+      readonly count: number;
+      readonly length: number;
+      readonly span: number;
+      readonly tipShade?: number;
+    };
   };
   /**
    * Opt-in inner shadow: cloak px 4-touching a drawn hem / leg / torso px take this shade (0..5), a 1-px column where
@@ -439,6 +450,12 @@ export interface Body {
   /** Procedural side-lock chains (default true); false = the head mask's own (short) locks only. */
   readonly sideLocks?: boolean;
   /**
+   * Opt-in (MA-46): the last pass gives every px of this ramp that has no 4-neighbour of the same ramp the most
+   * common opaque 4-neighbour colour (ties → the darker), so a pale cloth (e.g. ronin's mist haori sleeves) never
+   * leaves a 1-px speck at a cuff, hand or lapel (a floating pale dot reads as a hitodama).
+   */
+  readonly despeckle?: RampName;
+  /**
    * Opt-in: each drawn side lock is one straight lean from its root to its simulated tip (`leanLock`), so a lagging
    * chain never steps out locally (no headphone bulge at cheek height); the tip keeps its secondary motion.
    */
@@ -475,6 +492,12 @@ export interface Body {
    * Front only: a 1-px centre line `rows` high from the skirt hem in cloth `shade` (0..5, whole), e.g. a hakama split;
    * `notch` cuts a 2-px gap that many rows up from the hem between the legs (default 0).
    */
+  /**
+   * Opt-in hakama (MA-46): the skirt (and every `skirtSplit` tone) in its own `ramp` / whole `shade` instead of the
+   * cloth ramp + `dressShade`, and `drop` extra hem rows on standing frames (≤ `HAKAMA_DROP_MAX`; seated, dangling
+   * and curled legs keep the default hem) so the trapezoid reaches the ankles over the split legs.
+   */
+  readonly hakama?: { readonly ramp: RampName; readonly shade: number; readonly drop: number };
   readonly skirtSplit?: {
     readonly rows: number;
     readonly shade: number;

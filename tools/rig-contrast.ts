@@ -2,7 +2,7 @@
 //   node tools/rig-contrast.ts [<body id>]
 import { armTorsoContrast, armTorsoProblems } from '../assets-src/rig/checks.ts';
 import { bodyViewOf, createRigRenderer } from '../assets-src/rig/compose.ts';
-import { ANIMS } from '../assets-src/rig/anims/index.ts';
+import { animsFor } from '../assets-src/rig/anims/adult.ts';
 import { DUMMY_A, DUMMY_B, MAID_PREVIEW } from '../assets-src/rig/dummies.ts';
 import { GOTH } from '../assets-src/characters/goth/body.ts';
 import { KITSUNE } from '../assets-src/characters/kitsune/body.ts';
@@ -18,7 +18,7 @@ const only = process.argv[2];
 for (const body of [MAID, KITSUNE, GOTH, WITCH, RONIN, DUMMY_A, DUMMY_B, MAID_PREVIEW]) {
   if (only && body.id !== only) continue;
   const r = createRigRenderer(body);
-  for (const anim of ANIMS) {
+  for (const anim of animsFor(body)) {
     const rows = anim.frames.map((_, f) => {
       const { image, labels } = r.renderLabeled(anim, f, ctx);
       // q34 frames: the far (screen-right) arm sits behind the torso (ADR 010 far-arm rule).

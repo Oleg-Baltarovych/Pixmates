@@ -40,6 +40,7 @@ import {
   capScarfEnds,
   DEFAULT_SLEEVE_SHADE,
   dressShadeOf,
+  skirtRampOf,
   FOX_TAIL_FRONT,
   FOX_TAIL_Q34,
   frontTailLine,
@@ -57,6 +58,7 @@ import {
   armOverTorso,
   clipFarShoulder,
   closeSeams,
+  despeckle,
   cutSpadeNotches,
   farLegGap,
   fistKindOf,
@@ -553,13 +555,13 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
     const split = body.skirtSplit;
     if (split && !q && v.hem === 'skirt') {
       const x = Math.round(j.hip[0] + (p.parts.hem?.dx ?? 0)) - 1;
-      const clothRamp = ctx.palette.rampNames.indexOf(body.ramps.cloth);
+      const clothRamp = ctx.palette.rampNames.indexOf(skirtRampOf(body));
       skirtSplit(buf, x, split.rows, clothRamp, split.shade, locked);
       skirtDetail(buf, x, split, clothRamp, locked);
     }
     if (split?.q34 && q && v.hem === 'skirt') {
       const top = j.hip[0] + (p.parts.hem?.dx ?? 0);
-      const clothRamp = ctx.palette.rampNames.indexOf(body.ramps.cloth);
+      const clothRamp = ctx.palette.rampNames.indexOf(skirtRampOf(body));
       skirtSplitQ34(buf, top, j.footL, j.footR, split, clothRamp, locked);
     }
     // 4. Outline, AA, locked tones restored, rim.
@@ -595,10 +597,9 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
     const labels = squashRows(labelImage(buf), cut, p.squash);
     const squashed = squashRows(quantize(buf, ctx.palette), cut, p.squash);
     const deep = ctx.palette.ramps.get(sleeve.ramp)?.[0];
-    return {
-      image: closeSeams(p.squash > 0 && deep !== undefined ? squashSeparator(squashed, labels, deep) : squashed),
-      labels,
-    };
+    const sealed = closeSeams(p.squash > 0 && deep !== undefined ? squashSeparator(squashed, labels, deep) : squashed);
+    const speckRamp = body.despeckle === undefined ? undefined : ctx.palette.ramps.get(body.despeckle);
+    return { image: speckRamp ? despeckle(sealed, new Set(speckRamp)) : sealed, labels };
   };
   const render = (anim: RigAnim, frame: number, ctx: RenderContext): RgbaImage => renderLabeled(anim, frame, ctx).image;
   const toneOf = (ctx: RenderContext, ramp: RampName, shade: number): number => {

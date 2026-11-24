@@ -524,6 +524,35 @@ export function squashSeparator(img: RgbaImage, labels: RgbaImage, deep: number)
  * Fills enclosed transparent gaps of ≤ 3 px (pinholes where outlines of neighbouring parts meet, e.g. between the
  * feet) with the darkest 4-neighbour colour. Larger enclosed spaces are intentional negative space and stay.
  */
+/** `Body.despeckle`: lone px of `colors` (no same-set 4-neighbour) take their most common opaque 4-neighbour colour. */
+export function despeckle(img: RgbaImage, colors: ReadonlySet<number>): RgbaImage {
+  const { width: w, height: h } = img;
+  const src = img.data;
+  const data = new Uint8Array(src);
+  const rgbAt = (x: number, y: number): number | undefined => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return undefined;
+    const o = (y * w + x) * 4;
+    if ((src[o + 3] ?? 0) === 0) return undefined;
+    return ((src[o] ?? 0) << 16) | ((src[o + 1] ?? 0) << 8) | (src[o + 2] ?? 0);
+  };
+  const lum = (c: number): number => ((c >> 16) & 255) + ((c >> 8) & 255) + (c & 255);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const c = rgbAt(x, y);
+      if (c === undefined || !colors.has(c)) continue;
+      const around = N4.map(([dx, dy]) => rgbAt(x + dx, y + dy)).filter((n): n is number => n !== undefined);
+      if (around.length === 0 || around.some((n) => colors.has(n))) continue;
+      const count = (n: number): number => around.filter((m) => m === n).length;
+      const pick = around.reduce((a, b) => (count(b) > count(a) || (count(b) === count(a) && lum(b) < lum(a)) ? b : a));
+      const o = (y * w + x) * 4;
+      data[o] = (pick >> 16) & 255;
+      data[o + 1] = (pick >> 8) & 255;
+      data[o + 2] = pick & 255;
+    }
+  }
+  return { width: w, height: h, data };
+}
+
 export function closeSeams(img: RgbaImage): RgbaImage {
   const { width: w, height: h } = img;
   const data = new Uint8Array(img.data);
