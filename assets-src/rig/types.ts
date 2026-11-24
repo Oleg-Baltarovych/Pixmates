@@ -150,8 +150,13 @@ export interface BodyVariants {
   readonly headAcc: 'none' | 'horns' | 'fox_ears' | 'clip' | 'hat';
   readonly hairBack: 'short' | 'long';
   readonly hem: 'skirt' | 'shorts';
-  readonly back: 'none' | 'spade_tail' | 'fox_tail';
-  readonly neckAcc: 'none' | 'bow' | 'choker' | 'scarf';
+  /** `cloak`: a procedural panel behind the body (`Body.cloak`, required). */
+  readonly back: 'none' | 'spade_tail' | 'fox_tail' | 'cloak';
+  /**
+   * `collar`: a mantle / collar mask on the neck-mask path (mask only, like `choker`; needs `masks.neckAcc`), never
+   * stamped over arm px (the arms draw over a mantle).
+   */
+  readonly neckAcc: 'none' | 'bow' | 'choker' | 'scarf' | 'collar';
   readonly sleeves: 'short' | 'long';
 }
 
@@ -205,26 +210,93 @@ export interface ScarfEnds {
   readonly maxTrail?: number;
 }
 
+/**
+ * Cloak (`back: 'cloak'`): a procedural panel behind the back hair from the shoulder line to a hem below the hip,
+ * the same params in both views (q34: trailing from the back, leading edge behind the torso). Widths are half-widths
+ * from the body axis in px; rows are whole frame rows. Tones are final (locked): `shade` fill, `litShade` on the lit
+ * (screen-left) edge column, bands and dither as listed. Binary alpha; texture is fixed to cloak coordinates.
+ */
+export interface Cloak {
+  readonly ramp: RampName;
+  /** Fill shade (0..5). */
+  readonly shade: number;
+  /** Lit-edge shade (0..5) on the screen-left edge column; default `shade`. */
+  readonly litShade?: number;
+  /** Top row offset from the shoulder joints' row (0 = the shoulder line, negative = higher). */
+  readonly top: number;
+  /** Hem row offset from the hip joint (standing). */
+  readonly hemRow: number;
+  /** Half-widths at the top and the hem; `column` reaches the hem width within the first third, `bell` flares evenly. */
+  readonly widths: { readonly top: number; readonly hem: number; readonly shape: 'bell' | 'column' };
+  /** `square`: full width on the top row; `round`: the top row 1 px in each side. */
+  readonly shoulder: 'square' | 'round';
+  readonly hem: {
+    /** Rounded lobes per side (0 = a straight hem); 1-row dips between lobes. */
+    readonly lobes: number;
+    /** Outer corners drop this many rows below the hem (pointed corners; default 0). */
+    readonly cornerDrop?: number;
+    /** Outer corners curl up this many rows in a stepped 1-px wisp, attached (default 0). */
+    readonly curl?: number;
+    /** Shade of the 1-px curl line above each lobe dip (default none). */
+    readonly curlShade?: number;
+  };
+  /**
+   * Opt-in inner shadow: cloak px 4-touching a drawn hem / leg / torso px take this shade (0..5), a 1-px column where
+   * the panel meets the body so a pale cloak never fuses with the skirt into one shape.
+   */
+  readonly innerShade?: number;
+  /** Horizontal bands (rows above the hem row, 1 row each) with rounded ends (inset 2 px); may be empty. */
+  readonly bands: readonly { readonly row: number; readonly shade: number }[];
+  /** Ordered 2-tone dither on these rows above the hem, only on interior px (all 8 neighbours cloak). */
+  readonly dither?: { readonly rows: readonly number[]; readonly shades: readonly [number, number] };
+  /** Turned-back corner lining: a stepped triangle `corner` [w, h] px at each outer hem corner. */
+  readonly lining?: { readonly ramp: RampName; readonly shade: number; readonly corner: readonly [number, number] };
+  /** Extra lining rows shown on flare frames (hairLift, squash > 0); default 0. */
+  readonly flareRows?: number;
+  /** Max px the hem trails sideways (front: hip lag + hairDx; q34: behind the hip). Default `CLOAK_MAX_TRAIL` 2. */
+  readonly maxTrail?: number;
+}
+
+/**
+ * A prop (e.g. a sheathed sword) on the hip joint at depth `behindTorso`: drawn over the cloak, tail, back hair and
+ * empty px, under the torso, hem, legs and arms. `dangle` (e.g. a charm) is stamped after it, offset 1 px against the
+ * hip lag + the frame's `hairDx` (clamped to ±1).
+ */
+export interface Prop extends PlacedMask {
+  /** `overHem`: the dangle hangs in front of the skirt and legs (never over an arm), e.g. a charm over a hakama. */
+  readonly dangle?: PlacedMask & { readonly overHem?: true };
+}
+
+/** Head-accessory masks shared by the front body and every view. */
+export interface HeadAccMasks {
+  readonly headAcc?: PlacedMask;
+  /**
+   * Opt-in follow-through: the head-accessory mask stamped instead of `headAcc` on frames whose head is higher
+   * than on the previous frame (e.g. a hat tip drooping 1 px while the head rises); same size as `headAcc.mask`.
+   */
+  readonly headAccRising?: Mask;
+}
+
 /** Per-view authored parts (ADR 010): a body supplies them for every non-front view its poses use. */
 export interface BodyView {
   readonly head: PlacedMask & { readonly band: number };
   /** Only the expressions the view's poses reference are required (q34: neutral, blink). */
   readonly face: ViewFaceLibrary;
-  readonly masks: {
+  readonly masks: HeadAccMasks & {
     /** Side shoe, toe forward (screen-right); top-left = foot − (2, 0.6). */
     readonly shoe: Mask;
-    readonly headAcc?: PlacedMask;
-    /**
-     * Opt-in follow-through: the head-accessory mask stamped instead of `headAcc` on frames whose head is higher
-     * than on the previous frame (e.g. a hat tip drooping 1 px while the head rises); same size as `headAcc.mask`.
-     */
-    readonly headAccRising?: Mask;
     readonly neckAcc?: PlacedMask;
     /**
      * q34 far back hair (from the head joint): an authored sliver beyond the far jaw line. When set, the procedural
      * back hair keeps clear of the facing side under the jaw (only the nape behind the neck shows).
      */
     readonly hairFar?: PlacedMask;
+    /**
+     * Opt-in authored back hair (from the head joint, final tones, behind the head / neck / torso, over the cloak):
+     * replaces the procedural back-hair mass on frames whose head uses this view (e.g. a short q34 nape that hugs the
+     * skull instead of a bob); the side-lock chains are unaffected.
+     */
+    readonly hairBack?: PlacedMask;
   };
   readonly apron?: Apron;
   /**
@@ -243,6 +315,8 @@ export interface BodyView {
    * near leg, so two pale shins never merge into one patch on the walk contact frames.
    */
   readonly farLegShade?: number;
+  /** Prop in this view (from the hip joint); required when the body has `Body.prop`. */
+  readonly prop?: Prop;
   /** Sash knot in this view (from the hip joint); default none. */
   readonly sashKnot?: PlacedMask;
   /** Scarf ends in this view (required with `neckAcc: 'scarf'`). */
@@ -314,15 +388,9 @@ export interface Body {
   /** Authored head (skin, fringe, crown; horns when `headAcc` is `horns`); `at` from the head joint. */
   readonly head: PlacedMask & { readonly band: number };
   readonly face: FaceLibrary;
-  readonly masks: {
+  readonly masks: HeadAccMasks & {
     /** One shoe, top-left = foot − (2, 0.6). */
     readonly shoe: Mask;
-    readonly headAcc?: PlacedMask;
-    /**
-     * Opt-in follow-through: the head-accessory mask stamped instead of `headAcc` on frames whose head is higher
-     * than on the previous frame (e.g. a hat tip drooping 1 px while the head rises); same size as `headAcc.mask`.
-     */
-    readonly headAccRising?: Mask;
     readonly neckAcc?: PlacedMask;
     /** Spade tip of `spade_tail`, hung by its top-centre px. */
     readonly spade?: Mask;
@@ -362,6 +430,8 @@ export interface Body {
    * (near and far) are painted.
    */
   readonly shinWrap?: { readonly row: number; readonly shade?: number };
+  /** Opt-out of the petticoat lace (default true); false = plain cloth to the same hem length, e.g. a hakama. */
+  readonly skirtLace?: boolean;
   /** Skirt hem raised this many whole rows (`hem: 'skirt'`, 0..`SKIRT_RAISE_MAX`), so more legwear shows. */
   readonly skirtRaise?: number;
   /**
@@ -369,8 +439,50 @@ export interface Body {
    * legs-ramp shade (0..5), a 1-px lit side on pale legwear; shin wraps paint over it.
    */
   readonly legRim?: number;
-  /** Waist sash: band height in rows (default 1) and a knot mask on the near hip (from the hip joint). */
-  readonly sash?: { readonly rows: number; readonly knot: PlacedMask };
+  /**
+   * Waist sash: band height in rows (default 1), a knot mask on the near hip (from the hip joint) and `dy` whole rows
+   * lower than the default waist band (0..`SASH_DY_MAX`, default 0; the torso shows between a collar and the sash).
+   */
+  readonly sash?: { readonly rows: number; readonly knot: PlacedMask; readonly dy?: number };
+  /** Cloak panel (required with `back: 'cloak'`). */
+  readonly cloak?: Cloak;
+  /** Front prop on the hip joint (`Prop`); a q34 pose needs `views.q34.prop` too. */
+  readonly prop?: Prop;
+  /**
+   * Front only: a 1-px centre line `rows` high from the skirt hem in cloth `shade` (0..5, whole), e.g. a hakama split;
+   * `notch` cuts a 2-px gap that many rows up from the hem between the legs (default 0).
+   */
+  readonly skirtSplit?: {
+    readonly rows: number;
+    readonly shade: number;
+    readonly notch?: number;
+    /** Opt-in: the notch px (legs or the cloak behind) take this cloth shade (0..5): an inner leg shadow. */
+    readonly notchShade?: number;
+    /** Opt-in: skirt hem half-width in px (default 10; a straight trapezoid, e.g. hakama legs, not a bell). */
+    readonly hemHalf?: number;
+    /**
+     * Opt-in pleats (front): 1-px vertical lines in cloth `shade` at each listed px offset from the split, mirrored to
+     * both legs, from the split top to the hem; `lit` (optional) paints the px left of the screen-left leg's lines.
+     */
+    readonly pleats?: { readonly offsets: readonly number[]; readonly shade: number; readonly lit?: number };
+    /**
+     * Opt-in 2-step rim on the skirt's screen-left edge (front): the outermost hem px take cloth `shade`, the stepped
+     * (lit) px whose up-left neighbour is not skirt take `lit`.
+     */
+    readonly rim?: { readonly shade: number; readonly lit: number };
+    /**
+     * Opt-in q34 split (the skirt breaks into two leg panels): on contact frames (feet ≥ `SPLIT_Q34_CONTACT_DX` px
+     * apart) a 1-px `shade` line `rows` up from the hem along the leg gap (hip → mid-feet), a 2-px `notch` (notchShade
+     * or shade) and the bottom 2 hem rows of the front panel 1 px forward / the back panel 1 px back; passing frames
+     * get the 2-px `passNotch` only. `pleat` (cloth shade) = 1 line on the near (L) leg.
+     */
+    readonly q34?: {
+      readonly rows: number;
+      readonly notch: number;
+      readonly passNotch: number;
+      readonly pleat?: number;
+    };
+  };
   /** Fox tail shape per view (default: the rig's dummy-b tail). */
   readonly foxTail?: FoxTail;
   /** Front scarf ends (required with `neckAcc: 'scarf'`). */

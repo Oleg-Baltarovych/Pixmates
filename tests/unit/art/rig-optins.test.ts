@@ -6,12 +6,22 @@ import { LEGEND } from '../../../assets-src/lib/mask.ts';
 import { MAT } from '../../../assets-src/lib/materials.ts';
 import { outline } from '../../../assets-src/lib/passes.ts';
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
-import { buildShorts, buildTorso, leanLock } from '../../../assets-src/rig/chains.ts';
+import { buildLegs, buildShorts, buildTorso, HEM_LIFT_MAX, leanLock } from '../../../assets-src/rig/chains.ts';
 import { createRigPack, createRigRenderer } from '../../../assets-src/rig/compose.ts';
-import { DUMMY_A, DUMMY_B, MAID_PREVIEW } from '../../../assets-src/rig/dummies.ts';
+import { DUMMY_A, DUMMY_B, DUMMY_FACE, MAID_PREVIEW } from '../../../assets-src/rig/dummies.ts';
+import { validateFace } from '../../../assets-src/rig/face.ts';
+import { HAT_MAX } from '../../../assets-src/rig/validate.ts';
 import { ARM_LABEL, PART_ID } from '../../../assets-src/rig/part-ids.ts';
-import { farLegGap, silhouetteOutline, squashSeparator, type Locked } from '../../../assets-src/rig/passes.ts';
-import type { Body, RigAnim } from '../../../assets-src/rig/types.ts';
+import {
+  farLegGap,
+  napeIndent,
+  silhouetteOutline,
+  SPLIT_Q34_CONTACT_DX,
+  squashSeparator,
+  type Locked,
+} from '../../../assets-src/rig/passes.ts';
+import { CLOAK_DANGLE_NARROW, CLOAK_SEAT_HEM, cloakGeometry } from '../../../assets-src/rig/cloak.ts';
+import type { Body, Cloak, RigAnim } from '../../../assets-src/rig/types.ts';
 import type { RgbaImage } from '../../../tools/lib/png.ts';
 import { loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
 
@@ -617,5 +627,475 @@ describe('rig opt-in: views.q34.hairBackCuts', () => {
     expect(() => createRigPack(withCuts([1.5]), ANIMS)).toThrow(/hairBackCuts/);
     expect(() => createRigPack(withCuts([1, 2, 3, 4, 5]), ANIMS)).toThrow(/hairBackCuts/);
     expect(() => createRigPack(withCuts([4], 30), ANIMS)).toThrow(/hairBackCuts/);
+  });
+});
+// ── MA-29b (ronin) slots: cloak, prop, collar, skirtSplit, skirtLace ─────────────────────────────────────────────────
+const CLOAK_A: Cloak = {
+  ramp: 'mist',
+  shade: 4,
+  litShade: 5,
+  top: 0,
+  hemRow: 2,
+  widths: { top: 8, hem: 13, shape: 'bell' },
+  shoulder: 'square',
+  hem: { lobes: 3 },
+  bands: [{ row: 4, shade: 5 }],
+  maxTrail: 3,
+};
+const CLOAKED: Body = {
+  ...DUMMY_A,
+  variants: { ...DUMMY_A.variants, back: 'cloak' },
+  cloak: CLOAK_A,
+};
+const geomOf = (cloak: Cloak, a: RigAnim, f: number, q = false) => {
+  const j = createRigRenderer(CLOAKED).joints(a, f);
+  const p = a.frames[f];
+  if (!p) throw new Error('frame');
+  return cloakGeometry(cloak, p, j, q, [0, 0], 0, 48);
+};
+const rowXs = (g: ReturnType<typeof geomOf>, y: number): number[] =>
+  [...g.px.keys()].filter((i) => Math.floor(i / 48) === y).map((i) => i % 48);
+
+describe("rig slot: back 'cloak' (R1)", () => {
+  it('draws a mist panel behind the body only with the slot, wider than the legs at the hem', () => {
+    expect(pxOn(render(DUMMY_A), 'mist')).toHaveLength(0);
+    const mist = pxOn(render(CLOAKED), 'mist');
+    expect(mist.length).toBeGreaterThan(20);
+    const g = geomOf(CLOAK_A, idle, 0);
+    const legs = pxOn(render(DUMMY_A), DUMMY_A.ramps.legs).map(([x]) => x);
+    expect(Math.min(...rowXs(g, g.hemY - 1))).toBeLessThan(Math.min(...legs));
+  });
+  it('lobes cut 1-row dips into the hem; 0 lobes = a straight hem', () => {
+    const straight = geomOf({ ...CLOAK_A, hem: { lobes: 0 } }, idle, 0);
+    const lobed = geomOf(CLOAK_A, idle, 0);
+    expect(rowXs(lobed, lobed.hemY).length).toBeLessThan(rowXs(straight, straight.hemY).length);
+    expect(rowXs(lobed, lobed.hemY - 1)).toEqual(rowXs(straight, straight.hemY - 1));
+  });
+  it('paints band rows in the band shade (ends inset 2 px) and the lit left edge in litShade', () => {
+    const g = geomOf(CLOAK_A, idle, 0);
+    const y = g.hemY - 4;
+    const xs = rowXs(g, y).sort((a, b) => a - b);
+    const shadeAt = (x: number): number | undefined => g.px.get(y * 48 + x)?.shade;
+    const [first = -1, last = -1] = [xs[0], xs[xs.length - 1]];
+    expect(shadeAt(first)).toBe(5);
+    expect(shadeAt(first + 1)).toBe(4);
+    expect(shadeAt(first + 2)).toBe(5);
+    expect(shadeAt(last)).toBe(4);
+  });
+  it('dithers only interior px of the listed rows', () => {
+    const g = geomOf({ ...CLOAK_A, dither: { rows: [6], shades: [3, 4] } }, idle, 0);
+    const y = g.hemY - 6;
+    const shades = rowXs(g, y)
+      .sort((a, b) => a - b)
+      .map((x) => g.px.get(y * 48 + x)?.shade);
+    expect(shades).toContain(3);
+    expect(shades[0]).not.toBe(3);
+    expect(shades[shades.length - 1]).not.toBe(3);
+  });
+  it('seated: the hem rises to the seat + 3 rows (feet show); dangling: 2 px narrower per side', () => {
+    const sit = anim('sit_edge');
+    const seat = createRigRenderer(CLOAKED).joints(sit, 0).seat;
+    expect(geomOf(CLOAK_A, sit, 0).hemY).toBeLessThanOrEqual(Math.round(seat[1]) + CLOAK_SEAT_HEM);
+    const drag = anim('drag');
+    const straight = { ...CLOAK_A, hem: { lobes: 0 } };
+    const idleG = geomOf(straight, idle, 0);
+    const wide = rowXs(idleG, idleG.hemY).length;
+    drag.frames.forEach((p, f) => {
+      if (p.parts.legs !== 'dangle') return;
+      const g = geomOf(straight, drag, f);
+      expect(rowXs(g, g.hemY).length).toBe(wide - 2 * CLOAK_DANGLE_NARROW + 2 * Math.max(0, p.squash));
+    });
+  });
+  it('corner curl adds an attached stepped wisp outside the hem; lining paints the corners in the lining ramp', () => {
+    const curled = geomOf({ ...CLOAK_A, hem: { lobes: 0, curl: 2 } }, idle, 0);
+    const plain = geomOf({ ...CLOAK_A, hem: { lobes: 0 } }, idle, 0);
+    expect(curled.px.size).toBe(plain.px.size + 6);
+    const lined = geomOf({ ...CLOAK_A, lining: { ramp: 'cloth_ochre', shade: 4, corner: [2, 3] } }, idle, 0);
+    expect([...lined.px.values()].filter((t) => t.lining).length).toBeGreaterThan(0);
+    expect([...geomOf(CLOAK_A, idle, 0).px.values()].some((t) => t.lining)).toBe(false);
+  });
+  it('q34: trails behind the hip (more px left of the axis than right)', () => {
+    const xs = [...geomOf(CLOAK_A, walk, 0, true).px.keys()].map((i) => i % 48);
+    expect(xs.filter((x) => x < 24).length).toBeGreaterThan(xs.filter((x) => x >= 24).length);
+  });
+  it('fails the build without Body.cloak, with a cloak but no slot, or out-of-range params', () => {
+    const bare: Body = { ...DUMMY_A, variants: { ...DUMMY_A.variants, back: 'cloak' } };
+    expect(() => createRigPack(bare, [idle])).toThrow(/back 'cloak' needs Body.cloak/);
+    expect(() => createRigPack({ ...DUMMY_A, cloak: CLOAK_A }, [idle])).toThrow(/Body.cloak needs back 'cloak'/);
+    expect(() => createRigPack({ ...CLOAKED, cloak: { ...CLOAK_A, hem: { lobes: 1.5 } } }, [idle])).toThrow(/lobes/);
+    expect(() => createRigPack({ ...CLOAKED, cloak: { ...CLOAK_A, shade: 9 } }, [idle])).toThrow(/cloak.shade/);
+  });
+});
+
+describe('rig slot: Body.prop (R2)', () => {
+  const BAR = ['X'.repeat(24), 'X'.repeat(24)];
+  const withProp: Body = { ...DUMMY_A, prop: { mask: BAR, at: [-12, -6] } };
+  it('draws behind the torso, hem and arms: prop px show only outside the body', () => {
+    const base = render(DUMMY_A);
+    const img = render(withProp);
+    expect(pxOn(img, 'ink').length).toBeGreaterThan(pxOn(base, 'ink').length);
+    // The bar crosses the whole body: its middle px stay hidden (the body px there are unchanged).
+    const j = createRigRenderer(DUMMY_A).joints(idle, 0);
+    const y = Math.round(j.hip[1] - 6);
+    expect(rgb(img, 24, y)).toBe(rgb(base, 24, y));
+  });
+  it('swings the dangle 1 px with the stride (hip lag + hairDx, clamped)', () => {
+    const q = q34Of(DUMMY_A);
+    const prop = { mask: ['X'], at: [-20, 4] as const, dangle: { mask: ['XX'], at: [0, 2] as const } };
+    const body: Body = { ...DUMMY_A, prop, views: { q34: { ...q, prop } } };
+    const r = createRigRenderer(body);
+    const passing = walk.frames.findIndex((p) => (p.hairDx ?? 0) !== 0);
+    const still = walk.frames.findIndex((p, f) => (p.hairDx ?? 0) === 0 && (walk.frames[f - 1]?.hairDx ?? 0) === 0);
+    const inkXs = (f: number): number[] => pxOn(r.render(walk, f, ctx), 'ink').map(([x]) => x);
+    expect(passing).toBeGreaterThanOrEqual(0);
+    expect(Math.min(...inkXs(passing))).not.toBe(Math.min(...inkXs(still)));
+  });
+  it('fails the build when a q34 pose is built without views.q34.prop', () => {
+    expect(() => createRigPack(withProp, [walk])).toThrow(/views.q34.prop/);
+  });
+});
+
+describe("rig slot: neckAcc 'collar' (R3)", () => {
+  const COLLARED: Body = {
+    ...DUMMY_A,
+    variants: { ...DUMMY_A.variants, neckAcc: 'collar' },
+    masks: {
+      ...DUMMY_A.masks,
+      neckAcc: { mask: ['O'.repeat(24), 'O'.repeat(24)], at: [-12, 3] },
+    },
+  };
+  const armPx = (b: Body): number => {
+    const { labels } = createRigRenderer(b).renderLabeled(anim('wave'), 2, ctx);
+    let n = 0;
+    for (let i = 0; i < labels.data.length; i += 4) {
+      const v = labels.data[i];
+      if (v === ARM_LABEL.sleeveL || v === ARM_LABEL.sleeveR || v === ARM_LABEL.endL || v === ARM_LABEL.endR) n++;
+    }
+    return n;
+  };
+  it('never stamps over arm px (arms draw over a mantle); a choker mask does', () => {
+    expect(armPx(COLLARED)).toBeGreaterThan(
+      armPx({
+        ...COLLARED,
+        variants: { ...COLLARED.variants, neckAcc: 'choker' },
+      }),
+    );
+  });
+  it('needs a neckAcc mask', () => {
+    expect(() => createRigPack({ ...COLLARED, masks: { shoe: DUMMY_A.masks.shoe } }, [idle])).toThrow(
+      /collar' needs masks.neckAcc/,
+    );
+  });
+});
+
+describe('rig opt-ins: skirtSplit, skirtLace (R4)', () => {
+  const clothPx = (img: RgbaImage): [number, number][] => pxOn(img, MAID_PREVIEW.ramps.cloth);
+  it('skirtLace false: no lace row (fewer clothAlt px); the cloth hem keeps the lace length', () => {
+    const plain = { ...MAID_PREVIEW, skirtLace: false };
+    expect(pxOn(render(plain), MAID_PREVIEW.ramps.clothAlt).length).toBeLessThan(
+      pxOn(render(MAID_PREVIEW), MAID_PREVIEW.ramps.clothAlt).length,
+    );
+    const bottom = (b: Body): number => Math.max(...clothPx(render(b)).map(([, y]) => y));
+    expect(bottom(plain)).toBeGreaterThan(bottom(MAID_PREVIEW));
+  });
+  it('skirtSplit paints a 1-px line in the split shade; notch opens a gap at the hem centre; front only', () => {
+    const split: Body = {
+      ...MAID_PREVIEW,
+      skirtLace: false,
+      skirtSplit: { rows: 4, shade: 0, notch: 2 },
+    };
+    const img = render(split);
+    const deep = palette.ramps.get(MAID_PREVIEW.ramps.cloth)?.[0];
+    expect(clothPx(img).some(([x, y]) => x === 23 && rgb(img, x, y) === deep)).toBe(true);
+    const noNotch = render({ ...split, skirtSplit: { rows: 4, shade: 0 } });
+    expect(clothPx(img).length).toBeLessThan(clothPx(noNotch).length);
+    const unsplit: Body = { ...MAID_PREVIEW, skirtLace: false };
+    expect(same(render(split, walk, 0), render(unsplit, walk, 0))).toBe(true);
+  });
+  it('fails the build on a bad split (rows, notch > rows, no skirt)', () => {
+    expect(() => createRigPack({ ...MAID_PREVIEW, skirtSplit: { rows: 0, shade: 1 } }, [idle])).toThrow(
+      /skirtSplit.rows/,
+    );
+    expect(() => createRigPack({ ...MAID_PREVIEW, skirtSplit: { rows: 2, shade: 1, notch: 3 } }, [idle])).toThrow(
+      /notch/,
+    );
+    expect(() => createRigPack({ ...DUMMY_A, skirtSplit: { rows: 2, shade: 1 } }, [idle])).toThrow(/needs hem 'skirt'/);
+  });
+});
+
+describe('rig: hemLiftOf (seated knee follows skirtRaise)', () => {
+  const sit = anim('sit_edge');
+  const f = sit.frames.findIndex((p) => p.parts.legs === 'sit');
+  const knees = (b: Body): number[] => {
+    const p = sit.frames[f];
+    if (!p) throw new Error('no sit frame');
+    return buildLegs(b, p, createRigRenderer(b).joints(sit, f), false, undefined).knees.map(([, y]) => y);
+  };
+  it('moves the seated knee bump up with the raised skirt hem (it stays just under the hem)', () => {
+    expect(f).toBeGreaterThanOrEqual(0);
+    const raised = knees({ ...MAID_PREVIEW, skirtRaise: 2 });
+    knees(MAID_PREVIEW).forEach((y, i) => {
+      expect(raised[i]).toBe(y - 2);
+    });
+  });
+  it('fails the build when pose hem.lift + skirtRaise passes HEM_LIFT_MAX', () => {
+    const lifted: RigAnim = {
+      ...sit,
+      frames: sit.frames.map((p) => ({ ...p, parts: { ...p.parts, hem: { lift: HEM_LIFT_MAX } } })),
+    };
+    expect(() => createRigPack({ ...MAID_PREVIEW, skirtRaise: 1 }, [lifted])).toThrow(/hem\.lift \+ raise reaches/);
+  });
+});
+
+// ── MA-29b art round 1 (ronin) opt-ins: q34 hairBack mask, sash.dy, skirtSplit detail, cloak innerShade, overHem ──
+describe('rig opt-in: BodyView.masks.hairBack (authored back hair)', () => {
+  const q = q34Of(MAID_PREVIEW);
+  const MASK = ['HH', 'HH', 'HH'];
+  const authored: Body = {
+    ...MAID_PREVIEW,
+    views: { q34: { ...q, masks: { ...q.masks, hairBack: { mask: MASK, at: [-16, 2] } } } },
+  };
+  const hairPx = (b: Body, a: RigAnim, f: number): number => pxOn(render(b, a, f), MAID_PREVIEW.ramps.hair).length;
+  it('replaces the procedural mass on q34-head frames (fewer hair px; the mask px are hair); front frames unchanged', () => {
+    expect(hairPx(authored, walk, 0)).toBeLessThan(hairPx(MAID_PREVIEW, walk, 0));
+    const img = render(authored, walk, 0);
+    const j = createRigRenderer(authored).joints(walk, 0);
+    const hair = new Set(palette.ramps.get(MAID_PREVIEW.ramps.hair) ?? []);
+    expect(hair.has(rgb(img, Math.round(j.head[0] - 15), Math.round(j.head[1] + 3)))).toBe(true);
+    expect(same(render(authored), render(MAID_PREVIEW))).toBe(true);
+  });
+  it('fails the build on a mask with an unknown letter', () => {
+    const bad: Body = {
+      ...MAID_PREVIEW,
+      views: { q34: { ...q, masks: { ...q.masks, hairBack: { mask: ['H?'], at: [0, 0] } } } },
+    };
+    expect(() => createRigPack(bad, [walk])).toThrow(/hairBack/);
+  });
+});
+
+describe('rig opt-in: sash.dy', () => {
+  const trimY = (b: Body): number => {
+    const j = createRigRenderer(b).joints(idle, 0);
+    const band = buildTorso(b, j, false, 0).find((p) => p.partId === PART_ID.trim);
+    if (!band) throw new Error('no waist band');
+    return band.shape.y;
+  };
+  const sash = { rows: 2, knot: { mask: [], at: [0, 0] as const } };
+  it('moves the waist band down by dy whole rows', () => {
+    expect(trimY({ ...MAID_PREVIEW, sash: { ...sash, dy: 2 } })).toBe(trimY({ ...MAID_PREVIEW, sash }) + 2);
+  });
+  it('fails the build outside 0..3 or fractional', () => {
+    expect(() => createRigPack({ ...MAID_PREVIEW, sash: { ...sash, dy: 4 } }, [idle])).toThrow(/sash.dy/);
+    expect(() => createRigPack({ ...MAID_PREVIEW, sash: { ...sash, dy: 0.5 } }, [idle])).toThrow(/sash.dy/);
+  });
+});
+
+describe('rig opt-ins: skirtSplit notchShade, hemHalf, pleats, rim', () => {
+  const base: Body = { ...MAID_PREVIEW, skirtLace: false, skirtSplit: { rows: 8, shade: 0, notch: 3 } };
+  const cloth = (s: number): number | undefined => palette.ramps.get(MAID_PREVIEW.ramps.cloth)?.[s];
+  const count = (img: RgbaImage, s: number): number =>
+    pxOn(img, MAID_PREVIEW.ramps.cloth).filter(([x, y]) => rgb(img, x, y) === cloth(s)).length;
+  const spanAt = (img: RgbaImage, y: number): number => {
+    const xs = pxOn(img, MAID_PREVIEW.ramps.cloth)
+      .filter(([, py]) => py === y)
+      .map(([x]) => x);
+    return Math.max(...xs) - Math.min(...xs);
+  };
+  const lowest = (img: RgbaImage): number => Math.max(...pxOn(img, MAID_PREVIEW.ramps.cloth).map(([, y]) => y));
+  it('hemHalf narrows the hem (a trapezoid, not the default bell)', () => {
+    const narrow = render({ ...base, skirtSplit: { ...base.skirtSplit, rows: 8, shade: 0, hemHalf: 7 } });
+    const wide = render(base);
+    expect(spanAt(narrow, lowest(narrow) - 2)).toBeLessThan(spanAt(wide, lowest(wide) - 2));
+  });
+  it('notchShade fills the notch with the inner shadow; pleats add mirrored lines in their shade with a lit px', () => {
+    const plain = render(base);
+    const shaded = render({ ...base, skirtSplit: { rows: 8, shade: 0, notch: 3, notchShade: 1 } });
+    expect(count(shaded, 1)).toBeGreaterThan(count(plain, 1));
+    const pleated = render({
+      ...base,
+      skirtSplit: { rows: 8, shade: 0, notch: 3, pleats: { offsets: [3], shade: 2, lit: 5 } },
+    });
+    const y = lowest(pleated) - 3;
+    // Split column 23: pleats at 23 − 3 and 23 + 1 + 3, lit px at 23 − 4.
+    expect(rgb(pleated, 20, y)).toBe(cloth(2));
+    expect(rgb(pleated, 27, y)).toBe(cloth(2));
+    expect(rgb(pleated, 19, y)).toBe(cloth(5));
+    expect(rgb(plain, 20, y)).not.toBe(cloth(2));
+  });
+  it('rim paints the leftmost skirt px of each hem row in the rim shades', () => {
+    const rimmed = render({ ...base, skirtSplit: { rows: 8, shade: 0, rim: { shade: 4, lit: 5 } } });
+    const y = lowest(rimmed) - 2;
+    const left = Math.min(
+      ...pxOn(rimmed, MAID_PREVIEW.ramps.cloth)
+        .filter(([, py]) => py === y)
+        .map(([x]) => x),
+    );
+    expect([cloth(4), cloth(5)]).toContain(rgb(rimmed, left, y));
+  });
+  it('fails the build on a hemHalf outside 6..10 or a bad pleat offset', () => {
+    expect(() => createRigPack({ ...base, skirtSplit: { rows: 8, shade: 0, hemHalf: 11 } }, [idle])).toThrow(/hemHalf/);
+    expect(() =>
+      createRigPack({ ...base, skirtSplit: { rows: 8, shade: 0, pleats: { offsets: [0], shade: 2 } } }, [idle]),
+    ).toThrow(/pleats/);
+  });
+});
+
+describe('rig opt-in: cloak innerShade', () => {
+  it('paints cloak px touching the skirt / legs in the inner shade; none without it', () => {
+    const inner = (b: Body): number => {
+      const img = render(b);
+      const mist2 = palette.ramps.get('mist')?.[2];
+      return [...geomOf(CLOAK_A, idle, 0).px.keys()].filter((i) => {
+        const [x, y] = [i % 48, Math.floor(i / 48)];
+        return (img.data[i * 4 + 3] ?? 0) > 0 && rgb(img, x, y) === mist2;
+      }).length;
+    };
+    expect(inner(CLOAKED)).toBe(0);
+    expect(inner({ ...CLOAKED, cloak: { ...CLOAK_A, innerShade: 2 } })).toBeGreaterThan(4);
+  });
+});
+
+describe('rig opt-in: Prop dangle overHem', () => {
+  it('hangs the dangle in front of the skirt / legs (hidden behind them without it)', () => {
+    const prop = { mask: ['X'], at: [-20, 0] as const, dangle: { mask: ['XX', 'XX'], at: [20, -4] as const } };
+    const behind = render({ ...DUMMY_A, prop });
+    const front = render({ ...DUMMY_A, prop: { ...prop, dangle: { ...prop.dangle, overHem: true as const } } });
+    expect(pxOn(front, 'ink').length).toBeGreaterThan(pxOn(behind, 'ink').length);
+  });
+});
+
+// ── MA-29a code-review follow-ups: nape indent, q34 rising, hat bounds, brow hair letters, rising edge cases ────────
+describe('rig opt-ins (witch review follow-ups)', () => {
+  const RISING = ['.gt', 'gtr', '.r.'];
+  // Rendered, the indent is invisible on every dummy and on witch (AO already takes those px to shade 0; witch frames
+  // are byte-identical without `nape`), so the pass is checked on a buffer.
+  it('napeIndent darkens hair px whose same-row neighbour is torso to shade 0; other hair px keep their tone', () => {
+    const buf = createIndexBuffer(6, 3, palette);
+    for (let x = 0; x < 6; x++)
+      buf.set(x, 1, { ramp: 'hair_umber', shade: 3, partId: x < 3 ? PART_ID.hair : PART_ID.torso });
+    buf.set(1, 0, { ramp: 'hair_umber', shade: 3, partId: PART_ID.hair });
+    napeIndent(buf, 1);
+    expect(buf.get(2, 1).shade).toBe(0);
+    expect(buf.get(1, 1).shade).toBe(3);
+    expect(buf.get(1, 0).shade).toBe(3);
+    expect(buf.get(3, 1).shade).toBe(3);
+  });
+  it('q34 headAccRising swaps on q34 frames whose head rises (same head view); others match the plain body', () => {
+    const q = q34Of(DUMMY_A);
+    const rising: Body = { ...DUMMY_A, views: { q34: { ...q, masks: { ...q.masks, headAccRising: RISING } } } };
+    const r = createRigRenderer(DUMMY_A);
+    let swapped = 0;
+    walk.frames.forEach((_, f) => {
+      const prev = (f + walk.frames.length - 1) % walk.frames.length;
+      const rises = r.fxAnchor(walk, f)[1] < r.fxAnchor(walk, prev)[1];
+      if (rises) swapped++;
+      expect(same(render(rising, walk, f), render(DUMMY_A, walk, f)), `walk/${String(f)}`).toBe(!rises);
+    });
+    expect(swapped).toBeGreaterThan(0);
+  });
+  it('rising edge cases: a loop compares f0 with its last frame; a one-shot f0 and a head-view switch never swap', () => {
+    const withRising: Body = { ...DUMMY_A, masks: { ...DUMMY_A.masks, headAccRising: RISING } };
+    const r = createRigRenderer(DUMMY_A);
+    // A loop rotated so a rising frame is f0: its previous frame is the last one.
+    const happy = anim('happy');
+    const k = happy.frames.findIndex((_, f) => f > 0 && r.fxAnchor(happy, f)[1] < r.fxAnchor(happy, f - 1)[1]);
+    expect(happy.loop && k > 0).toBe(true);
+    const loop: RigAnim = { ...happy, frames: [...happy.frames.slice(k), ...happy.frames.slice(0, k)] };
+    expect(same(render(withRising, loop, 0), render(DUMMY_A, loop, 0))).toBe(false);
+    const startle = anim('startle');
+    expect(startle.loop).toBeFalsy();
+    expect(same(render(withRising, startle, 0), render(DUMMY_A, startle, 0))).toBe(true);
+    // A view switch (as on turn f0 → f1) is never a "rise", even when the joints put the head higher: a 2-frame
+    // one-shot whose f1 is happy's rising frame drawn in q34.
+    const q = q34Of(DUMMY_A);
+    const both: Body = { ...withRising, views: { q34: { ...q, masks: { ...q.masks, headAccRising: RISING } } } };
+    const prevFrame = happy.frames[k - 1];
+    const riseFrame = happy.frames[k];
+    const stride = walk.frames[0]?.parts;
+    if (!prevFrame || !riseFrame || !stride) throw new Error('happy / walk frames');
+    const switched: RigAnim = {
+      ...happy,
+      loop: false,
+      frames: [
+        prevFrame,
+        {
+          ...riseFrame,
+          view: 'q34',
+          face: 'neutral',
+          parts: { ...riseFrame.parts, armL: stride.armL, armR: stride.armR },
+        },
+      ],
+    };
+    expect(r.fxAnchor(switched, 1)[1]).toBeLessThan(r.fxAnchor(switched, 0)[1]);
+    expect(same(render(both, switched, 1), render(DUMMY_A, switched, 1))).toBe(true);
+  });
+  it('hat bounds: a hat leaving the frame sideways throws; a too-tall hat names HAT_MAX.h', () => {
+    const HAT = Array.from({ length: 6 }, () => 'D'.repeat(20));
+    const hatBody = (mask: readonly string[], at: [number, number]): Body => ({
+      ...DUMMY_A,
+      variants: { ...DUMMY_A.variants, headAcc: 'hat' },
+      masks: { ...DUMMY_A.masks, headAcc: { mask, at } },
+      views: { q34: { ...q34Of(DUMMY_A), masks: { ...q34Of(DUMMY_A).masks, headAcc: { mask, at } } } },
+    });
+    expect(() => createRigPack(hatBody(HAT, [-28, -4]), ANIMS)).toThrow(/leave the frame/);
+    expect(() => createRigPack(hatBody(HAT, [12, -4]), ANIMS)).toThrow(/leave the frame/);
+    const tall = Array.from({ length: HAT_MAX.h + 1 }, () => 'D'.repeat(20));
+    expect(() => createRigPack(hatBody(tall, [-10, -4]), ANIMS)).toThrow(
+      new RegExp(`20 × ${String(HAT_MAX.h + 1)} exceeds ${String(HAT_MAX.w)} × ${String(HAT_MAX.h)}`),
+    );
+  });
+  it('brows may use hair letters over a non-hair head px, never over a hair px', () => {
+    const head = { mask: ['SSSS', 'HHHH'], faceAt: [0, 0] as const };
+    const browProblems = (y: number): string[] =>
+      validateFace({ ...DUMMY_FACE, brows: { b: { mask: ['hh'], at: [1, y] } } }, 'dummy', head).filter((p) =>
+        p.includes('brows.b'),
+      );
+    expect(browProblems(0)).toEqual([]);
+    expect(browProblems(1).join()).toMatch(/covers hair/);
+  });
+});
+
+describe('rig opt-in: skirtSplit.q34 (two leg panels)', () => {
+  const base: Body = { ...MAID_PREVIEW, skirtLace: false, skirtSplit: { rows: 6, shade: 0, notch: 3 } };
+  const split: Body = {
+    ...base,
+    skirtSplit: { rows: 6, shade: 0, notch: 3, q34: { rows: 5, notch: 3, passNotch: 2, pleat: 2 } },
+  };
+  const deep = palette.ramps.get(MAID_PREVIEW.ramps.cloth)?.[0];
+  const deepPx = (b: Body, f: number): number => {
+    const img = render(b, walk, f);
+    return pxOn(img, MAID_PREVIEW.ramps.cloth).filter(([x, y]) => rgb(img, x, y) === deep).length;
+  };
+  const r = createRigRenderer(base);
+  const apart = (f: number): number => {
+    const j = r.joints(walk, f);
+    return Math.abs(j.footL[0] - j.footR[0]);
+  };
+  const contact = walk.frames.findIndex((_, f) => apart(f) >= SPLIT_Q34_CONTACT_DX);
+  const passing = walk.frames.findIndex((_, f) => apart(f) < SPLIT_Q34_CONTACT_DX);
+  it('adds the split line + notch on contact frames and a shorter notch on passing frames; front unchanged', () => {
+    expect(contact).toBeGreaterThanOrEqual(0);
+    expect(passing).toBeGreaterThanOrEqual(0);
+    const gained = (f: number): number => deepPx(split, f) - deepPx(base, f);
+    expect(gained(passing)).toBeGreaterThan(0);
+    expect(gained(contact)).toBeGreaterThan(gained(passing));
+    expect(same(render(split), render(base))).toBe(true);
+  });
+  it('breaks the contact-frame hem into panels: the hem rows reach 1 px further on both sides', () => {
+    const span = (b: Body): number => {
+      const px = pxOn(render(b, walk, contact), MAID_PREVIEW.ramps.cloth);
+      const low = Math.max(...px.map(([, y]) => y));
+      const xs = px.filter(([, y]) => y === low - 1).map(([x]) => x);
+      return Math.max(...xs) - Math.min(...xs);
+    };
+    expect(span(split)).toBeGreaterThan(span(base));
+  });
+  it('fails the build on bad q34 rows / notches', () => {
+    const bad = (q34: { rows: number; notch: number; passNotch: number }): Body => ({
+      ...base,
+      skirtSplit: { rows: 6, shade: 0, q34 },
+    });
+    expect(() => createRigPack(bad({ rows: 9, notch: 2, passNotch: 1 }), [walk])).toThrow(/skirtSplit.q34/);
+    expect(() => createRigPack(bad({ rows: 4, notch: 2, passNotch: 3 }), [walk])).toThrow(/skirtSplit.q34/);
   });
 });

@@ -128,6 +128,7 @@ describe('spike packs (MA-07/08)', () => {
       'pixmates.kitsune',
       'pixmates.goth',
       'pixmates.witch',
+      'pixmates.ronin',
       'spike-maid-48soft',
       'spike-maid-64soft',
     ]);

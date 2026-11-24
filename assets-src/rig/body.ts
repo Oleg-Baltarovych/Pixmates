@@ -18,6 +18,8 @@ import {
 
 /** Figure box height (feet on row 46, row 47 free for the outline); the frame adds headroom on top. */
 export const FIGURE_H = 48;
+/** Frame (and figure) width; the body axis x = 24 sits on a px boundary. */
+export const RIG_W = 48;
 
 export const REST: JointMap = {
   root: [24, 46],

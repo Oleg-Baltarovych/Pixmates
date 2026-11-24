@@ -1,13 +1,13 @@
 # ronin — design spec (MA-29b)
 
-Originality gate: **PASS** (art-director, 2026-11-24). Owner decisions 2026-11-24 (§8): colourway B — warm dove-ivory mist (chosen so the green witch and the cloak never clash), paper charm on the sword cord, calf-length cloak. Brief: ART-BIBLE §9. A calm
+Originality gate: **PASS** (art-director, 2026-11-24). Owner decisions 2026-11-24 (§8): colourway B — warm dove-ivory mist (chosen so the green witch and the cloak never clash), paper charm on the sword cord; cloak changed to **knee length** after art round 1 (owner 2026-11-24: the calf cloak and the hakama fused into one dress triangle). Brief: ART-BIBLE §9. A calm
 spirit swordsman who speaks in aphorisms. Frame 48 × 56, chibi ≈ 2.2 heads. No portrait, no scar, no reference images.
 
 **Cast rule — not a second ninja next to kitsune.**
 
 | | kitsune | ronin |
 |---|---|---|
-| Silhouette | small body, big fox tail on one side, ears, scarf, shorts, bare pale shins | symmetric bell: calf-length mist cloak with a flat mantle collar, hakama, smooth dome head (no ears/tufts), one diagonal hilt at the hip |
+| Silhouette | small body, big fox tail on one side, ears, scarf, shorts, bare pale shins | symmetric bell: knee-length mist cloak with a flat mantle collar, hakama, smooth dome head (no ears/tufts), one diagonal hilt at the hip |
 | Palette | silver, indigo, teal (saturated, cool) | warm dove-ivory mist, near-neutral ash grey, warm umber hair, ochre accent (muted ink-wash) |
 | Costume | ninja wrap top, short scarf, side mask, tabi | no mask, scarf, tabi, shorts or shin wraps |
 
@@ -49,7 +49,7 @@ stays the widest element.
   pointed flicks showing 1–2 px under the jaw each side. No ponytail, topknot or tie. Angel ring one segment per clump
   on the skull arc, warm (steps 5/6) on the lit left, ≥ 1-px breaks.
 - **Mist cloak** (`back: 'cloak'`, R1): front — a panel behind the body from the shoulder line (shoulder joints ± 1 px)
-  to the calf (hem ≈ row 42, so 2–3 px of shin and the feet always show); hem ≈ 24–26 px wide (x 11–37, never past
+  to the knee (owner, art round 1: `hemRow` 0, frame row 48 — the split hakama legs read as trousers under it); hem ≈ 24 px wide (x 11–37, never past
   the head's outer x), showing 3–5 px each side of torso and hakama. Hem = 3 rounded cloud lobes per side (4–5 px wide,
   1-row dips); the 2 outer corners curl up 2 px in a stepped 1-px wisp that stays attached (no islands). Mist is shape
   and texture only: two horizontal *kasumi* bands with rounded ends (1 row each, mist 5, 2 rows apart, lower third);
@@ -96,9 +96,14 @@ stays the widest element.
 
 ## 3. Costume
 - Kosode `cloth_ash`, `dressShade` 3; crossover collar V under the mantle opening (in the neckAcc mask).
-- `sleeves: 'long'`, `sleeve: { ramp: 'cloth_ash', shade: 4 }` (5 if the p10 ΔL gate fails), `cuff: { ramp: 'mist',
-  shade: 3 }`. No `sleeveOverHand` — hands fully visible.
-- Obi: `sash: { rows: 2 }` ochre, no knot. Hakama: skirt, clothAlt ash 2, R4 split.
+- `sleeves: 'long'`, `sleeve: { ramp: 'cloth_ash', shade: 4 }` (5 if the p10 ΔL gate fails), `cuff: { ramp: 'cloth_ash',
+  shade: 1 }` (art round 1: cream cuffs read as a blouse, mist cuffs as noise). No `sleeveOverHand`.
+- Obi: `sash: { rows: 2, dy: 2 }` ochre, no knot — one ash-3 kosode row with the ash-1 crossover V shows between the
+  mantle (mist-1 bottom outline, hard corners) and the obi. Hakama (art round 1): `skirtSplit` rows 9, notch 4 +
+  `notchShade` 0, `hemHalf` 8 (trapezoid), pleats [3, 6] ash 2 (lit ash 5), rim ash 4 / 5; charm `overHem` over it.
+  Art round 2: q34 split (`skirtSplit.q34` rows 5, notch 4, pass notch 2, near-leg pleat ash 2); front side locks
+  taper 1 px inward every 3 rows and end in a 1-px inward-curling point; grip rim ash 4 / lit ash 5 on its upper-left
+  edge; the mantle's lower 2 rows stop at the sleeves (square top corners kept).
 - `variants: { headAcc: 'none' (R5 if needed), hairBack: 'short', hem: 'skirt', back: 'cloak', neckAcc: 'collar', sleeves: 'long' }`
 - `ramps: { hair: 'hair_umber', cloth: 'cloth_ash', clothAlt: 'cloth_ash', trim: 'cloth_ochre', legs: 'cloth_ash', tail: 'mist', tailTip: 'mist' }`; cloak ramp `mist`.
 - outfit: skin · hair `hair_umber` · horn → `mist` (mantle letters, `hornOutline: 'mist'`) · dress `cloth_ash` · apron

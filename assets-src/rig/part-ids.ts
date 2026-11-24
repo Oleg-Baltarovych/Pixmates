@@ -27,6 +27,10 @@ export const PART_ID = {
   scarf: 12,
   /** q34 far leg when `BodyView.farLegShade` is set. */
   farLeg: 13,
+  /** Cloak panel (`back: 'cloak'`): label none, behind the back hair. */
+  cloak: 14,
+  /** Hip prop + its dangle (`Body.prop`): label none, so the arm-over-torso check ignores it. */
+  prop: 15,
   /** Far (R) arm, as the near one. */
   armUpperR: 19,
   armForeR: 20,
@@ -72,3 +76,6 @@ export const LABEL_OF: Readonly<Partial<Record<number, number>>> = {
 export const NOT_ARM = (id: number): boolean => !ARM_PARTS.has(id);
 /** Parts a tucked spade may cover: legs and empty px, never the skirt/lace or the torso. */
 export const UNDER_HEM = (id: number): boolean => id !== PART_ID.hem && !TORSO_PARTS.has(id);
+/** Parts a hip prop may cover (`Body.prop`, depth behindTorso): empty px, the cloak, tails, back hair, the prop. */
+export const BEHIND_TORSO = (id: number): boolean =>
+  id === PART_ID.none || id === PART_ID.cloak || id === PART_ID.tail || id === PART_ID.hair || id === PART_ID.prop;

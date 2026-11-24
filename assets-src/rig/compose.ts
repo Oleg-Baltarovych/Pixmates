@@ -1,10 +1,15 @@
 // Rig composer (plan M-ART MA-23, docs/art/RIG.md), generalized from the 48-soft spike (assets-src/spike/maid.ts).
-// One renderer per body, per shared pose frame (passes in passes.ts, builders in chains.ts):
-//  1. joints (body.ts) → procedural parts in composite order far → back → behind → front (back hair with the opt-in
-//     q34 `hairTipLag`, `lockLean` locks, q34 `farLegShade` far leg) → compose (light, texture, AO, dither);
-//  2. tone passes: spade tube tones, q34 `hideFarShoulder` clip, hand shadows;
-//  3. authored masks stamped and locked (apron panel, bib, ties, neck_acc, sash knot, far lock, head_acc, head + band,
-//     face parts, chin fists, spade, shoes) → `shinWrap`, q34 far-leg gap, knee creases;
+// One renderer per body, per shared pose frame (passes in passes.ts, builders in chains.ts / cloak.ts, body checks in
+// validate.ts), in this order:
+//  1. joints (body.ts) → procedural parts far → back → behind → front: the cloak (`back: 'cloak'`, behind
+//     everything), q34 far arm + far leg, back hair (opt-in q34 `hairTipLag`, `lockLean` locks), tails, legs (q34
+//     `farLegShade`), skirt (`hemLiftOf` = pose lift + `skirtRaise`, `skirtLace`, `skirtSplit.notch`) or shorts,
+//     torso, arms, scarf ends → compose;
+//  2. tone passes: spade tube tones, q34 `hideFarShoulder` clip, q34 `hairBackCuts` + `nape` indent, hand shadows;
+//  3. authored masks stamped and locked (apron panel, bib, ties, hip prop + dangle behind the torso, neck_acc — a
+//     `collar` never over arms —, sash knot, far lock, head_acc / `headAccRising`, head + band, face parts, chin
+//     fists, spade, shoes) → cloak tones (lone cloak px cleared) → `legRim`, `shinWrap`, q34 far-leg gap, knee
+//     creases, `skirtSplit` line;
 //  4. outline on the whole composite (so part seams never show) → `hornOutline` → selective outline → AA →
 //     `silhouetteOutline` → locked tones restored → rim → far-lock tones restored;
 //  5. arm over torso → `sleeveRim` → q34 `sleeveHairLine` → hand line over apron ties;
@@ -13,15 +18,13 @@
 import type { RgbaImage } from '../../tools/lib/png.ts';
 import { createIndexBuffer, quantize, type IndexBuffer, type RampName } from '../lib/buffer.ts';
 import type { Point } from '../lib/chain.ts';
-import { checkMask, maskSize, type Mask } from '../lib/mask.ts';
+import { maskSize } from '../lib/mask.ts';
 import { toOklab } from '../lib/palette.ts';
-import MASTER from '../palettes/master.json' with { type: 'json' };
 import { MAT } from '../lib/materials.ts';
 import { compose, outline, selectiveOutline, type Part } from '../lib/passes.ts';
 import { antiAlias, rimLight } from '../lib/polish.ts';
-import type { AnimDef, Facing, PackDef, RenderContext } from '../lib/types.ts';
-import { frame as poseFrame } from './anims/kit.ts';
-import { FIGURE_H, REST_Q34, resolveJoints, withBand } from './body.ts';
+import type { AnimDef, PackDef, RenderContext } from '../lib/types.ts';
+import { FIGURE_H, REST_Q34, resolveJoints, RIG_W, withBand } from './body.ts';
 import {
   buildArm,
   buildBackHair,
@@ -32,6 +35,7 @@ import {
   buildSkirt,
   buildSpadeTail,
   buildTorso,
+  BREATH_GLOW,
   capScarfEnds,
   DEFAULT_SLEEVE_SHADE,
   dressShadeOf,
@@ -43,9 +47,10 @@ import {
   simulateChains,
   type Chains,
 } from './chains.ts';
+import { cloakGeometry, cloakPart, cloakTones, type CloakGeometry } from './cloak.ts';
 import { darkerMask, tipToe } from './q34.ts';
-import { expressionParts, Q34_EXPRESSIONS, validateFace, type ExpressionId } from './face.ts';
-import { NOT_ARM, PART_ID, TORSO_PARTS, UNDER_HEM } from './part-ids.ts';
+import { expressionParts } from './face.ts';
+import { BEHIND_TORSO, NOT_ARM, PART_ID, TORSO_PARTS, UNDER_HEM } from './part-ids.ts';
 import {
   apronPanel,
   armOverTorso,
@@ -53,7 +58,7 @@ import {
   closeSeams,
   cutSpadeNotches,
   farLegGap,
-  FISTS,
+  fistKindOf,
   handLineOverTies,
   hairBackCuts,
   handShadows,
@@ -67,38 +72,29 @@ import {
   silhouetteOutline,
   sleeveRim,
   sleeveHairLine,
+  skirtDetail,
+  skirtSplit,
+  skirtSplitQ34,
   squashSeparator,
   stampChinFists,
   stampMask,
   tubeTones,
   WRAP_SHADE,
-  type FistKind,
   type Locked,
   type Stamp,
 } from './passes.ts';
 import { SOFT as style } from './style.ts';
 import type { Body, BodyView, JointMap, PoseFrame, RigAnim, ScarfEnds, View } from './types.ts';
+import { validateBody } from './validate.ts';
+import { animFacing, bodyViewOf, headViewOf } from './views.ts';
 
 export { ARM_LABEL } from './part-ids.ts';
 export { SCARF_MAX_BELOW_CHEST, SCARF_MAX_TRAIL, q34FoxTail } from './chains.ts';
 export { closeSeams, pointToe, stampMask, type StampOptions } from './passes.ts';
+export { RIG_W } from './body.ts';
+export { HAIR_CUT_MAX_COUNT, HAIR_CUT_MAX_ROW, HAT_MAX, SKIRT_RAISE_MAX } from './validate.ts';
+export { animFacing, bodyViewOf, headViewOf, usesView } from './views.ts';
 
-/** Body view of a frame (the frame is the single source of truth; default front). */
-export const bodyViewOf = (anim: RigAnim, frame: number): View => anim.frames[frame]?.view ?? 'front';
-/**
- * Manifest facing of an animation (ADR 010): `right` when any frame's body is q34 (authored facing screen-right),
- * else `front`. A leading q34 head alone (no q34 body) stays front.
- */
-export const animFacing = (anim: RigAnim): Facing =>
-  anim.frames.some((_, i) => bodyViewOf(anim, i) === 'q34') ? 'right' : 'front';
-/** Head view of a frame: a leading `headView`, else the body view. */
-export const headViewOf = (anim: RigAnim, frame: number): View =>
-  anim.frames[frame]?.headView ?? bodyViewOf(anim, frame);
-/** Does any frame of these animations use the view (body or head)? */
-export const usesView = (anims: readonly RigAnim[], view: View): boolean =>
-  anims.some((a) => a.frames.some((_, i) => bodyViewOf(a, i) === view || headViewOf(a, i) === view));
-
-export const RIG_W = 48;
 /** Frame height: the smallest of 52/56/60 that keeps row 0 clear in every frame (measured by tests/unit/art/rig). */
 export const RIG_H = 56;
 /** Standing-figure height for sizing (manifest `scaleRef`, ADR 009): S/M/L stay ×3/×4/×5 at 1080p / 125 %. */
@@ -131,8 +127,8 @@ export function squashRows(img: RgbaImage, cut: number, n: number): RgbaImage {
 const DEPTH_TIES = 1.6;
 const DEPTH_HAIR_FAR = 0.5;
 const DEPTH_TRIM_MASK = 1.7;
-/** Bodice shade lift on breath frames (`PoseFrame.breath`). */
-const BREATH_GLOW = 0.4;
+/** Hip prop: over the cloak / back slot, under the torso (1), hem (1) and arms. */
+const DEPTH_PROP = 0.6;
 
 /** Previous frame index: looped clips wrap; one-shot clips (land, startle) reuse frame 0 (no lag there). */
 const prevFrameOf = (anim: RigAnim, frame: number): number =>
@@ -192,7 +188,9 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         masks: body.masks,
         apron: body.apron,
         sashKnot: body.sash?.knot,
+        prop: body.prop,
         hairFar: undefined,
+        hairBack: undefined,
       };
     }
     if (!q34 || !headMasks.q34) throw new Error(`${body.id}: q34 poses need Body.views.q34 (ADR 010)`);
@@ -203,7 +201,9 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       masks: q34.masks,
       apron: q34.apron,
       sashKnot: q34.sashKnot,
+      prop: q34.prop,
       hairFar: q34.masks.hairFar,
+      hairBack: q34.masks.hairBack,
     };
   };
   const jointCache = new Map<string, readonly JointMap[]>();
@@ -262,6 +262,18 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     return capScarfEnds(chains(anim).scarf, frame, scarfOf(bv), joints(anim, frame).chest[1], bv === 'q34', lift);
   };
 
+  /** Cloak geometry of a frame (`back: 'cloak'`), else undefined. */
+  const cloakOf = (anim: RigAnim, frame: number): CloakGeometry | undefined => {
+    const p = anim.frames[frame];
+    if (v.back !== 'cloak' || !body.cloak || !p) return undefined;
+    const j = joints(anim, frame);
+    const prevIndex = prevFrameOf(anim, frame);
+    const prev = joints(anim, prevIndex);
+    const q = bodyViewOf(anim, frame) === 'q34';
+    const prevHairDx = anim.frames[prevIndex]?.hairDx ?? 0;
+    return cloakGeometry(body.cloak, p, j, q, [prev.hip[0] - j.hip[0], prev.hip[1] - j.hip[1]], prevHairDx, RIG_W);
+  };
+
   /** Procedural parts of a frame in draw order (q34: far arm + far leg first, behind everything; ADR 010). */
   const layers = (anim: RigAnim, frame: number, p: PoseFrame): Layers => {
     const j = joints(anim, frame);
@@ -295,7 +307,8 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     const prevDx = hv === 'q34' && q34?.hairTipLag ? (anim.frames[prevIndex]?.hairDx ?? 0) : 0;
     const tipDx = Math.max(-HAIR_TIP_MAX, Math.min(HAIR_TIP_MAX, hairDx + prevDx));
     const tucked = viewParts(hv).hairFar !== undefined;
-    back.push(...buildBackHair(body, p, j, prev, hv, tucked, [ch.lockL[frame], ch.lockR[frame]], tipDx));
+    const authoredBack = viewParts(hv).hairBack !== undefined;
+    back.push(...buildBackHair(body, p, j, prev, hv, tucked, [ch.lockL[frame], ch.lockR[frame]], tipDx, authoredBack));
     if (q) back.push(...tailParts);
 
     // Legs, hem, torso.
@@ -320,7 +333,10 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     // Scarf ends: front = over the bodice under the knot, under the arms; q34 = trailing back from the nape over the
     // near shoulder (drawn last, so the near puff never hides them).
     (q ? front : behind).push(...buildScarfParts(body, scarfEnds(anim, frame), bv));
-    return { parts: [...far, ...back, ...behind, ...front], hands, knees: legs.knees };
+    // Cloak: behind everything (the far arm and leg too), in both views.
+    const cloakGeom = cloakOf(anim, frame);
+    const cloak = cloakGeom && body.cloak ? [cloakPart(body.cloak, cloakGeom, RIG_W)] : [];
+    return { parts: [...cloak, ...far, ...back, ...behind, ...front], hands, knees: legs.knees };
   };
 
   /** Authored masks (final tones, locked) in stamp order; returns what the post-outline passes need. */
@@ -365,11 +381,31 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         stampMask(buf, body, t.mask, tieAt[0], tieAt[1], DEPTH_TIES, MAT.apron, locked, { allow: NOT_ARM });
       }
     }
+    // Prop on the hip (behind the torso, hem, legs and arms; over the cloak, tail, back hair and empty px), then its
+    // dangle offset 1 px against the hip lag.
+    const prop = bodyParts.prop;
+    if (prop) {
+      const [px, py] = [Math.round(j.hip[0] + prop.at[0]), Math.round(j.hip[1] + prop.at[1])];
+      const opts = { partId: PART_ID.prop, allow: BEHIND_TORSO };
+      stampMask(buf, body, prop.mask, px, py, DEPTH_PROP, MAT.metal, locked, opts);
+      if (prop.dangle) {
+        const prev = joints(anim, prevFrameOf(anim, frame));
+        // Hip lag + the stride's back-hair trail (`hairDx`), clamped to ±1 px.
+        const swing = Math.max(-1, Math.min(1, Math.round(prev.hip[0] - j.hip[0]) + (p.hairDx ?? 0)));
+        const d = prop.dangle;
+        const dOpts = d.overHem ? { partId: PART_ID.prop, allow: NOT_ARM } : opts;
+        stampMask(buf, body, d.mask, px + d.at[0] + swing, py + d.at[1], DEPTH_PROP, MAT.apron, locked, dOpts);
+      }
+    }
     const neckAcc = bodyParts.masks.neckAcc;
     // Collar accessory = torso trim: the arm-over-torso pass and check cover the shoulder seam against it.
     if (neckAcc) {
       const [x, y] = [j.neck[0] + neckAcc.at[0], j.neck[1] + neckAcc.at[1]];
-      stamp(neckAcc.mask, x, y, DEPTH_TRIM_MASK, MAT.trim, undefined, PART_ID.trim);
+      // A mantle `collar` sits on the shoulders under the arms (arms always draw over it).
+      stampMask(buf, body, neckAcc.mask, Math.round(x), Math.round(y), DEPTH_TRIM_MASK, MAT.trim, locked, {
+        partId: PART_ID.trim,
+        ...(v.neckAcc === 'collar' ? { allow: NOT_ARM } : {}),
+      });
     }
     // Sash knot on the near hip (trim, never over an arm).
     const knot = bodyParts.sashKnot;
@@ -380,19 +416,22 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         allow: NOT_ARM,
       });
     }
-    const hairFar = headParts.hairFar;
-    const hairFarPx = hairFar
-      ? stampMask(
-          buf,
-          body,
-          hairFar.mask,
-          Math.round(j.head[0] + hairFar.at[0]),
-          Math.round(j.head[1] + hairFar.at[1]),
-          DEPTH_HAIR_FAR,
-          MAT.hair,
-          locked,
-        )
-      : [];
+    // Authored back hair (`masks.hairBack`, replaces the procedural mass) and the far lock: behind the head, neck and
+    // torso, over the cloak; both keep their authored tones through rim light.
+    const hairFarPx = [headParts.hairBack, headParts.hairFar].flatMap((m) =>
+      m
+        ? stampMask(
+            buf,
+            body,
+            m.mask,
+            Math.round(j.head[0] + m.at[0]),
+            Math.round(j.head[1] + m.at[1]),
+            DEPTH_HAIR_FAR,
+            MAT.hair,
+            locked,
+          )
+        : [],
+    );
     const headAcc = headParts.masks.headAcc;
     // Follow-through (`masks.headAccRising`): the alternate mask while the head rises vs the previous frame.
     const rising = headParts.masks.headAccRising;
@@ -477,6 +516,11 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     // 3. Authored masks, then the opt-in locked tone passes over legs.
     const locked: Locked = new Map();
     const { tieAt, hairFarPx } = stampAuthored(buf, anim, frame, p, locked);
+    // Cloak tones after the masks (a prop over the cloak can leave a 1-px cloak sliver, which is cleared).
+    const cloakGeom = cloakOf(anim, frame);
+    if (cloakGeom && body.cloak) {
+      cloakTones(buf, body.cloak, cloakGeom, (r) => ctx.palette.rampNames.indexOf(r), locked);
+    }
     if (body.legRim !== undefined) legRim(buf, body.legRim, ctx.palette.rampNames.indexOf(body.ramps.legs), locked);
     if (body.shinWrap) {
       const legsRamp = ctx.palette.rampNames.indexOf(body.ramps.legs);
@@ -485,6 +529,18 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     }
     if (q && q34?.farLegShade !== undefined) farLegGap(buf, locked);
     kneeCreases(buf, knees, locked);
+    const split = body.skirtSplit;
+    if (split && !q && v.hem === 'skirt') {
+      const x = Math.round(j.hip[0] + (p.parts.hem?.dx ?? 0)) - 1;
+      const clothRamp = ctx.palette.rampNames.indexOf(body.ramps.cloth);
+      skirtSplit(buf, x, split.rows, clothRamp, split.shade, locked);
+      skirtDetail(buf, x, split, clothRamp, locked);
+    }
+    if (split?.q34 && q && v.hem === 'skirt') {
+      const top = j.hip[0] + (p.parts.hem?.dx ?? 0);
+      const clothRamp = ctx.palette.rampNames.indexOf(body.ramps.cloth);
+      skirtSplitQ34(buf, top, j.footL, j.footR, split, clothRamp, locked);
+    }
     // 4. Outline, AA, locked tones restored, rim.
     const map = outline(buf, ctx.rampSize, { drop: style.drop, internal: true });
     if (body.hornOutline) recolorHornOutline(buf, map, body.hornOutline);
@@ -534,9 +590,16 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     const squash = anim.frames[frame]?.squash ?? 0;
     return [Math.round(j.fx[0]), Math.round(j.fx[1]) + (j.fx[1] < waistRow(j) ? squash : 0)];
   };
-  /** The drawn head (after squash) is higher than on the previous frame (one-shot frame 0: never). */
+  /**
+   * The drawn head (after squash) is higher than on the previous frame (one-shot frame 0: never; a body- or head-view
+   * switch, e.g. turn f0 front body → f1 q34: never — the two views' joints are not one motion).
+   */
   function headRises(anim: RigAnim, frame: number): boolean {
-    return fxAnchor(anim, frame)[1] < fxAnchor(anim, prevFrameOf(anim, frame))[1];
+    const prev = prevFrameOf(anim, frame);
+    if (headViewOf(anim, frame) !== headViewOf(anim, prev) || bodyViewOf(anim, frame) !== bodyViewOf(anim, prev)) {
+      return false;
+    }
+    return fxAnchor(anim, frame)[1] < fxAnchor(anim, prev)[1];
   }
 
   return { joints, render, renderLabeled, fxAnchor, tail, scarfEnds };
@@ -555,197 +618,6 @@ const FALLBACKS = {
   'activity:*': 'idle_a',
   '*': 'idle_a',
 } as const;
-
-/** Highest index of a six-tone ramp / swatch (shade opt-ins are 0..MAX_SHADE). */
-const MAX_SHADE = 5;
-/** Master palette ramp → tone count (validation only; rendering reads `ctx.palette`). */
-const MASTER_RAMP_SIZE: ReadonlyMap<string, number> = new Map(
-  Object.entries(MASTER.ramps).map(([name, tones]) => [name, tones.length]),
-);
-/** Chin-fist mask kind of a body: bare hands, long-sleeve cuff, or sleeve-over-hand paw. */
-const fistKindOf = (body: Body): FistKind =>
-  body.variants.sleeves === 'short' ? 'bare' : body.sleeveOverHand ? 'paw' : 'long';
-
-/**
- * All body-part validation before rendering: every authored mask (front, q34, apron, sash knot), shade opt-ins in
- * range, required per-view parts (q34 view, scarf ends, spade), faces and expressions. Throws with every problem.
- */
-function validateBody(body: Body, anims: readonly RigAnim[], frameH: number): void {
-  const q34 = body.views?.q34;
-  const usesQ34 = usesView(anims, 'q34');
-  if (usesQ34 && !q34) {
-    throw new Error(`${body.id}: q34 poses (walk, turn) need Body.views.q34 (head, face, masks; ADR 010)`);
-  }
-  const masks: [string, Mask | undefined][] = [
-    ['head', body.head.mask],
-    ['shoe', body.masks.shoe],
-    ['headAcc', body.masks.headAcc?.mask],
-    ['headAccRising', body.masks.headAccRising],
-    ['neckAcc', body.masks.neckAcc?.mask],
-    ['spade', body.masks.spade],
-    ['bib', body.apron?.bib.mask],
-    ['ties', body.apron?.ties?.mask],
-    ['sashKnot', body.sash?.knot.mask],
-  ];
-  if (q34) {
-    masks.push(
-      ['q34/head', q34.head.mask],
-      ['q34/shoe', q34.masks.shoe],
-      ['q34/headAcc', q34.masks.headAcc?.mask],
-      ['q34/headAccRising', q34.masks.headAccRising],
-      ['q34/neckAcc', q34.masks.neckAcc?.mask],
-      ['q34/bib', q34.apron?.bib.mask],
-      ['q34/ties', q34.apron?.ties?.mask],
-      ['q34/hairFar', q34.masks.hairFar?.mask],
-      ['q34/sashKnot', q34.sashKnot?.mask],
-    );
-  }
-  masks.push(['chinFist', FISTS[fistKindOf(body)]]);
-  for (const [name, mask] of masks) if (mask) checkMask(mask, `${body.id}/${name}`);
-  const partProblems: string[] = [];
-  const sleeveRamp = body.sleeve?.ramp ?? body.ramps.cloth;
-  const outlines = body.silhouetteOutline ?? [];
-  const ramps: [string, RampName | undefined][] = [
-    ['sleeve', body.sleeve?.ramp],
-    ['cuff', body.cuff?.ramp],
-    ...outlines.map((o, i): [string, RampName] => [`silhouetteOutline[${String(i)}]`, o.ramp]),
-  ];
-  for (const [name, ramp] of ramps) {
-    if (ramp !== undefined && !MASTER_RAMP_SIZE.has(ramp)) {
-      partProblems.push(`${body.id}: ${name} ramp "${ramp}" is not in the master palette`);
-    }
-  }
-  /** Highest shade index of a ramp (its tone count − 1; an unknown ramp is reported above). */
-  const topOf = (ramp: RampName): number => (MASTER_RAMP_SIZE.get(ramp) ?? MAX_SHADE + 1) - 1;
-  const outlineRamps = outlines.map((o) => o.ramp);
-  for (const r of new Set(outlineRamps.filter((r, i) => outlineRamps.indexOf(r) !== i))) {
-    partProblems.push(`${body.id}: silhouetteOutline lists ramp "${r}" more than once`);
-  }
-  /** Shade opt-ins: 0..MAX_SHADE, within their ramp when it is known, whole when written straight into buf.shade. */
-  const shades: { name: string; s: number | undefined; ramp?: RampName; int?: true }[] = [
-    { name: 'shorts.shade', s: body.shorts?.shade },
-    { name: 'shinWrap.shade', s: body.shinWrap?.shade },
-    { name: 'legRim', s: body.legRim, ramp: body.ramps.legs, int: true },
-    // Fractional on purpose (a far-leg tone between two steps).
-    { name: 'views.q34.farLegShade', s: q34?.farLegShade },
-    // The bodice lifts by BREATH_GLOW on breath frames.
-    { name: 'dressShade + breath glow', s: dressShadeOf(body) + BREATH_GLOW, ramp: body.ramps.cloth },
-    { name: 'sleeve.shade', s: body.sleeve?.shade, ramp: sleeveRamp },
-    ...(body.cuff ? [{ name: 'cuff.shade', s: body.cuff.shade, ramp: body.cuff.ramp, int: true as const }] : []),
-    { name: 'sleeveRim', s: body.sleeveRim, ramp: sleeveRamp, int: true },
-    ...outlines.flatMap((o) => [
-      { name: `silhouetteOutline.${o.ramp}.lit`, s: o.lit, ramp: o.ramp, int: true as const },
-      { name: `silhouetteOutline.${o.ramp}.shade`, s: o.shade, ramp: o.ramp, int: true as const },
-    ]),
-  ];
-  for (const { name, s, ramp, int } of shades) {
-    if (s === undefined) continue;
-    const top = Math.min(MAX_SHADE, ramp === undefined ? MAX_SHADE : topOf(ramp));
-    if (!(s >= 0 && s <= top)) partProblems.push(`${body.id}: ${name} ${String(s)} is outside 0..${String(top)}`);
-    else if (int && !Number.isInteger(s)) partProblems.push(`${body.id}: ${name} ${String(s)} must be a whole shade`);
-  }
-  partProblems.push(...headAccProblems(body, frameH));
-  const raise = body.skirtRaise;
-  if (raise !== undefined && !(Number.isInteger(raise) && raise >= 0 && raise <= SKIRT_RAISE_MAX)) {
-    partProblems.push(`${body.id}: skirtRaise ${String(raise)} must be a whole 0..${String(SKIRT_RAISE_MAX)}`);
-  }
-  if (raise !== undefined && body.variants.hem !== 'skirt')
-    partProblems.push(`${body.id}: skirtRaise needs hem 'skirt'`);
-  const cuts = q34?.hairBackCuts;
-  if (cuts) {
-    const bad = [...cuts.rows, ...(cuts.nape === undefined ? [] : [cuts.nape])].filter(
-      (r) => !(Number.isInteger(r) && r >= 0 && r <= HAIR_CUT_MAX_ROW),
-    );
-    if (bad.length > 0 || cuts.rows.length > HAIR_CUT_MAX_COUNT) {
-      partProblems.push(
-        `${body.id}: hairBackCuts rows must be ≤ ${String(HAIR_CUT_MAX_COUNT)} whole offsets 0..${String(HAIR_CUT_MAX_ROW)}`,
-      );
-    }
-  }
-  if (partProblems.length > 0) throw new Error(partProblems.join('\n'));
-  if (body.sleeveOverHand && body.variants.sleeves !== 'long') {
-    throw new Error(`${body.id}: sleeveOverHand needs sleeves 'long'`);
-  }
-  if (body.variants.neckAcc === 'scarf') {
-    if (!body.scarf) throw new Error(`${body.id}: neckAcc 'scarf' needs Body.scarf (front ends)`);
-    if (usesQ34 && !q34?.scarf) throw new Error(`${body.id}: neckAcc 'scarf' needs views.q34.scarf`);
-  }
-  const faceAtOf = (view: View, head: Body['head']): Point => {
-    const rest = resolveJoints(body, poseFrame({}), frameH, view);
-    return [rest.face[0] - (rest.head[0] + head.at[0]), rest.face[1] - (rest.head[1] + head.at[1])];
-  };
-  const problems = validateFace(body.face, body.id, { mask: body.head.mask, faceAt: faceAtOf('front', body.head) });
-  // Per view, only the expressions its frames reference are required (q34: neutral + blink).
-  const usedBy = (view: View): ExpressionId[] => [
-    ...new Set(anims.flatMap((a) => a.frames.filter((_, i) => headViewOf(a, i) === view).map((f) => f.face))),
-  ];
-  if (q34) {
-    problems.push(
-      ...validateFace(q34.face, `${body.id}/q34`, { mask: q34.head.mask, faceAt: faceAtOf('q34', q34.head) }, [
-        ...new Set([...Q34_EXPRESSIONS, ...usedBy('q34')]),
-      ]),
-    );
-  }
-  for (const a of anims) {
-    a.frames.forEach((f, i) => {
-      const lib = headViewOf(a, i) === 'q34' ? q34?.face : body.face;
-      if (lib && !(f.face in lib.expressions)) {
-        problems.push(`${body.id}/${a.name}/${String(i).padStart(2, '0')}: expression "${f.face}" is missing`);
-      }
-    });
-  }
-  if (problems.length > 0) throw new Error(problems.join('\n'));
-  if (body.variants.back === 'spade_tail' && !body.masks.spade) throw new Error(`${body.id}: spade_tail needs a spade`);
-}
-
-/**
- * `headAcc: 'hat'` bounds (figure units): at most `w` × `h` px, top row at rest ≥ `top` (the outline adds 1 row and
- * the highest pose lifts the head 3, so the apex stays ≥ frame row 3 with 8 headroom rows), inside the frame width.
- */
-export const HAT_MAX = { w: 28, h: 10, top: -1 } as const;
-/** `Body.skirtRaise` upper bound (rows): the hem stays below the knees. */
-export const SKIRT_RAISE_MAX = 3;
-/** `BodyView.hairBackCuts` bounds: offsets from the head / neck joint and the number of cut rows. */
-export const HAIR_CUT_MAX_ROW = 24;
-export const HAIR_CUT_MAX_COUNT = 4;
-
-/** Head-accessory checks: a rising alternate matches its mask; a hat stays inside `HAT_MAX` in every view. */
-function headAccProblems(body: Body, frameH: number): string[] {
-  const problems: string[] = [];
-  const views: readonly (readonly [View, BodyView['masks'] | Body['masks'] | undefined])[] = [
-    ['front', body.masks],
-    ['q34', body.views?.q34?.masks],
-  ];
-  for (const [view, masks] of views) {
-    if (!masks) continue;
-    const acc = masks.headAcc;
-    const name = `${body.id}/${view}`;
-    if (masks.headAccRising) {
-      if (!acc) problems.push(`${name}: headAccRising needs headAcc`);
-      else {
-        const [a, r] = [maskSize(acc.mask), maskSize(masks.headAccRising)];
-        if (a.w !== r.w || a.h !== r.h) problems.push(`${name}: headAccRising must be the size of headAcc`);
-      }
-    }
-    if (body.variants.headAcc !== 'hat') continue;
-    if (!acc) {
-      problems.push(`${name}: headAcc 'hat' needs a headAcc mask`);
-      continue;
-    }
-    const { w, h } = maskSize(acc.mask);
-    const rest = resolveJoints(body, poseFrame({}), frameH, view);
-    const x = Math.round(rest.acc[0] + acc.at[0]);
-    const top = Math.round(rest.acc[1] + acc.at[1]) - (frameH - FIGURE_H);
-    if (w > HAT_MAX.w || h > HAT_MAX.h) {
-      problems.push(`${name}: hat ${String(w)} × ${String(h)} exceeds ${String(HAT_MAX.w)} × ${String(HAT_MAX.h)}`);
-    }
-    if (top < HAT_MAX.top) problems.push(`${name}: hat top row ${String(top)} is above ${String(HAT_MAX.top)}`);
-    if (x < 1 || x + w > RIG_W - 1) {
-      problems.push(`${name}: hat cols ${String(x)}..${String(x + w - 1)} leave the frame`);
-    }
-  }
-  return problems;
-}
 
 /** A pack for `pnpm sprites` from a body and the shared poses; throws on any mask, face or pose problem. */
 export function createRigPack(body: Body, anims: readonly RigAnim[], frameH: number = RIG_H): PackDef {

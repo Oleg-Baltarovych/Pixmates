@@ -124,7 +124,11 @@ describe('pixmates.witch pack', () => {
 describe('art gate (witch.md): cloth_moss ramp (R-W4)', () => {
   const moss = ramp('cloth_moss');
   it('has no #000, L rising monotonically and ≥ 15° hue drift', () => {
-    expect(moss.length).toBe(7);
+    // Enough steps for every outfit tone that maps onto it (behavioural, not a pinned palette size).
+    const used = Object.values(WITCH.outfit)
+      .filter((sw) => sw.ramp === 'cloth_moss')
+      .flatMap((sw) => [...sw.tones]);
+    expect(moss.length).toBeGreaterThan(Math.max(0, ...used));
     expect(moss).not.toContain(0);
     const ls = moss.map((c) => toOklab(c)[0]);
     for (let i = 1; i < ls.length; i++) expect(ls[i]).toBeGreaterThan(ls[i - 1] ?? 1);
@@ -441,16 +445,27 @@ describe('art gate (witch.md): vial clear of the hands (art round 1)', () => {
     expect(Math.min(...vial.map(([x]) => x))).toBeGreaterThanOrEqual(20);
     expect(gap(anim('idle_a'), 0)).toBeGreaterThanOrEqual(2);
   });
-  it.each([2, 6])('q34 walk f%i: the near hand stays ≥ 2 px clear of the vial', (f) => {
-    expect(gap(anim('walk'), f)).toBeGreaterThanOrEqual(3);
+  /** q34 walk frames with the near arm hanging down beside the vial (derived from the pose, not pinned). */
+  const forward = anim('walk').frames.flatMap((p, f) => (p.parts.armL === 'down' ? [f] : []));
+  it('q34 walk: the near hand keeps ≥ 2 empty px to the vial (Chebyshev gap ≥ 3) on the arm-down frames', () => {
+    expect(forward.length).toBeGreaterThan(0);
+    for (const f of forward) expect(gap(anim('walk'), f), `walk/${String(f)}`).toBeGreaterThanOrEqual(3);
   });
 });
 
 describe('art gate (witch.md): q34 pout corner (art round 2, rendered)', () => {
-  it.each([
-    ['walk', 2],
-    ['turn', 1],
-  ] as const)('%s f%i: the skin-shade low corner sits screen-left of the XX, one row under it', (name, f) => {
+  /** The first frame of walk and of turn whose head is q34 with the pout mouth (derived, not pinned). */
+  const poutFrames = (['walk', 'turn'] as const).flatMap((name) => {
+    const a = anim(name);
+    const f = a.frames.findIndex(
+      (p, i) => headViewOf(a, i) === 'q34' && q34.face.expressions[p.face]?.mouth === 'pout',
+    );
+    return f < 0 ? [] : [[name, f] as const];
+  });
+  it('finds a q34 pout frame in walk and turn', () => {
+    expect(poutFrames.map(([n]) => n)).toEqual(['walk', 'turn']);
+  });
+  it.each(poutFrames)('%s f%i: the skin-shade low corner sits screen-left of the XX, one row under it', (name, f) => {
     const a = anim(name);
     const img = frameOf(name, f);
     const [hx, hy] = headOrigin(a, f);

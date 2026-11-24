@@ -127,6 +127,9 @@ const FIST_BREAK: Mask = ['.ZZ...'];
 export type FistKind = 'bare' | 'long' | 'paw';
 /** Chin-fist masks per sleeve kind (exported so `createRigPack` runs them through `checkMask`). */
 export const FISTS: Readonly<Record<FistKind, Mask>> = { bare: FIST, long: FIST_LONG, paw: FIST_PAW };
+/** Chin-fist mask kind of a body: bare hands, long-sleeve cuff, or sleeve-over-hand paw. */
+export const fistKindOf = (body: Body): FistKind =>
+  body.variants.sleeves === 'short' ? 'bare' : body.sleeveOverHand ? 'paw' : 'long';
 
 /** think: fists stamped over the bow/bib under the chin (after the head), each with its jaw break above. */
 export function stampChinFists(
@@ -574,6 +577,8 @@ export function legRim(buf: IndexBuffer, shade: number, legsRamp: number, locked
       edge.push(i);
     }
   }
+  // Not locked (yet): the later outline / AA passes retone edge rim px (witch: 418 px over all frames). Locking them
+  // is a visible change pending art review — see docs/CONTEXT.md gotchas.
   for (const i of edge) buf.shade[i] = shade;
 }
 
@@ -610,7 +615,182 @@ export function napeIndent(buf: IndexBuffer, y: number): void {
   for (let x = 0; x < buf.width; x++) {
     const i = y * buf.width + x;
     if (buf.partId[i] !== PART_ID.hair) continue;
-    const touches = [i - 1, i + 1].some((k) => TORSO_PARTS.has(buf.partId[k] ?? 0) || buf.partId[k] === PART_ID.trim);
+    // Same-row neighbours only (x ± 1 inside the frame; never wraps to the previous / next row).
+    const touches = [x - 1, x + 1].some(
+      (nx) => nx >= 0 && nx < buf.width && TORSO_PARTS.has(buf.partId[y * buf.width + nx] ?? 0),
+    );
     if (touches) buf.shade[i] = 0;
+  }
+}
+
+/**
+ * `Body.skirtSplit` (front): a 1-px cloth-ramp line in column `x` from the lowest hem px up `rows` hem px (skirt
+ * and lace; arms or hands in front are skipped), e.g. the centre split of a hakama. Final tones, locked.
+ */
+/**
+ * `Body.skirtSplit` detail opt-ins (front, after `skirtSplit`; final tones, locked): `notchShade` on the leg px in the
+ * 2-px notch, `pleats` lines mirrored about the split, and the 2-step screen-left `rim`. Only hem / leg px are painted
+ * (arms and hands in front are skipped).
+ */
+export function skirtDetail(
+  buf: IndexBuffer,
+  x: number,
+  split: NonNullable<Body['skirtSplit']>,
+  ramp: number,
+  locked: Locked,
+): void {
+  const w = buf.width;
+  const at = (cx: number, cy: number): number => (cx >= 0 && cx < w && cy >= 0 && cy < buf.height ? cy * w + cx : -1);
+  const isHem = (i: number): boolean => i >= 0 && buf.partId[i] === PART_ID.hem;
+  const set = (i: number, shade: number): void => {
+    buf.ramp[i] = ramp;
+    buf.shade[i] = shade;
+    locked.set(i, [ramp, shade]);
+  };
+  let bottom = -1;
+  for (let y = 0; y < buf.height; y++) if (isHem(at(x, y)) || isHem(at(x - 1, y))) bottom = y;
+  if (bottom < 0) return;
+  const top = bottom - split.rows + 1;
+  if (split.notchShade !== undefined) {
+    for (let y = bottom - (split.notch ?? 0) + 1; y <= bottom; y++) {
+      for (const cx of [x, x + 1]) {
+        const i = at(cx, y);
+        const beside = at(x - 1, y);
+        if (i < 0 || buf.partId[i] === PART_ID.hem || !isHem(beside)) continue;
+        // The gap (legs, the cloak behind them or empty px) becomes an inner leg shadow of the skirt cloth.
+        const src = buf.get(x - 1, y);
+        if (((buf.alpha[i] ?? 0) === 0 || buf.ramp[i] === -1) && src.ramp !== null)
+          buf.set(cx, y, { ...src, ramp: src.ramp, partId: PART_ID.legs });
+        if (buf.partId[i] === PART_ID.legs || buf.partId[i] === PART_ID.cloak) set(i, split.notchShade);
+      }
+    }
+  }
+  const pleats = split.pleats;
+  if (pleats) {
+    for (let y = top; y <= bottom; y++) {
+      for (const o of pleats.offsets) {
+        for (const cx of [x - o, x + 1 + o]) if (isHem(at(cx, y))) set(at(cx, y), pleats.shade);
+        const lit = at(x - o - 1, y);
+        if (pleats.lit !== undefined && isHem(lit)) set(lit, pleats.lit);
+      }
+    }
+  }
+  const rim = split.rim;
+  if (rim) {
+    let prevLeft = Infinity;
+    for (let y = 0; y < buf.height; y++) {
+      let left = -1;
+      for (let cx = 0; cx < w; cx++) {
+        if (isHem(at(cx, y))) {
+          left = cx;
+          break;
+        }
+      }
+      if (left < 0) {
+        prevLeft = Infinity;
+        continue;
+      }
+      if (!isHem(at(left - 1, y)) && at(left - 1, y) >= 0 && buf.partId[at(left - 1, y)] !== PART_ID.legs) {
+        set(at(left, y), left < prevLeft && prevLeft !== Infinity ? rim.lit : rim.shade);
+      }
+      prevLeft = left;
+    }
+  }
+}
+
+/** q34 split: feet at least this many px apart = a contact frame (line + notch + panel hems), else passing. */
+export const SPLIT_Q34_CONTACT_DX = 4;
+
+/**
+ * `Body.skirtSplit.q34` (q34 frames; final tones, locked; arms / hands in front are skipped): see the type. `hipX` is
+ * the hem top x (hip + hem dx); the near leg is L.
+ */
+export function skirtSplitQ34(
+  buf: IndexBuffer,
+  hipX: number,
+  footL: Point,
+  footR: Point,
+  split: NonNullable<Body['skirtSplit']>,
+  ramp: number,
+  locked: Locked,
+): void {
+  const sq = split.q34;
+  if (!sq) return;
+  const w = buf.width;
+  const isHem = (x: number, y: number): boolean =>
+    x >= 0 && x < w && y >= 0 && y < buf.height && buf.partId[y * w + x] === PART_ID.hem;
+  const paint = (x: number, y: number, shade: number): void => {
+    const i = y * w + x;
+    buf.ramp[i] = ramp;
+    buf.shade[i] = shade;
+    locked.set(i, [ramp, shade]);
+  };
+  let bottom = -1;
+  for (let y = 0; y < buf.height; y++) for (let x = 0; x < w; x++) if (isHem(x, y)) bottom = y;
+  if (bottom < 0) return;
+  const contact = Math.abs(footL[0] - footR[0]) >= SPLIT_Q34_CONTACT_DX;
+  const midX = (footL[0] + footR[0]) / 2;
+  const rows = contact ? sq.rows : sq.passNotch;
+  const gapAt = (y: number): number => {
+    const t = rows <= 1 ? 1 : (y - (bottom - rows + 1)) / (rows - 1);
+    return Math.round(hipX + (midX - hipX) * t) - 1;
+  };
+  // Panel hems: the bottom 2 rows of the front (screen-right) panel extend 1 px forward, the back panel 1 px back.
+  if (contact) {
+    for (let y = bottom - 1; y <= bottom; y++) {
+      const g = gapAt(y);
+      let [lo, hi] = [w, -1];
+      for (let x = 0; x < w; x++) {
+        if (!isHem(x, y)) continue;
+        lo = Math.min(lo, x);
+        hi = Math.max(hi, x);
+      }
+      if (hi < 0) continue;
+      for (const [edge, out] of [
+        [hi, 1],
+        [lo, -1],
+      ] as const) {
+        const nx = edge + out;
+        const src = buf.get(edge, y);
+        if ((edge - g) * out <= 0 || nx < 0 || nx >= w || (buf.alpha[y * w + nx] ?? 0) > 0 || src.ramp === null)
+          continue;
+        buf.set(nx, y, { ...src, ramp: src.ramp });
+        paint(nx, y, buf.shade[y * w + edge] ?? split.shade);
+      }
+    }
+  }
+  const notch = contact ? sq.notch : sq.passNotch;
+  for (let y = bottom - rows + 1; y <= bottom; y++) {
+    const g = gapAt(y);
+    const cols = y > bottom - notch ? [g, g + 1] : [g + 1];
+    for (const x of cols)
+      if (isHem(x, y)) paint(x, y, y > bottom - notch ? (split.notchShade ?? split.shade) : split.shade);
+  }
+  if (sq.pleat !== undefined) {
+    for (let y = bottom - rows + 1; y <= bottom - 1; y++) {
+      const t = (y - (bottom - rows + 1)) / Math.max(1, rows - 1);
+      const x = Math.round(hipX + (footL[0] - hipX) * t) - 3;
+      if (isHem(x, y) && Math.abs(x - gapAt(y)) > 1) paint(x, y, sq.pleat);
+    }
+  }
+}
+
+export function skirtSplit(
+  buf: IndexBuffer,
+  x: number,
+  rows: number,
+  ramp: number,
+  shade: number,
+  locked: Locked,
+): void {
+  const w = buf.width;
+  let bottom = -1;
+  for (let y = 0; y < buf.height; y++) if (buf.partId[y * w + x] === PART_ID.hem) bottom = y;
+  for (let y = bottom; y > bottom - rows && y >= 0; y--) {
+    const i = y * w + x;
+    if (buf.partId[i] !== PART_ID.hem) continue;
+    buf.ramp[i] = ramp;
+    buf.shade[i] = shade;
+    locked.set(i, [ramp, shade]);
   }
 }

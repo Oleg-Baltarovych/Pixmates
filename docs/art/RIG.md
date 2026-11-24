@@ -9,6 +9,9 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 |---|---|
 | `types.ts` | rig contract: views, joints, pose frame, `RigAnim`, `Body`, `BodyView`, opt-in shapes |
 | `body.ts` | rest layouts `REST` / `REST_Q34` (`restOf(view)`), joint resolution |
+| `validate.ts` | `validateBody` (every authored mask, opt-in ramps / shades, per-view parts, faces, hat / skirt / hair-cut / cloak / prop / collar / split bounds, `HEM_LIFT_MAX`) |
+| `views.ts` | `bodyViewOf`, `headViewOf`, `animFacing`, `usesView` (re-exported by compose) |
+| `cloak.ts` | cloak slot: `cloakGeometry` (per-frame px + tones), `cloakPart`, `cloakTones` |
 | `compose.ts` | `createRigRenderer` + `createRigPack`; `renderLabeled` = ordered steps: layers → compose → tone passes → `stampAuthored` → leg passes → outline / AA / rim → arm over torso → quantize / squash / seams; `validateBody` (every authored mask incl. front bib/ties and sash knots; shade opt-ins 0..5); `animFacing` |
 | `chains.ts` | looped verlet chains per animation (side locks, fox tail, scarf ends) + procedural part builders (back hair, tails, scarf ends, legs, skirt / shorts, torso, arms) |
 | `passes.ts` | `stampMask` and the buffer / image passes (shin wraps, far-leg gap, knee creases, far-shoulder clip, chin fists, spade notches, apron panel, arm over torso, sleeve/hair line, hand over ties, labels, squash separator, seam closer) |
@@ -23,7 +26,7 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 | 2 | fox tail, spade tube | 13 | q34 far leg with `BodyView.farLegShade` |
 | 3 | legs (front both; q34 near, and far without `farLegShade`) | 19 / 20 / 21 | far (R) arm, as L |
 | 4 | hem: skirt + lace + apron panel, or shorts | 7 | bodice + neck (+ apron bib) |
-| 8 | trim: waist band, sash knot, collar accessory | | |
+| 8 | trim: waist band, sash knot, collar accessory | 14 / 15 | cloak / hip prop + dangle (label none) |
 
 `LABEL_OF` maps sleeve / end / torso / trim ids to the arm-over-torso check labels; every other id is `none`.
 
@@ -115,8 +118,8 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 | `arms` | mitten biped; `sleeves: short / long` | long = sleeve to the wrist + bell cuff, hand skin always visible |
 | `legs` | `biped` | wheel legs: M3, contract only |
 | `hem` | `skirt` (+ lace), `shorts` | `dx` lag, `flare`, `lift` per frame; tailored shorts via `Body.shorts` |
-| `back` | `none`, `spade_tail`, `fox_tail` | spade = authored curve with tip lag; fox = chain (default 4 segments, per body `Body.foxTail`), pale tip, no fur noise; cloak: decided at the ronin gate (MA-29b, D-17) |
-| `neck_acc` | `bow`, `choker`, `scarf` | authored masks on the neck joint; scarf adds chain ends (`ScarfEnds`) |
+| `back` | `none`, `spade_tail`, `fox_tail`, `cloak` | spade = authored curve with tip lag; fox = chain (default 4 segments, per body `Body.foxTail`), pale tip, no fur noise; cloak = «Cloak slot» below (MA-29b) |
+| `neck_acc` | `bow`, `choker`, `scarf`, `collar` | authored masks on the neck joint; scarf adds chain ends (`ScarfEnds`); `collar` (mantle) is mask-only and never stamped over arm px (coder's `hood` = later alias) |
 
 ## Body (`assets-src/characters/<id>/body.ts`)
 `Body` in `types.ts`: id (`pixmates.<id>`), outfit (mask slot → ramp), ramps per material, variants, head mask +
@@ -130,7 +133,7 @@ offsets per joint). A body never forks an animation; proportions go through `twe
 | `Body.foxTail` (`FoxTail`) | per-body fox tail (default = dummy-b's). `front`: verlet chain from the back joint, `radii.length − 1` segments of `length`, `gravity` sets the rest direction, `bend` px per point (S-curve, tip curl), `root` (default [1, 1]), `shine` = lit stroke (tail shade 5) on the upper-left edge. `q34`: fixed centre line `points` (trailing = −x), tip swings against `hairDx`. Pale tip = second stroke over the last `tipRadii.length` points |
 | `Body.shorts` {shade, raise} | tailored shorts (`hem: 'shorts'`): clothAlt shade (0..5, default 3), hem raised `raise` rows; front adds a 1-px notch between the legs + 1-px outward flare at each leg hem |
 | `Body.shinWrap` {row, shade?} | darker legs-ramp row `row` rows above each foot joint (shade 0..5, default `WRAP_SHADE` 3), leg px only (near and far) |
-| `Body.sash` {rows, knot} + `BodyView.sashKnot` | waist sash band `rows` high (default 1) + knot mask on the near hip (from the hip joint, trim part 8); q34 knot per view, default none |
+| `Body.sash` {rows, knot, dy?} + `BodyView.sashKnot` | waist sash band `rows` high (default 1), `dy` whole rows lower (0..`SASH_DY_MAX` 3) + knot mask on the near hip (from the hip joint, trim part 8); q34 knot per view, default none |
 | `BodyView.farLegShade` | q34 far leg in that legs shade (0..5), part 13, shade-0 px where it touches the near leg (two pale shins never merge on contact frames) |
 | `Body.hairBackStretch` | back-hair length below the temples as a factor (default short 1 / long 1.45; ≈ 0.2 = short mop ending at the nape) |
 | `Body.sideLocks` | procedural side-lock chains (default true); false = the head mask's own short locks only |
@@ -147,7 +150,29 @@ offsets per joint). A body never forks an animation; proportions go through `twe
 | `Body.skirtRaise` (MA-29a) | skirt hem raised whole rows (0..`SKIRT_RAISE_MAX` 3, `hem: 'skirt'` only) so more legwear shows |
 | `Body.legRim` (MA-29a) | whole legs-ramp shade on each leg's lit (screen-left) edge px (left neighbour not a leg px); shin wraps paint over it |
 | `BodyView.hairBackCuts` {rows, nape?} (MA-29a, q34) | clump tips on the trailing back-hair edge: per row (offset from the head joint, 0..24, ≤ 4 rows) the outermost hair px is cleared and the row above gets a 1-px outward flick; `nape` (offset from the neck) darkens back-hair px touching the torso/collar to shade 0 |
+| `Body.cloak` (MA-29b, R1) | required with `back: 'cloak'`; see «Cloak slot» |
+| `Body.prop` / `BodyView.prop` (MA-29b, R2) | authored mask on the hip joint (part 15) stamped only over empty / cloak / tail / hair / prop px (depth behindTorso: under torso, hem, legs, arms); optional `dangle` sub-mask offset ±1 px by hip lag + `hairDx`; q34 poses need `views.q34.prop` |
+| `Body.skirtSplit` {rows, shade, notch?, notchShade?, hemHalf?, pleats?, rim?} (MA-29b, R4) | front: 1-px cloth-ramp centre line `rows` (≤ 12) up from the hem; `notch` cuts a 2-px gap that many rows up between the legs; `notchShade` fills the gap (legs / cloak / empty) with that cloth shade; `hemHalf` (6..10, default 10, both views) = straight trapezoid hem; `pleats` {offsets, shade, lit?} = 1-px lines mirrored about the split (+ lit px left of the screen-left ones); `rim` {shade, lit} = 2-step screen-left skirt edge (lit on outward steps). All final + locked |
+| `Body.skirtSplit.q34` {rows, notch, passNotch, pleat?} (MA-29b round 2) | q34 two leg panels: on contact frames (feet ≥ `SPLIT_Q34_CONTACT_DX` 4 px apart) a 1-px split line `rows` (≤ 8) up the leg gap (hip → mid-feet) + a 2-px `notch` (notchShade) + the bottom 2 hem rows of the front panel 1 px forward / back panel 1 px back; passing frames get `passNotch` only; `pleat` = 1 near-leg (L) line in that cloth shade |
+| `BodyView.masks.hairBack` (MA-29b round 1) | authored back hair (from the head joint, final tones, stamped like `hairFar`: over the cloak, under head / neck / torso, kept through rim light); replaces the procedural back-hair mass on frames whose head uses the view (`hairBackStretch` is then moot) |
+| `Cloak.innerShade` (MA-29b round 1) | cloak px 4-touching skirt / leg px take this shade: a 1-px inner shadow column so a pale cloak never fuses with the skirt |
+| `Prop.dangle.overHem` (MA-29b round 1) | the dangle is stamped over the skirt / legs (never over arms) instead of behind the torso |
+| `headAccRising` view rule | never swaps on a frame whose body or head view differs from the previous frame (turn f0 → f1) |
+| `Body.skirtLace` (MA-29b) | false = no petticoat lace; the plain cloth runs to the same hem length |
+| `hemLiftOf(body, p)` | pose `hem.lift` + `skirtRaise` (skirt) / `shorts.raise`; used by skirt, shorts and the seated skirt knee; sum ≤ `HEM_LIFT_MAX` 5 |
 | `Body.sleeve`, `Body.chinHand`, `Body.apron` (+ `ties`), `hornOutline`, `BodyView.{sleeveHairLine, hideFarShoulder, masks.hairFar}` | see «Arm over torso», «Views» |
+
+### Cloak slot (`back: 'cloak'`, `rig/cloak.ts`; ronin, vampire later)
+One general panel behind everything (incl. the q34 far arm/leg), both views. `Cloak`: `ramp`, `shade`, `litShade` (screen-left
+edge column), `top` (rows from the shoulder line), `hemRow` (rows below the hip), `widths {top, hem, shape: bell|column}`
+(half-widths), `shoulder: square|round`, `hem {lobes (0 = straight), cornerDrop, curl, curlShade}`, `bands [{row, shade}]`
+(rows above the hem, ends inset 2 px, may be empty), `dither {rows, shades}` (cloak-local, interior px only), `lining {ramp,
+shade, corner [w, h]}` + `flareRows` (extra lining rows on hairLift / squash), `maxTrail` (default `CLOAK_MAX_TRAIL` 2). Per frame:
+front hem sways with hip lag + `hairDx` (≤ maxTrail, sheared from 0 at the top), lifts 1 on `hairLift`, widens by squash; seated
+hem ≤ seat + `CLOAK_SEAT_HEM` 3 (feet always show); dangling legs: straight, `CLOAK_DANGLE_NARROW` 2 px narrower per side; q34
+trails left from a leading edge 3 px ahead of the chest axis, the hem foreshortened to 0.85 and trailing by the previous
+frame's |hairDx| + hip lag (≤ maxTrail). Tones are final and locked after the masks (a cloak px left with no cloak
+4-neighbour is cleared). Bounds in `validate.ts` (`CLOAK_MAX`).
 
 Post-squash separator pass: squash > 0 can join a sleeve px to the bodice, so the separator runs again after the
 squash rows (`squashSeparator`). Test hooks: `RigRenderer.tail()` / `scarfEnds()`.

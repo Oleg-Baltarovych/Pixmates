@@ -100,6 +100,7 @@ export function buildBackHair(
   tucked: boolean,
   locks: readonly (readonly Point[] | undefined)[],
   tipDx: number,
+  authoredBack = false,
 ): Part[] {
   const parts: Part[] = [];
   const stretch = body.hairBackStretch ?? HAIR_STRETCH[body.variants.hairBack];
@@ -111,8 +112,11 @@ export function buildBackHair(
     const t = (y - 7) / 9.6;
     return [x + hx + (lag[0] + tipDx) * t, 7 + (y - 7) * stretch + j.head[1] + lag[1] * t];
   });
-  parts.push(part(ellipse(hx, j.head[1] + 0.5, 11.6, 10.4, 0.9), hairMat(body, 2), PART_ID.hair, 0));
-  parts.push(part(curveX(poly(hair), hx, 11), hairMat(body, 1.6), PART_ID.hair, 0));
+  // `BodyView.masks.hairBack`: the authored mask (stamped later) replaces the procedural mass.
+  if (!authoredBack) {
+    parts.push(part(ellipse(hx, j.head[1] + 0.5, 11.6, 10.4, 0.9), hairMat(body, 2), PART_ID.hair, 0));
+    parts.push(part(curveX(poly(hair), hx, 11), hairMat(body, 1.6), PART_ID.hair, 0));
+  }
   // Side locks: below the root they trail the head by ≤ 1 px from the previous frame (walk, drag).
   const trail: Point = [clamp1(lag[0]), clamp1(lag[1])];
   const shown = body.sideLocks === false ? [] : headView === 'q34' ? [locks[0]] : locks;
@@ -379,6 +383,15 @@ export function simulateChains(
   };
 }
 
+/**
+ * Whole rows the hem sits above its rest row on this frame: the pose `hem.lift` plus the body's raise (`skirtRaise`
+ * for skirts, `shorts.raise` for tailored shorts). Shared by the skirt, the shorts and the seated knee.
+ */
+export const hemLiftOf = (body: Body, p: PoseFrame): number =>
+  (p.parts.hem?.lift ?? 0) + (body.variants.hem === 'skirt' ? (body.skirtRaise ?? 0) : (body.shorts?.raise ?? 0));
+/** Upper bound of `hemLiftOf` over a body's poses (validateBody): the hem stays at or below the hip − 5 rows. */
+export const HEM_LIFT_MAX = 5;
+
 // ---- Legs, hem, torso, arms ---------------------------------------------------------------------------------------
 
 /** Legs. q34: the far leg (R) is drawn behind everything, one ramp step darker unless `farLegShade` is set. */
@@ -413,7 +426,10 @@ export function buildLegs(
     }
     if (p.parts.legs === 'sit') {
       // Seated, thighs toward the viewer: the knee is a 1-px bump just under the (lifted) hem, the shin hangs past it.
-      const hemBottom = j.hip[1] + 1.1 - (p.parts.hem?.lift ?? 0);
+      // Skirts: the knee sits just under the (lifted, raised) hem. Tailored shorts end above the knee, so their
+      // raise is not applied here (pose lift only).
+      const raise = body.variants.hem === 'skirt' ? hemLiftOf(body, p) : (p.parts.hem?.lift ?? 0);
+      const hemBottom = j.hip[1] + 1.1 - raise;
       const knee: StrokePoint = [foot[0], hemBottom + 0.2, 1.3];
       knees.push([knee[0], knee[1]]);
       back.push(part(stroke([top, knee]), legMat, PART_ID.legs, 0.85));
@@ -458,6 +474,9 @@ export function hemShape(p: PoseFrame, q: boolean): HemShape {
   };
 }
 
+/** Default skirt hem half-width (px from the hip axis). */
+export const SKIRT_HEM_HALF = 10;
+
 const cloth3 = (body: Body, seed: string, folds: number, shade = 3): Material =>
   cloth(MAT.cloth, body.ramps.cloth, shade, { folds, cell: 3, seed: `${body.id}:${seed}` });
 
@@ -466,12 +485,28 @@ export function buildSkirt(body: Body, p: PoseFrame, hip: Point, q: boolean): Pa
   const shape = hemShape(p, q);
   const { flare, hemDx, farW, trailFlare } = shape;
   // `Body.skirtRaise`: the hem sits whole rows higher (more legwear shows).
-  const lift = shape.lift + (body.skirtRaise ?? 0);
+  const lift = hemLiftOf(body, p);
+  // `skirtLace: false`: the plain cloth runs down over the rows the lace would take (same hem length).
+  const plain = body.skirtLace === false ? (p.parts.legs === 'sit' ? 1 : 2) : 0;
+  const hemY = hip[1] + 0.1 - lift + plain;
+  // `Body.skirtSplit.notch` (front): a 2-px gap between the legs at the hem (divided skirt / hakama).
+  const notch = q ? 0 : (body.skirtSplit?.notch ?? 0);
+  const hemHalf = body.skirtSplit?.hemHalf ?? SKIRT_HEM_HALF;
+  const gap: [number, number][] =
+    notch > 0
+      ? [
+          [hip[0] + 1 + hemDx, hemY],
+          [hip[0] + 1 + hemDx, hemY - notch],
+          [hip[0] - 1 + hemDx, hemY - notch],
+          [hip[0] - 1 + hemDx, hemY],
+        ]
+      : [];
   const skirt = poly([
     [hip[0] - 5.6, hip[1] - 10.1],
     [hip[0] + 5.6 * farW, hip[1] - 10.1],
-    [hip[0] + 10 * farW + flare + hemDx, hip[1] + 0.1 - lift],
-    [hip[0] - 10 - flare - trailFlare + hemDx, hip[1] + 0.1 - lift],
+    [hip[0] + hemHalf * farW + flare + hemDx, hemY],
+    ...gap,
+    [hip[0] - hemHalf - flare - trailFlare + hemDx, hemY],
   ]);
   const pet = rect(
     Math.round(hip[0] - 9.4 - flare - trailFlare + hemDx),
@@ -479,10 +514,14 @@ export function buildSkirt(body: Body, p: PoseFrame, hip: Point, q: boolean): Pa
     Math.round(9.4 + 9.4 * farW + 2 * flare + trailFlare),
     p.parts.legs === 'sit' ? 1 : 2,
   );
-  return [
-    part(curveX(skirt, hip[0] + (q ? 1 : 0), 9), cloth3(body, 'skirt', 1, dressShadeOf(body)), PART_ID.hem, 1),
-    part(pet, lace(body, pet, 4), PART_ID.hem, 1.05),
-  ];
+  const cloth = part(
+    curveX(skirt, hip[0] + (q ? 1 : 0), 9),
+    cloth3(body, 'skirt', 1, dressShadeOf(body)),
+    PART_ID.hem,
+    1,
+  );
+  // `Body.skirtLace: false`: a plain hem (e.g. hakama), no petticoat lace row.
+  return body.skirtLace === false ? [cloth] : [cloth, part(pet, lace(body, pet, 4), PART_ID.hem, 1.05)];
 }
 
 /** Tailored shorts: notch rows between the legs, leg-hem flare px. */
@@ -492,9 +531,9 @@ const SHORTS_DEFAULT_SHADE = 3;
 
 /** Shorts; tailored (`Body.shorts`): raised hem, front 1-px notch between the legs and a 1-px leg-hem flare. */
 export function buildShorts(body: Body, p: PoseFrame, hip: Point, q: boolean): Part {
-  const { flare, hemDx, lift, farW, trailFlare } = hemShape(p, q);
+  const { flare, hemDx, farW, trailFlare } = hemShape(p, q);
   const tailored = body.shorts;
-  const hemY = hip[1] + 1.2 - lift - (tailored?.raise ?? 0);
+  const hemY = hip[1] + 1.2 - hemLiftOf(body, p);
   const legOut = tailored && !q ? SHORTS_LEG_FLARE : 0;
   const notch: Point[] =
     tailored && !q
@@ -532,6 +571,8 @@ export function buildShorts(body: Body, p: PoseFrame, hip: Point, q: boolean): P
 export const BODICE_SHADE = 3;
 export const DEFAULT_SLEEVE_SHADE = 2;
 /** Bodice + skirt base shade of a body (`Body.dressShade`, default `BODICE_SHADE`). */
+/** Bodice shade lift on breath frames (`PoseFrame.breath`). */
+export const BREATH_GLOW = 0.4;
 export const dressShadeOf = (body: Body): number => body.dressShade ?? BODICE_SHADE;
 /** Default bell-cuff shade on the clothAlt ramp. */
 export const DEFAULT_CUFF_SHADE = 3;
@@ -578,7 +619,12 @@ export function buildTorso(body: Body, j: JointMap, q: boolean, glow: number): P
       1,
     ),
     part(
-      rect(Math.round(hip[0] - 5.4), Math.round(hip[1] + band), q ? 10 : 11, body.sash?.rows ?? 1),
+      rect(
+        Math.round(hip[0] - 5.4),
+        Math.round(hip[1] + band) + (body.sash?.dy ?? 0),
+        q ? 10 : 11,
+        body.sash?.rows ?? 1,
+      ),
       flat(MAT.trim, body.ramps.trim, 2.4),
       PART_ID.trim,
       1.6,
