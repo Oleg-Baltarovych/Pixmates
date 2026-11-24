@@ -62,10 +62,14 @@ are authored in `assets-src/`, and procedural code is used only for material tex
 
 ## 9. Originality (ADR 005)
 - Own designs only. `maid` is an original horned demoness housekeeper: a chibi anime girl with lilac hair in pointed clumps, thin ivory hook horns shading to plum at the base, teal dress, cream apron with scalloped lace, rose bow and ribbons, plum stockings, a thin plum tail with a pointed spade at knee height and amber eyes with round pupils. She has no signature costume or colour scheme from any existing character; in particular she must not read as a «dragon maid» (no thick scaled tail, no tan dragon horns, no slit pupils).
-- **kitsune** (chibi fox-boy ninja, hyperactive braggart). Colourway (owner Q3): ash-silver fur, deep indigo garb,
-  teal scarf. Own traits: one oversized tail with a pale tip, a fox mask worn tilted on the side of the head, a short
-  scarf whose ends lag in motion. Forbidden: leaf or forehead-plate headband, whisker marks, orange jumpsuit, nine
-  tails, red-white shrine scheme.
+- **kitsune** (chibi fox-girl ninja, hyperactive braggart; female since D-18, art unchanged). Colourway (owner Q3):
+  ash-silver fur, deep indigo garb, teal scarf. Own traits: one oversized tail with a pale tip, a fox mask worn tilted
+  on the side of the head, a short scarf whose ends lag in motion. Forbidden: leaf or forehead-plate headband, whisker
+  marks, orange jumpsuit, nine tails, red-white shrine scheme.
+  - Fox-girl risk list (D-18) — **re-check pending (MA-28r)**: Ahri (LoL), Senko-san, Holo (Spice and Wolf), Yae Miko
+    (Genshin), Shirakami Fubuki (hololive), Tamamo no Mae (Fate), Kiriko (Overwatch), Izuna (Blue Archive). Watch: no
+    pink/red-white miko or shrine scheme, no multiple tails, no long white hair with a side braid, no blonde/amber
+    fur with a wolf-girl read, no heart or bell charms as signature props.
 - **goth** (stylized pixel-anime goth girl, calm, ironic, warm to friends): long blue-black hair with bangs, all-black
   gothic dress, lace choker, brown eyes. Own traits (owner Q4): a small garnet drop on the choker, a moth hair clip,
   sleeves past the hands. Forbidden: red or heterochromatic eyes, clock or eyepatch motifs, twin-tails or drills,
@@ -92,6 +96,25 @@ are authored in `assets-src/`, and procedural code is used only for material tex
     Forbidden lookalikes: Puss in Boots (ginger cat, feathered cavalier hat, boots, rapier, cape), Felyne/Palico
     (Monster Hunter cat armour sets), Hollow Knight (white mask with two horns, black body, nail), Garfield (orange
     tabby with black stripes). No ginger/orange fur, no cavalier hat with a feather, no white horned mask.
+- **D-18 briefs (proposals; the per-character gates MA-29d/e refine them into `docs/art/<id>.md`):**
+  - **coder** (male, night-owl coder boy in a hoodie; sleepy, dry humour; Dev companion lead). Own-trait ideas:
+    hood down and bunched, sleeves past the hands, half-lidded eyes with a soft under-eye shade, one cowlick, a
+    steaming mug, a muted non-black hoodie (so he never doubles as `goth` or `vampire`), drawstrings of uneven length.
+    Forbidden lookalikes: L (Death Note: white long-sleeve, crouched sitting, dark eye bags, messy black hair, sweets),
+    Mr. Robot (black hood up, dark hacker read), Kenma (Haikyuu:
+    two-tone blond-over-black hair, red/team jacket, handheld console), Satou (NHK ni Youkoso), generic hikikomori
+    tropes (unkempt clutter, energy-drink piles), GitHub Octocat. No headphones (q34 rule), no glasses glint
+    «anime hacker» trope, no real brand logos (IDE, OS, cloud, drink) on hoodie or mug, no code text legible on props.
+  - **vampire** (male, chibi aristocrat count; theatrical, afraid of the light theme and mornings). Own-trait ideas:
+    a high standing collar on a short cloak with a coloured lining of his own (not red-on-black), a small cravat or
+    brooch, neat swept hair with one stray lock, tiny fangs only on chosen faces, a dramatic cloak-hide pose.
+    Forbidden lookalikes: Alucard (Hellsing: red coat, wide hat, orange glasses; Castlevania: long white hair, black
+    coat), Dracula (Castlevania), Count von Count (Sesame Street: monocle, purple skin, counting), Vlad (Hotel
+    Transylvania), Edward Cullen (sparkling skin), Mavis (Hotel Transylvania), D (Vampire Hunter D: wide hat, long
+    sword), Krul Tepes (Owari no Seraph: pink hair, gothic lolita), Mirai Kuriyama (Kyoukai no Kanata: red glasses,
+    blood weapon), Vampire Knight (white/black academy uniforms), Dio (JoJo: blond, yellow jacket, heart motifs). No
+    widow's-peak + slicked black hair + red-lined black cape combo, no monocle, no bats styled as any brand logo
+    (e.g. the Batman emblem).
 - **Black cloth and hair rule** (R6): "black" is a lifted ramp (`hair_black` blue-black with a cool angel ring,
   `cloth_black` desaturated plum-blue); its darkest tone is never `#000` (tested), the rim stays at 2 and the
   selective outline is lighter, so the figure holds on a dark IDE (judged first on that backdrop).

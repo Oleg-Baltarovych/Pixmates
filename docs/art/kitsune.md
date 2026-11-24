@@ -1,5 +1,9 @@
 # kitsune — design spec (MA-28)
 
+> **D-18 (owner, 2026-11-24):** kitsune is now **female** (fox girl ninja, hyperactive braggart); the signed-off art
+> stays. Originality re-check as a girl is **pending (MA-28r)** against the fox-girl list in ART-BIBLE §9. The body
+> below still says «him»/«fox-boy» from MA-28 and is not rewritten; read it as describing the same art.
+
 Originality gate: **PASS** (art-director, 2026-11-24). Owner decisions 2026-11-24: violet eyes, pale cream leg wraps,
 mask on the character's right (screen-left, near side in q34). Brief: ART-BIBLE §9. Frame 48 × 56, chibi ≈ 2.2 heads.
 
@@ -93,3 +97,16 @@ low ninja crouch before the happy jump; smoke-puff FX on drag release; sleep wit
 ## Rig work
 - Build the `neckAcc: 'scarf'` end chain (exists only as a type).
 - Parameterize the fox-tail per body: front radii and the q34 curve points/radii.
+
+## D-18 — fox girl (MA-28r, art-director 2026-11-24)
+Originality re-check as a girl: **PASS as is** (Shirakami Fubuki and Izuna are the real risks). Hard rules that keep her
+clear (every future round and skin):
+1. Hair stays `fur_ash` — the lightest step only in the shine band and highlights, mids (L ≤ 0.71) carry the mass; never
+   `hair_ash`, never white; no braid, side braid, ponytail or long back hair; the bob stays chin-length.
+2. Eyes stay violet (`hair_lilac`), never blue, cyan, teal or yellow.
+3. Garb stays deep indigo — no white or sky-blue top, no hoodie, choker or bell, no kimono or long sleeves.
+4. Scarf stays short and teal, never red or long. Persona: no third-person self-name, no "nin-nin" tic, no devotion to a
+   lord/master (Izuna) — her hook is the braggart.
+5. No pink hair and no red anywhere (hair, mask, scarf, props).
+Owner decision 2026-11-24: add a tail ribbon wrap — a 1-row, 3-px `cloth_rose` band around the tail just above the cream
+tip, no bow, no trailing ends, front and q34, moving with the tail chain.
