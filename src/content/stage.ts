@@ -28,7 +28,12 @@ export const DRAG_FPS = 60;
 export const DEFAULT_CHARACTER = builtinPackId('maid');
 
 /**
- * M1 travel speed matched to the q34 `walk` (art round MA-27c-1): the planted foot slides back 2 native px per frame
- * at 10 fps, so the sprite moves 20 native px/s (× the integer sprite scale on screen); any other speed skates.
+ * M1 travel speed per rig layout, matched to the q34 `walk` so the planted foot never skates: the stance foot slides
+ * back `pxPerFrame` native px per frame at `fps`, so the sprite moves `pxPerSecond` native px/s (× the integer sprite
+ * scale on screen). Legacy 48 × 56 (art round MA-27c-1): 2 px × 10 fps; adult 56 × 72 (MA-45, 16-px stride over 4
+ * stance frames): 4 px × 10 fps.
  */
-export const WALK_TRAVEL = { pxPerFrame: 2, fps: 10, pxPerSecond: 20 } as const;
+export const WALK_TRAVEL = {
+  legacy: { pxPerFrame: 2, fps: 10, pxPerSecond: 20 },
+  adult: { pxPerFrame: 4, fps: 10, pxPerSecond: 40 },
+} as const;

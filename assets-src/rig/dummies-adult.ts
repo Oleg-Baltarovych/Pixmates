@@ -5,7 +5,8 @@
 import type { Point } from '../lib/chain.ts';
 import type { Mask, Outfit } from '../lib/mask.ts';
 import type { PackDef } from '../lib/types.ts';
-import { ANIMS } from './anims/index.ts';
+import { animsFor } from './anims/adult.ts';
+import { SWORD, SWORD_Q34 } from '../characters/ronin/masks.ts';
 import { createRigPack } from './compose.ts';
 import { irisShift, type FaceLibrary, type FacePart, type ViewFaceLibrary } from './face.ts';
 import type { Body, BodyView } from './types.ts';
@@ -50,6 +51,19 @@ export const ADULT_HEAD: Mask = [
   '...seeeeeeeeS...',
   '....sseeeeSs....',
   '......sSSs......',
+];
+
+/**
+ * Female front head: the ADULT_HEAD skull and face rows with a narrower, pointed jaw (rows 10…14 lose 1–2 px on each
+ * side, the chin is 2 px wide).
+ */
+export const ADULT_HEAD_FEMALE: Mask = [
+  ...ADULT_HEAD.slice(0, 10),
+  '.JeeEEEEEEEeeS..',
+  '..seeEEEEEeeS...',
+  '...sseeeeeeS....',
+  '.....seeeeS.....',
+  '.......sS.......',
 ];
 
 /** q34 head (facing screen-right): back hair mass on the trailing side, ear at col 5, the profile on the right. */
@@ -176,6 +190,8 @@ export const ADULT_MALE: Body = {
   head: { mask: ADULT_HEAD, at: ADULT_HEAD_AT, band: ADULT_BAND },
   face: ADULT_FACE,
   masks: { shoe: ADULT_SHOE, neckAcc: { mask: ADULT_COLLAR, at: [-5, 1] } },
+  // Hip prop on an adult body (slot check, MA-45): the sheathed sword masks of the ronin pack, hilt up at the left hip.
+  prop: { mask: SWORD, at: [-15, -12] },
   cloak: {
     ramp: 'hair_plum',
     shade: 2,
@@ -187,7 +203,9 @@ export const ADULT_MALE: Body = {
     hem: { lobes: 0 },
     bands: [],
   },
-  views: { q34: adultQ34({ neckAcc: { mask: ADULT_COLLAR, at: [-5, 1] } }) },
+  views: {
+    q34: { ...adultQ34({ neckAcc: { mask: ADULT_COLLAR, at: [-5, 1] } }), prop: { mask: SWORD_Q34, at: [-12, -12] } },
+  },
 };
 
 /** Adult female dummy: skirt, long hair, short sleeves, the pinched waist of the female build. */
@@ -208,11 +226,11 @@ export const ADULT_FEMALE: Body = {
   },
   variants: { headAcc: 'none', hairBack: 'long', hem: 'skirt', back: 'none', neckAcc: 'none', sleeves: 'short' },
   sideLocks: false,
-  head: { mask: ADULT_HEAD, at: ADULT_HEAD_AT, band: ADULT_BAND },
+  head: { mask: ADULT_HEAD_FEMALE, at: ADULT_HEAD_AT, band: ADULT_BAND },
   face: ADULT_FACE,
   masks: { shoe: ADULT_SHOE },
   views: { q34: adultQ34() },
 };
 
 /** Adult review packs (`pnpm sprites:sheet --adult`; never written to resources/). */
-export const adultPacks = (): PackDef[] => [ADULT_MALE, ADULT_FEMALE].map((b) => createRigPack(b, ANIMS));
+export const adultPacks = (): PackDef[] => [ADULT_MALE, ADULT_FEMALE].map((b) => createRigPack(b, animsFor(b)));

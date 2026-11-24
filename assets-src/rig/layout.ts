@@ -127,6 +127,11 @@ export interface RigLayout {
   /** Glance: the eye-mask column splitting the two eyes (`irisShift`). */
   readonly irisHalf: number;
   readonly face?: FaceRules;
+  /**
+   * q34 far (R) arm one ramp step darker than the near one (sleeve and bare forearm; adult). The far leg already
+   * takes `farLegShade` or one step under the near leg.
+   */
+  readonly farArmStep?: number;
 }
 
 // ---- Legacy 48 × 56 (pre-D-19 numbers, unchanged) -------------------------------------------------------------------
@@ -298,21 +303,24 @@ const ARMS_ADULT: Readonly<Record<ArmVariant, ArmShape>> = {
   swing_fwd: { elbow: [-0.6, 9.9], hand: [0.4, 20.2] },
   swing_back: { elbow: [-1.6, 9.8], hand: [-4.6, 19.6] },
   hang: { elbow: [-0.6, 10], hand: [-2.6, 20.4] },
-  limp: { elbow: [-1.4, 9.9], hand: [0.4, 20] },
-  fold: { elbow: [-1.8, 9.8], hand: [8.6, 12.2] },
+  // Sleep (seated, slumped): the hand rests on the foreshortened thigh, just above the knee row.
+  limp: { elbow: [-1.2, 9.8], hand: [2.2, 17] },
+  // Think: forearm across the waist, the fist under the other (chin) elbow.
+  fold: { elbow: [0.8, 9.7], hand: [11.5, 10] },
   // Raised hands stay outside the head and below row 2 at the happy apex (root −4).
   up: { elbow: [-7, -6.5], hand: [-11.5, -14] },
   wave_a: { elbow: [-7.5, -4], hand: [-10, -13] },
   wave_b: { elbow: [-7.5, -4.6], hand: [-8, -14] },
   hug: { elbow: [-1.2, 9.8], hand: [5, 14] },
   flail: { elbow: [-7.5, -3], hand: [-15, -8] },
-  out: { elbow: [-6.5, 7.5], hand: [-12.5, 13.5] },
-  // Elbow forward (foreshortened), the fist under the chin.
-  chin: { elbow: [0.5, 7.5], hand: [6.5, -1.5] },
+  out: { elbow: [-7.4, 6.6], hand: [-12.5, 13.5] },
+  // Elbow propped on the folded forearm (x ≈ axis + 5), the fist under the chin.
+  chin: { elbow: [4, 9.5], hand: [6.5, -1] },
   chest: { elbow: [-1.4, 9.6], hand: [4.5, 7.5] },
   knees: { elbow: [-1.6, 9.8], hand: [-0.4, 19] },
-  talk: { elbow: [-2.6, 9.4], hand: [-4.5, 15.5] },
-  edge: { elbow: [-2.2, 9.8], hand: [-3.6, 20.4] },
+  talk: { elbow: [-1.6, 9.6], hand: [-6, 15] },
+  // Hands on the edge beside the hips (the seat row, hip + 1…2).
+  edge: { elbow: [-1.2, 9.7], hand: [-3.6, 18.6] },
 };
 
 /** q34 adult arms (x = forward): the elbow bends forward only. */
@@ -320,6 +328,11 @@ const ARMS_Q34_ADULT: Readonly<Partial<Record<ArmVariant, ArmShape>>> = {
   down: { elbow: [-0.3, 9.9], hand: [0.9, 20.3] },
   swing_fwd: { elbow: [2.2, 9.6], hand: [6.4, 18.8] },
   swing_back: { elbow: [-3, 9.5], hand: [-4.6, 19.6] },
+  // Seated in q34 (reserved for adult signature poses): hands on the edge, limp on the thigh, the fist under the chin
+  // (near arm; the elbow forward and down).
+  edge: { elbow: [-0.5, 9.8], hand: [1.5, 18.5] },
+  limp: { elbow: [-0.3, 9.9], hand: [2.5, 18] },
+  chin: { elbow: [6.5, 7.5], hand: [12.5, -1.5] },
 };
 
 function adultLayout(build: BodyBuild): RigLayout {
@@ -375,12 +388,13 @@ function adultLayout(build: BodyBuild): RigLayout {
     legs: {
       dangle: [rest.footL[0] - rest.hip[0], rest.footL[1] - rest.hip[1]],
       // Seated on an edge: thighs toward the viewer (foreshortened), shins hanging past it.
-      sit: [-4, 18],
+      // The long shins hang a full shin (≈ 14 px) under the knee, which sits on the seat row.
+      sit: [-4, 16],
       curl: [-7, 4],
     },
     knee: {
       thigh: 0.5,
-      bend: { stand: [0, 0], dangle: [-0.6, -0.6], sit: [-1.2, -6], curl: [-2.5, -5] },
+      bend: { stand: [0, 0], dangle: [-0.6, -0.6], sit: [-1.2, -6.5], curl: [-2.5, -5] },
       bendQ34: { stand: [0.6, 0], dangle: [1.2, -0.4], sit: [4, -6], curl: [4, -4] },
     },
     torso: {
@@ -412,6 +426,7 @@ function adultLayout(build: BodyBuild): RigLayout {
     hairScale: 0.62,
     cloakHemMax: 12,
     irisHalf: 6,
+    farArmStep: 1,
     face: {
       faceH: 12,
       eyeRows: [2, 3],

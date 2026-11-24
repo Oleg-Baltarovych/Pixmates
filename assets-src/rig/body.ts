@@ -142,8 +142,22 @@ export function kneeOf(
   const top: Point = [joints.hip[0] + s * (q ? layout.torso.leg.dxQ : layout.torso.leg.dx), joints.hip[1]];
   const foot = joints[side === 'L' ? 'footL' : 'footR'];
   const bend = q ? k.bendQ34[legs] : k.bend[legs];
-  const bx = q ? bend[0] : -s * bend[0];
+  const bx = q ? Math.max(bend[0], legs === 'stand' ? strideBend(layout, side, top, foot) : 0) : -s * bend[0];
   return [top[0] + (foot[0] - top[0]) * k.thigh + bx, top[1] + (foot[1] - top[1]) * k.thigh + bend[1]];
+}
+
+/**
+ * q34 standing / walking knee: equal thigh and shin of half the rest hip-top → ankle length, so a leg shortened by the
+ * stride, the bob or a lifted swing foot bends the knee forward by the two-segment height over the hip → foot chord
+ * (0 when the leg is at or past its rest length).
+ */
+function strideBend(layout: RigLayout, side: 'L' | 'R', top: Point, foot: Point): number {
+  const r = layout.restQ34;
+  const sx = side === 'L' ? -1 : 1;
+  const restFoot = r[side === 'L' ? 'footL' : 'footR'];
+  const half = Math.hypot(restFoot[0] - (r.hip[0] + sx * layout.torso.leg.dxQ), restFoot[1] - r.hip[1]) / 2;
+  const chord = Math.hypot(foot[0] - top[0], foot[1] - top[1]) / 2;
+  return chord < half ? Math.sqrt(half * half - chord * chord) : 0;
 }
 
 const HAIR_CHARS = new Set(['j', 'J', 'h', 'H', 'y', 'Y']);

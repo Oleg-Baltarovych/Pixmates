@@ -5,8 +5,9 @@
 //   pnpm sprites:sheet --lineup   all packs side by side (idle, walk, happy frame strips) → reports/art-spike/
 //   pnpm sprites:sheet --swatch   master palette swatch → docs/art/palette.png
 //   pnpm sprites:sheet --review   the rig review bodies (dummies + maid preview, never built into resources/)
-//   pnpm sprites:sheet --adult    adult rig dummies (ADR 011): front + q34 idle_a / walk / happy at 1× and ×4 on
-//                                 white and dark → reports/sprites/rig-adult-<build>/sheet-x1.png, sheet-x4.png
+//   pnpm sprites:sheet --adult    adult rig dummies (ADR 011): all 16 anims (front + q34) at 1× and ×4 on white
+//                                 and dark → reports/sprites/rig-adult-<build>/sheet-x1.png, sheet-x4.png, plus
+//                                 ×4 APNGs walk.apng.png, turn.apng.png, walk-mirrored.apng.png
 //   pnpm sprites:sheet --fx       FX marks sheet on light + dark, and marks composited at the rig fx anchor
 //                                 → reports/sprites/fx-sheet.png, fx-on-<id>.png
 //   pnpm sprites:sheet --real     real M size on the 4 backdrops: first frame of every animation + the walk cycle
@@ -119,9 +120,9 @@ const packs = sources
   }));
 
 if (adult) {
-  // Rows: idle_a, walk (q34), happy; columns = frames; top half white, bottom half dark; 1× and ×4.
-  const rows = ['idle_a', 'walk', 'happy'] as const;
+  // Rows: every animation in build order; columns = frames; top half white, bottom half dark; 1× and ×4.
   for (const { def, built } of packs) {
+    const rows = [...built.frames.keys()];
     const { w, h } = def.frameSize;
     const dir = join(reports, 'sprites', def.id);
     mkdirSync(dir, { recursive: true });
@@ -141,6 +142,28 @@ if (adult) {
       }
       const file = join(dir, `sheet-x${String(s)}.png`);
       writeFileSync(file, encodePng(c.image()));
+      console.log(file);
+    }
+    // Motion check: walk, turn and the runtime mirror of walk (walking left), ×4 on white | dark.
+    const s = 4;
+    const motion = [
+      ['walk', false],
+      ['turn', false],
+      ['walk', true],
+    ] as const;
+    for (const [name, flip] of motion) {
+      const fps = def.animations[name]?.fps ?? 8;
+      const apng = encodeApng(
+        (built.frames.get(name) ?? []).map((frame) => {
+          const c = new Canvas(2 * (w * s + 16), h * s + 16);
+          c.fill(0, 0, w * s + 16, c.height, WHITE);
+          c.fill(w * s + 16, 0, w * s + 16, c.height, DARK);
+          for (const x0 of [8, w * s + 24]) c.blit(flip ? mirror(frame) : frame, x0, 8, s);
+          return { image: c.image(), delayMs: Math.round(1000 / fps) };
+        }),
+      );
+      const file = join(dir, `${name}${flip ? '-mirrored' : ''}.apng.png`);
+      writeFileSync(file, apng);
       console.log(file);
     }
   }

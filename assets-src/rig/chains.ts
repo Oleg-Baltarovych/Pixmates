@@ -428,6 +428,8 @@ export function buildLegs(
       : undefined;
     if (knee) {
       const farLeg = q && side === 1;
+      // Folded knees (seated, curled) get the crease where the shin folds under them (near legs only in q34).
+      if ((p.parts.legs === 'sit' || p.parts.legs === 'curl') && !farLeg) knees.push([knee[0], knee[1]]);
       (farLeg ? far : back).push(
         part(
           stroke([top, [knee[0], knee[1], lg.kneeR], [foot[0], foot[1], lg.footR]]),
@@ -695,6 +697,9 @@ export function buildArm(
   const shoulder = j[side === 'L' ? 'shoulderL' : 'shoulderR'];
   const layout = layoutOf(body);
   const la = layout.torso.arm;
+  // q34 far arm one ramp step darker (adult layouts; legacy far arms keep the near tones).
+  const step = farHand ? (layout.farArmStep ?? 0) : 0;
+  const sleeveShade = sleeve.shade - step;
   const elbow = elbowOf(j, side, arm, view, layout);
   const hand = j[side === 'L' ? 'handL' : 'handR'];
   const longSleeve = body.variants.sleeves === 'long';
@@ -709,7 +714,7 @@ export function buildArm(
   const parts: Part[] = [
     part(
       ellipse(shoulder[0] - (side === 'L' ? 0.1 : -0.1), shoulder[1] - 0.2, la.puff[0], la.puff[1], 0.9),
-      cloth(MAT.cloth, sleeve.ramp, sleeve.shade + 0.2, { folds: 0.3, cell: 2 }),
+      cloth(MAT.cloth, sleeve.ramp, sleeveShade + 0.2, { folds: 0.3, cell: 2 }),
       ids.upper,
       2,
     ),
@@ -718,13 +723,13 @@ export function buildArm(
         [...shoulder, la.upper[0]],
         [...elbow, la.upper[1]],
       ]),
-      flat(MAT.cloth, sleeve.ramp, sleeve.shade),
+      flat(MAT.cloth, sleeve.ramp, sleeveShade),
       ids.upper,
       2,
     ),
     part(
       stroke([[...elbow, la.fore], foreEnd]),
-      longSleeve ? flat(MAT.cloth, sleeve.ramp, sleeve.shade) : flat(MAT.skin, skin, 4),
+      longSleeve ? flat(MAT.cloth, sleeve.ramp, sleeveShade) : flat(MAT.skin, skin, 4 - step),
       ids.fore,
       2.1,
     ),

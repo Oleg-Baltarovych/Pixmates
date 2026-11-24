@@ -14,6 +14,7 @@ import {
 import { DUMMY_A, DUMMY_FACE } from '../../../assets-src/rig/dummies.ts';
 import { Q34_EXPRESSIONS, validateFace, type FaceLibrary } from '../../../assets-src/rig/face.ts';
 import { LAYOUT_ADULT, LAYOUT_LEGACY, layoutOf } from '../../../assets-src/rig/layout.ts';
+import { animsFor } from '../../../assets-src/rig/anims/adult.ts';
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
 import { frame } from '../../../assets-src/rig/anims/kit.ts';
 import type { ArmVariant, Body, LegVariant, RigAnim } from '../../../assets-src/rig/types.ts';
@@ -96,7 +97,7 @@ function holes(img: RgbaImage): number[] {
 }
 
 describe('adult layout (MA-42 rest, frame, scaleRef)', () => {
-  const built = BODIES.map((b) => ({ body: b, pack: buildPack(createRigPack(b, ANIMS), ctx) }));
+  const built = BODIES.map((b) => ({ body: b, pack: buildPack(createRigPack(b, animsFor(b)), ctx) }));
 
   it('emits a 56 × 72 manifest with scaleRef 66; legacy bodies keep 48 × 56 / 48', () => {
     for (const { pack } of built) {
@@ -179,7 +180,7 @@ describe('adult layout (MA-42 rest, frame, scaleRef)', () => {
 
   it('is deterministic (same atlas bytes on a second build)', () => {
     for (const { body, pack } of built) {
-      const again = buildPack(createRigPack(body, ANIMS), ctx);
+      const again = buildPack(createRigPack(body, animsFor(body)), ctx);
       expect(again.sha256).toBe(pack.sha256);
     }
   });
@@ -200,7 +201,7 @@ describe('adult q34 rest (ADR 010 rules on the adult layout)', () => {
     });
   }
   it('keeps the head x − hip x constant in every walk frame', () => {
-    const walk = ANIMS.find((a) => a.name === 'walk');
+    const walk = animsFor(ADULT_MALE).find((a) => a.name === 'walk');
     const r = createRigRenderer(ADULT_MALE);
     walk?.frames.forEach((_, f) => {
       const j = r.joints(walk, f);
