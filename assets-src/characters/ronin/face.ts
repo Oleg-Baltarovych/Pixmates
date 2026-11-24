@@ -43,7 +43,7 @@ export const RONIN_FACE: FaceLibrary = {
     level: part(['.jjJj..jJjj.'], 0, 2),
   },
   mouths: {
-    flat: part(['....xXXx....'], 0, 8),
+    flat: part(['.....xxx....'], 0, 8),
     talk_a: part(['.....xXx....', '......z.....'], 0, 8),
     talk_b: part(['.....XXX....', '......x.....'], 0, 8),
     talk_c: part(['.....xXx....', '.....XzX....', '......x.....'], 0, 8),
@@ -81,7 +81,7 @@ export const RONIN_FACE_Q34: ViewFaceLibrary = {
     closed: part(['....xXXX.xX.'], 0, 4),
   },
   brows: { stern: part(['....jj....j.', '......jJ.J..'], 0, 1) },
-  mouths: { flat: part(['......xXX...'], 0, 8) },
+  mouths: { flat: part(['.......xx...'], 0, 8) },
   cheeks: { none: part([], 0, 6) },
   nose: part(['S', 's'], 10, 5),
   expressions: {

@@ -37,7 +37,7 @@ export const BAND = 5;
 
 /**
  * q34 head (facing screen-right), same 16 × 16 placement: the tuft 1 px toward the back, swept-back hair mass on the
- * trailing side, 2 strands on the facing brow, the back jaw edge in skin shade 1 (`Z`, never an ink column — reads as
+ * trailing side, 2 strands on the facing brow, the back jaw edge in skin shade 1 (`z`, never an ink column — reads as
  * stubble), the facing contour tapering ≤ 1 px per row to a 1-px chin point.
  */
 export const HEAD_Q34: Mask = [
@@ -54,8 +54,8 @@ export const HEAD_Q34: Mask = [
   '.jhhhjeEEEEEEEEE',
   '.Jjhh.seEEEEEEEe',
   '..Jjj.seEEEEEEe.',
-  '...J..ZseEEEEe..',
-  '......ZseeeeS...',
+  '...J..zseEEEEe..',
+  '......zseeeeS...',
   '...........S....',
 ];
 

@@ -28,15 +28,35 @@ spirit swordsman who speaks in aphorisms. Frame 48 × 56, chibi ≈ 2.2 heads. N
 | Palette | silver, indigo, teal (saturated, cool) | warm dove-ivory mist, near-neutral ash grey, warm umber hair, ochre accent (muted ink-wash) |
 | Costume | ninja wrap top, short scarf, side mask, tabi | no mask, scarf, tabi, shorts or shin wraps |
 
+## D-19 lookalikes (adult) — hard rules (originality gate PASS with these, MA-46)
+Re-checked for the adult redesign: Jin (Champloo), Hanzo, Samurai Jack, Kenshin, Musashi, Kenpachi, Byakuya, Rengoku,
+Yasuo, Sanjuro. These rules replace the old «no ponytail / topknot» entries for Jin, Hanzo and Samurai Jack.
+1. Tuft ≤ 2 px wide, ≤ 3 rows, on the crown, centred or 1 px back; a sprout, never a bun or chonmage; nothing trailing;
+   an oxblood cord only. (Yasuo / Jin / Hanzo / Samurai Jack: no ponytail, topknot bun or tied tail.)
+2. Hair umber (never black, grey, silver or red), at most jaw / nape length; the 3 forehead strands; no headband.
+   (Byakuya: no long black hair or kenseikan; Kenshin / Rengoku: no red or flame hair.)
+3. Clean-shaven (no stubble px), no scar, eyepatch or glasses. (Kenpachi: no eyepatch, scar; Sanjuro: no stubble.)
+4. Haori hem wisps REGULAR and tapered 3 → 2 → 1 px, evenly spaced, in mist tones; never torn rags; tips never warm.
+   (Rengoku: no flame-tongue hem.)
+5. Haori warm dove-ivory (h 60–95), never white, pale blue or pink, unpatterned. Hakama umber-black (brown hue), never
+   neutral black or indigo. Oxblood only on the obi, tuft cord and sageo. No scarf. (Byakuya: no white haori + scarf;
+   Kenpachi: no tattered white haori.)
+6. Haori on both shoulders, open front, full rectangular sleeves.
+7. One katana with a black saya at the hip; no second sword, back sword, wooden sword, straw hat or mask. One kote on
+   the right forearm only, never metal or mechanical-looking. (Musashi: no two swords, straw hat.)
+8. Futokoro-de: the hand never comes out at the collar or chin (Sanjuro's chin-scratch).
+Tested in `tests/unit/art/ronin.test.ts`: tuft bounds, clean-shaven jaw, wisp regularity + mist-only tips, haori hue,
+hakama hue in the umber range.
+
 ## Lookalikes checked
 - Kenshin: no red hair, cross scar, magenta gi, ponytail, straw kasa, reverse blade.
 - Zoro: no green hair, exactly one sword, no haramaki, earrings, bandana.
-- Jin (Samurai Champloo): no glasses, ponytail/topknot; hakama never blue or indigo. Mugen: no red jacket, spiky/afro
-  hair, wrist tattoos.
+- Jin (Samurai Champloo): no glasses; hakama never blue or indigo (tuft: see «D-19 lookalikes (adult)»). Mugen: no red
+  jacket, spiky/afro hair, wrist tattoos.
 - Jin Sakai / Ghost of Tsushima: no mask, menpo or lower-face cloth, hood, headband; the cloak is a smooth mist mantle,
   never a fur-trimmed traveller's cape.
 - Yasuo: no ponytail, single pauldron, bare shoulder, wind-tornado FX. Genji: no visor, cyborg parts, green glow,
-  shuriken. Hanzo: no topknot, bow, dragon tattoo. Afro Samurai: no afro, tagged headband.
+  shuriken. Hanzo: no bow, dragon tattoo (tuft: see below). Afro Samurai: no afro, tagged headband.
 - Musashi (Vagabond): no long wild tied hair, two swords, straw hat. Okami: no white wolf, red markings, sun disc.
 - Sekiro: no prosthetic arm, scarf; cloak hem is rounded cloud lobes, never torn rags; no grey-and-orange scheme.
 - Hornet: no red cloak, horned white mask, needle. Yoshimitsu: no demon/face mask, no manji or swastika-like mark.
@@ -50,7 +70,7 @@ spirit swordsman who speaks in aphorisms. Frame 48 × 56, chibi ≈ 2.2 heads. N
 - Demon Slayer: no checkered pattern anywhere, hanafuda earrings, forehead scar (Tanjiro); no split two-pattern haori,
   low ponytail (Giyu); no water/flame swirl FX.
 - Also: Shinsengumi (no pale-blue haori, sawtooth sleeve band), Gintoki (no silver perm, wooden sword, wave pattern),
-  Samurai Jack (no white gi + topknot), Ashitaka (no cowl).
+  Samurai Jack (no white gi; tuft: see below), Ashitaka (no cowl).
 
 Spirit without horror (yurei / jiangshi): feet always visible; warm `skin`, never grey-blue; garb never white; no
 triangle forehead cloth, forehead paper charm, hitodama flames or hair over the face; eyes always keep a pupil and
