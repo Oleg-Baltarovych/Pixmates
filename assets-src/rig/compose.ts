@@ -196,7 +196,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
         sashKnot: body.sash?.knot,
         prop: body.prop,
         hairFar: undefined,
-        hairBack: undefined,
+        hairBack: body.masks.hairBack,
       };
     }
     if (!q34 || !headMasks.q34) throw new Error(`${body.id}: q34 poses need Body.views.q34 (ADR 010)`);

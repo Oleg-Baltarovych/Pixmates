@@ -19,6 +19,8 @@ import {
   CHARM_Q34,
   COLLAR,
   COLLAR_Q34,
+  HAIR_BACK,
+  HAIR_BACK_Q34,
   HEAD,
   HEAD_Q34,
   HILT,
@@ -75,7 +77,11 @@ export const HAORI: Cloak = {
 const RONIN_Q34: BodyView = {
   head: { mask: HEAD_Q34, at: HEAD_AT, band: BAND },
   face: RONIN_FACE_Q34,
-  masks: { shoe: SHOE_Q34, neckAcc: { mask: COLLAR_Q34, at: [-5, 1] } },
+  masks: {
+    shoe: SHOE_Q34,
+    neckAcc: { mask: COLLAR_Q34, at: [-5, 1] },
+    hairBack: { mask: HAIR_BACK_Q34, at: [-9, 0] },
+  },
   prop: { mask: SWORD_Q34, at: [-23, -4], dangle: { mask: CHARM_Q34, at: [19, 8], overHem: true } },
   farLegShade: 0,
 };
@@ -102,7 +108,7 @@ export const RONIN: Body = {
   cuff: { ramp: 'cloth_ash', shade: 1 },
   head: { mask: HEAD, at: HEAD_AT, band: BAND },
   face: RONIN_FACE,
-  masks: { shoe: SHOE, neckAcc: { mask: COLLAR, at: [-5, 1] } },
+  masks: { shoe: SHOE, neckAcc: { mask: COLLAR, at: [-5, 1] }, hairBack: { mask: HAIR_BACK, at: [-8, -2] } },
   // Oxblood obi, 3 rows, no knot.
   sash: { rows: 3, knot: { mask: [], at: [0, 0] } },
   hakama: { ramp: 'hair_umber', shade: 1, drop: 13 },

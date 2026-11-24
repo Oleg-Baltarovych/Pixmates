@@ -17,8 +17,8 @@ const IRIS_ROWS = [1] as const;
 /** Glance split column (`RigLayout.irisHalf`, adult 6). */
 const EYE_HALF = 6;
 
-/** Open: the heavy half-lid (outer end ink 0, inner end ink 1), then sclera · glint · pupil · rim. */
-const OPEN: Mask = ['.XXXx..xXXX.', '.pKCc..cCKp.'];
+/** Open (2 rows): the heavy half-lid cuts the iris top (outer end ink 0, inner ink 1); glint · pupil · rim, no sclera. */
+const OPEN: Mask = ['.XXXx..xXXX.', '..KCc..KCc..'];
 
 export const RONIN_FACE: FaceLibrary = {
   eyes: {
@@ -26,7 +26,7 @@ export const RONIN_FACE: FaceLibrary = {
     low: part(OPEN, 0, 4, IRIS_ROWS),
     side: part(irisShift(OPEN, EYE_HALF, IRIS_ROWS), 0, 3, IRIS_ROWS),
     closed: part(['.XXXx..xXXX.'], 0, 4),
-    half: part(['.xXXx..xXXx.', '..KC....CK..'], 0, 4),
+    half: part(['.xXXx..xXXx.', '..KC...KC...'], 0, 4),
     /** Serene closed lines, the outer ends drooped (not ^^, not arcs). */
     serene: part(['..XXX..XXX..', '.x........x.'], 0, 4),
     startle: part(['.xXXx..xXXx.', '.pKCp..pCKp.', '..pp....pp..'], 0, 3),
@@ -35,15 +35,15 @@ export const RONIN_FACE: FaceLibrary = {
   },
   brows: {
     /** Stern: outer ends high, sloping down to the nose (2 rows). */
-    stern: part(['.jj......jj.', '...jJ..Jj...'], 0, 1),
+    stern: part(['.JJ......JJ.', '...JJ..JJ...'], 0, 0),
     /** Worried (only here): the inner ends lifted. */
-    worried: part(['...Jj..jJ...', '.jj......jj.'], 0, 1),
-    up: part(['.jjJj..jJjj.'], 0, 1),
+    worried: part(['...JJ..JJ...', '.JJ......JJ.'], 0, 0),
+    up: part(['.JJJJ..JJJJ.'], 0, 0),
     /** Meditation: level, calm. */
-    level: part(['.jjJj..jJjj.'], 0, 2),
+    level: part(['.JJJJ..JJJJ.'], 0, 1),
   },
   mouths: {
-    flat: part(['.....xxx....'], 0, 8),
+    flat: part(['.....ZZZ....'], 0, 8),
     talk_a: part(['.....xXx....', '......z.....'], 0, 8),
     talk_b: part(['.....XXX....', '......x.....'], 0, 8),
     talk_c: part(['.....xXx....', '.....XzX....', '......x.....'], 0, 8),
@@ -55,7 +55,7 @@ export const RONIN_FACE: FaceLibrary = {
     none: part([], 0, 6),
     blush: part(['.FF......FF.'], 0, 6),
   },
-  nose: part(['S', 's'], 6, 5),
+  nose: part(['s', 'z'], 6, 5),
   expressions: {
     neutral: { eyes: 'open', brows: 'stern', mouth: 'flat', cheeks: 'none' },
     blink: { eyes: 'closed', brows: 'stern', mouth: 'flat', cheeks: 'none' },
@@ -77,10 +77,10 @@ export const RONIN_FACE: FaceLibrary = {
 /** q34 face (neutral + blink): near eye 4 px, far eye 2 px, the stern brow, the nose shadow on the profile. */
 export const RONIN_FACE_Q34: ViewFaceLibrary = {
   eyes: {
-    open: part(['....xXXX.xX.', '....pKCc.C..'], 0, 3),
+    open: part(['....xXXX.xX.', '.....KCc.C..'], 0, 3),
     closed: part(['....xXXX.xX.'], 0, 4),
   },
-  brows: { stern: part(['....jj....j.', '......jJ.J..'], 0, 1) },
+  brows: { stern: part(['....JJ....J.', '......JJ.J..'], 0, 1) },
   mouths: { flat: part(['.......xx...'], 0, 8) },
   cheeks: { none: part([], 0, 6) },
   nose: part(['S', 's'], 10, 5),

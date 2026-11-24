@@ -428,6 +428,11 @@ export interface Body {
     readonly neckAcc?: PlacedMask;
     /** Spade tip of `spade_tail`, hung by its top-centre px. */
     readonly spade?: Mask;
+    /**
+     * Opt-in authored front back hair (MA-46; same contract as `BodyView.masks.hairBack`): replaces the procedural
+     * back-hair mass on front-head frames, e.g. short hair that must not show as a bob beside a narrow adult face.
+     */
+    readonly hairBack?: PlacedMask;
   };
   /**
    * Apron (clothAlt ramp): `bib` is an authored mask on the bodice (`at` from the neck joint; torso part, so the

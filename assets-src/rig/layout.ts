@@ -332,8 +332,8 @@ const ARMS_ADULT: Readonly<Record<ArmVariant, ArmShape>> = {
   talk: { elbow: [-1.6, 9.6], hand: [-6, 15] },
   // Fist pump (happy): elbow out on the shoulder row, the fist up at row ≈ 14 beside the head.
   pump: { elbow: [-6, 0], hand: [-5, -9.2] },
-  // Hand to the back of the neck (behind the head mask), elbow out at row ≈ 18.
-  neck: { elbow: [-5, -5.2], hand: [4, -6.2] },
+  // Hand to the back of the neck, the fist at the nape beside the head (≥ 2 px clear of the skull), elbow out.
+  neck: { elbow: [-5, -5.2], hand: [2.5, -6.2] },
   // Hand on the hip, elbow out.
   hip: { elbow: [-4, 8], hand: [1.5, 15.5] },
   // Hands on the edge beside the hips (the seat row, hip + 1…2).

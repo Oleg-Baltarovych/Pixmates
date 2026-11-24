@@ -10,30 +10,37 @@ import type { Mask } from '../../lib/mask.ts';
 
 /**
  * Front head, 16 × 16 from the head joint − (8, 8) (frame rows 5…20): row 0 = the tuft (2 px, centred), row 1 the
- * oxblood cord over the crown, then the C+ adult skull: angel ring on row 3, 3 sharp strands (cols 3, 7, 11 → 12)
- * over the forehead, umber sides to the ears, a square jaw stepping in on rows 13–14 in skin shade (never ink), a
- * 6-px chin. Face anchor at mask (2, 5).
+ * oxblood cord binding it, then a 14-px adult skull (spike C+ width): angel ring on row 3, a centre strand and the
+ * side locks over a 10-px face (cols 3–12), forehead light top-left, a cheek/jaw shade on the shadow side (cols 11–12),
+ * the jaw stepping 10 → 8 → 6 to a 3-px chin. Face anchor at mask (2, 5): brows rows 5–6, lids row 8.
  */
 export const HEAD: Mask = [
   '.......yh.......',
-  '....JjjTTjjJ....',
-  '..JjhhHhhHhhjJ..',
-  '.JhhHyyHhhyYhhJ.',
-  'JhHhhhhHhhhhhhhJ',
-  'JhhHheEHeEeHhhjJ',
-  'JjheEEEhEEEEejjJ',
-  'JjeeEEEEEEEEeSjJ',
-  'JjeEEEEEEEEEeSjJ',
-  'zjeEEEEEEEEEeeSz',
-  'zjeEEEEEEEEeeeSz',
-  '.jeEEEEEEEEeeeS.',
-  '.seEEEEEEEEeeeS.',
-  '.sseEEEEEEeeeSs.',
-  '..sseeeeeeeeSs..',
-  '.....sSSSSs.....',
+  '.......TT.......',
+  '....JjjhhjjJ....',
+  '..JjhHyyHhhhjJ..',
+  '.JhhHhhyhhhHhhJ.',
+  '.JheEEejheeeshJ.',
+  '.JheEeeeeeeeshJ.',
+  '.JheEEeeeeeesjJ.',
+  '.JjeeeeeeeeesjJ.',
+  '..zeeeeeeeeeSz..',
+  '..seEeeeeeeesz..',
+  '...eEeeeeeess...',
+  '...eeeeeeesss...',
+  '....eeeeeess....',
+  '.....seeess.....',
+  '......sSz.......',
 ];
+/**
+ * Front back hair (`Body.masks.hairBack`, from the head joint − (8, 2)): only two swept-back flicks past the skull
+ * outline beside the temples (head mask rows 6–8); the rest of the short hair is the head mask itself (no bob).
+ */
+export const HAIR_BACK: Mask = ['J..............J', 'jJ............Jj', '.J............J.'];
+/** q34 back hair (from the head joint − (9, 0)): a short swept-back nape flick behind the skull, never a bob. */
+export const HAIR_BACK_Q34: Mask = ['J.', 'jJ', 'Jj', '.J'];
 /** Last head row the forehead hair-shadow band (`withBand`) may use. */
-export const BAND = 5;
+export const BAND = 4;
 
 /**
  * q34 head (facing screen-right), same 16 × 16 placement: the tuft 1 px toward the back, swept-back hair mass on the
@@ -49,13 +56,13 @@ export const HEAD_Q34: Mask = [
   'JhhhhhhjhEhHEhhJ',
   'JhhhhhjeEEhEhEeJ',
   'JhhhhjeEEEEEEEEe',
-  'jhhhhzeEEEEEEEEe',
+  'jhhhhjeEEEEEEEEe',
   'JjhhhzeEEEEEEEEe',
   '.jhhhjeEEEEEEEEE',
   '.Jjhh.seEEEEEEEe',
   '..Jjj.seEEEEEEe.',
   '...J..zseEEEEe..',
-  '......zseeeeS...',
+  '.......zeeeeS...',
   '...........S....',
 ];
 
