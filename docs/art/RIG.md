@@ -135,6 +135,13 @@ offsets per joint). A body never forks an animation; proportions go through `twe
 | `Body.hairBackStretch` | back-hair length below the temples as a factor (default short 1 / long 1.45; ≈ 0.2 = short mop ending at the nape) |
 | `Body.sideLocks` | procedural side-lock chains (default true); false = the head mask's own short locks only |
 | `FacePart.irisRows` | eyes with 1-px pupils: the rows `irisShift` moves (glance / `irisDx`), the pupil's lighter ink end `x` moves with the iris; default = rows with a 2-px `XX` pupil |
+| `Body.dressShade` | bodice + skirt base shade on the cloth ramp (default 3); `dressShade` + breath glow 0.4 must stay on the ramp |
+| `Body.sleeveOverHand` (MA-29) | long sleeves only: bell cuff over the hand (1–2 fingertip px; raised, it slides back to the long-sleeve cuff spot, 2–3 px of hand); the think chin fist becomes the `paw` mask with no procedural cuff/hand |
+| `Body.cuff` {ramp, shade} (MA-29) | bell-cuff ramp + whole shade (default clothAlt 3); the hem lace keeps clothAlt |
+| `Body.silhouetteOutline` [{ramp, lit, shade}] (MA-29) | outer-outline px of each listed ramp (once each) take whole shade `lit` on the top-left, `shade` elsewhere (dark ramps never melt into dark backdrops) |
+| `Body.sleeveRim` (MA-29) | whole sleeve-ramp shade on the near (L) sleeve's outer edge only; the far (R) sleeve never |
+| `Body.lockLean` (MA-29) | side-lock chain points between root and tip on one straight line (no outward kink) |
+| `BodyView.hairTipLag` (MA-29, q34) | back-hair tips add the previous frame's `hairDx`, capped at `HAIR_TIP_MAX` 2 px |
 | `Body.sleeve`, `Body.chinHand`, `Body.apron` (+ `ties`), `hornOutline`, `BodyView.{sleeveHairLine, hideFarShoulder, masks.hairFar}` | see «Arm over torso», «Views» |
 
 Post-squash separator pass: squash > 0 can join a sleeve px to the bodice, so the separator runs again after the

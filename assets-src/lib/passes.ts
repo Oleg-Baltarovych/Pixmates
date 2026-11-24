@@ -148,6 +148,9 @@ export interface OutlineOptions {
   readonly parts?: readonly number[];
 }
 
+/** `OutlineMap.kind` of an outer-silhouette outline px. */
+export const OUTER = 1;
+
 /** Which px the outline pass wrote, so the selective pass can lift the lit side. */
 export interface OutlineMap {
   /** 0 none, 1 outer silhouette, 2 inner silhouette, 3 internal line. */

@@ -10,10 +10,11 @@ import { toOklab } from '../../../assets-src/lib/palette.ts';
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
 import { armTorsoContrast, armTorsoProblems } from '../../../assets-src/rig/checks.ts';
 import { ARM_LABEL, bodyViewOf, createRigRenderer, headViewOf, RIG_H } from '../../../assets-src/rig/compose.ts';
-import { leanLock, simulateChains } from '../../../assets-src/rig/chains.ts';
 import { EXPRESSIONS, Q34_EXPRESSIONS, validateFace } from '../../../assets-src/rig/face.ts';
 import { deriveQ34Head } from '../../../assets-src/rig/q34.ts';
-import type { RigAnim } from '../../../assets-src/rig/types.ts';
+import { frame as poseFrame } from '../../../assets-src/rig/anims/kit.ts';
+import { resolveJoints } from '../../../assets-src/rig/body.ts';
+import type { RigAnim, View } from '../../../assets-src/rig/types.ts';
 import { checkStrips, facingOf, manifestSchema } from '../../../src/shared/pack.ts';
 import { ATLAS_FILE, buildPack, deepestTones, loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
 
@@ -35,14 +36,26 @@ const rgbAt = (data: Uint8Array, i: number): number =>
 /** Every built frame with its animation. */
 const allFrames = (): { a: RigAnim; f: number; img: { width: number; height: number; data: Uint8Array } }[] =>
   ANIMS.flatMap((a) => (built.frames.get(a.name) ?? []).map((img, f) => ({ a, f, img })));
-/** Top-left of the head mask in a built frame (after the waist squash, which moves rows above the cut). */
+/** Top-left of the frame's head mask (`head.at` from the head joint) after the waist squash (moves rows above the cut). */
 const headOrigin = (a: RigAnim, f: number): [number, number] => {
   const j = renderer.joints(a, f);
+  const [ax, ay] = (headViewOf(a, f) === 'q34' ? q34.head : GOTH.head).at;
   const squash = a.frames[f]?.squash ?? 0;
-  return [Math.round(j.head[0] - 15), Math.round(j.head[1] - 14) + squash];
+  return [Math.round(j.head[0] + ax), Math.round(j.head[1] + ay) + squash];
 };
-const LASH_ROW = 15;
-const EYE_BOTTOM_ROW = 20;
+/** Face anchor in head-mask px per view (the face joint minus the head mask's top-left at rest). */
+const faceAtOf = (view: View): [number, number] => {
+  const head = view === 'q34' ? q34.head : GOTH.head;
+  const rest = resolveJoints(GOTH, poseFrame({}), RIG_H, view);
+  return [rest.face[0] - (rest.head[0] + head.at[0]), rest.face[1] - (rest.head[1] + head.at[1])];
+};
+const FACE_AT = faceAtOf('front');
+const FACE_AT_Q34 = faceAtOf('q34');
+const OPEN_EYES = GOTH_FACE.eyes.open;
+if (!OPEN_EYES) throw new Error('goth has no open eyes');
+/** Head-mask row of the open-eye lash (the eye part's first ink row) and of the eyes' last row. */
+const LASH_ROW = FACE_AT[1] + OPEN_EYES.at[1] + OPEN_EYES.mask.findIndex((row) => row.includes('X'));
+const EYE_BOTTOM_ROW = FACE_AT[1] + OPEN_EYES.at[1] + OPEN_EYES.mask.length - 1;
 const hue = (rgb: number): { c: number; h: number } => {
   const [, a, b] = toOklab(rgb);
   return { c: Math.hypot(a, b), h: ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360 };
@@ -72,9 +85,9 @@ describe('pixmates.goth pack', () => {
 
   it('passes the face validator per view: all front expressions, q34 neutral + blink', () => {
     expect(Object.keys(GOTH_FACE.expressions).sort()).toEqual([...EXPRESSIONS].sort());
-    expect(validateFace(GOTH_FACE, 'goth', { mask: HEAD, faceAt: [5, 12] })).toEqual([]);
+    expect(validateFace(GOTH_FACE, 'goth', { mask: HEAD, faceAt: FACE_AT })).toEqual([]);
     expect(Object.keys(q34.face.expressions).sort()).toEqual([...Q34_EXPRESSIONS].sort());
-    expect(validateFace(q34.face, 'goth/q34', { mask: HEAD_Q34, faceAt: [7, 12] }, Q34_EXPRESSIONS)).toEqual([]);
+    expect(validateFace(q34.face, 'goth/q34', { mask: HEAD_Q34, faceAt: FACE_AT_Q34 }, Q34_EXPRESSIONS)).toEqual([]);
   });
 
   it('keeps row 0 transparent on every frame (headroom)', () => {
@@ -232,7 +245,9 @@ describe('art gate (goth.md): q34 contour and near lock (RIG.md owner rules)', (
     }
     const last = skinCols(HEAD_Q34[HEAD_Q34.length - 1] ?? '');
     expect(last).toHaveLength(1);
-    expect(last[0]).toBeGreaterThan(17);
+    // The chin point sits on the facing side: right of the q34 face centre (anchor + half the eye band).
+    const eyeBand = Math.max(...(q34.face.eyes.open?.mask ?? []).map((row) => row.length));
+    expect(last[0]).toBeGreaterThan(FACE_AT_Q34[0] + (eyeBand >> 1));
   });
 
   it('keeps the q34 skin no wider than the front skin', () => {
@@ -273,8 +288,8 @@ describe('art gate (goth.md): q34 contour and near lock (RIG.md owner rules)', (
   });
 
   it('runs the near lock ≤ 3 px wide from the temple down, never widening (no bulge at ear height)', () => {
-    // From the face anchor row (12): hair px left of the first skin px of the row.
-    const widths = HEAD_Q34.slice(12).flatMap((row) => {
+    // From the face anchor row: hair px left of the first skin px of the row.
+    const widths = HEAD_Q34.slice(FACE_AT_Q34[1]).flatMap((row) => {
       const first = skinCols(row)[0];
       if (first === undefined) return [];
       return [
@@ -290,11 +305,14 @@ describe('art gate (goth.md): q34 contour and near lock (RIG.md owner rules)', (
 });
 
 describe('art gate (goth.md): calm lashes (art round 1: no frown read)', () => {
-  /** Ink px (X / x) of the screen-left eye (cols 0–9) in the lash rows (0–2). */
+  /** Rows of an eye mask that carry the lash (the top rows above the iris). */
+  const LASH_ROWS = 3;
+  /** Ink px (X / x) of the screen-left eye (left half of the mask) in the lash rows. */
   const lashEnds = (mask: Mask): { outer: number; inner: number } => {
     const px: [number, number][] = [];
-    mask.slice(0, 3).forEach((row, y) => {
-      for (let x = 0; x < 10; x++) if ('Xx'.includes(row.charAt(x))) px.push([x, y]);
+    const half = Math.max(...mask.map((row) => row.length)) >> 1;
+    mask.slice(0, LASH_ROWS).forEach((row, y) => {
+      for (let x = 0; x < half; x++) if ('Xx'.includes(row.charAt(x))) px.push([x, y]);
     });
     const outerX = Math.min(...px.map(([x]) => x));
     const innerX = Math.max(...px.map(([x]) => x));
@@ -317,55 +335,7 @@ describe('art gate (goth.md): calm lashes (art round 1: no frown read)', () => {
   });
 });
 
-describe('art gate (goth.md): art round 2 — think paw, lock lean, mouth corner', () => {
-  it('think: nothing cream on the mouth row or the row above it; the paw lace is one row ≤ 3 px under the knuckles', () => {
-    const cream = new Set(ramp(GOTH.cuff?.ramp ?? 'cloth_cream'));
-    const think = anim('think');
-    (built.frames.get('think') ?? []).forEach((img, f) => {
-      const [, y0] = headOrigin(think, f);
-      const mouth = y0 + 23;
-      for (const y of [mouth - 1, mouth]) {
-        for (let x = 0; x < img.width; x++) {
-          const i = y * img.width + x;
-          if (img.data[i * 4 + 3])
-            expect(cream.has(rgbAt(img.data, i)), `think/${String(f)} (${String(x)}, ${String(y)})`).toBe(false);
-        }
-      }
-      // Below the mouth and above the choker (rows mouth+1 … mouth+4): the paw's lace is a single row of ≤ 3 px.
-      const rows = new Map<number, number>();
-      for (let y = mouth + 1; y <= mouth + 4; y++) {
-        for (let x = 24; x < img.width; x++) {
-          const i = y * img.width + x;
-          if (img.data[i * 4 + 3] && cream.has(rgbAt(img.data, i))) rows.set(y, (rows.get(y) ?? 0) + 1);
-        }
-      }
-      const laceRows = [...rows.entries()].filter(([y]) => y < y0 + 28);
-      expect(laceRows.length, `think/${String(f)}`).toBeLessThanOrEqual(1);
-      for (const [, n] of laceRows) expect(n).toBeLessThanOrEqual(3);
-    });
-  });
-
-  it('leans each side lock in one continuous line root → tip (no local outward step) on every frame', () => {
-    expect(GOTH.lockLean).toBe(true);
-    const r = createRigRenderer(GOTH);
-    for (const a of ANIMS) {
-      const js = a.frames.map((_, f) => r.joints(a, f));
-      const ch = simulateChains(
-        GOTH,
-        a,
-        js,
-        1,
-        (f) => bodyViewOf(a, f),
-        () => ({ at: [0, 0], lengths: [1, 1] }),
-      );
-      for (const lock of [...ch.lockL, ...ch.lockR]) {
-        const xs = leanLock(lock).map(([x]) => x);
-        const steps = xs.slice(1).map((x, k) => Math.sign(Math.round((x - (xs[k] ?? x)) * 1000)));
-        expect(new Set(steps.filter((d) => d !== 0)).size, a.name).toBeLessThanOrEqual(1);
-      }
-    }
-  });
-
+describe('art gate (goth.md): art round 2 — mouth corner', () => {
   it.each([
     ['front', GOTH_FACE],
     ['q34', GOTH.views?.q34?.face],

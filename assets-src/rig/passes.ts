@@ -8,7 +8,7 @@ import type { Point } from '../lib/chain.ts';
 import { LEGEND, maskSize, type Mask, type Swatch } from '../lib/mask.ts';
 import { MAT } from '../lib/materials.ts';
 import { toOklab, type Palette } from '../lib/palette.ts';
-import type { outline } from '../lib/passes.ts';
+import { OUTER, type outline } from '../lib/passes.ts';
 import {
   ARM_IDS_L,
   ARM_IDS_R,
@@ -125,7 +125,8 @@ const FIST_PAW: Mask = ['.Ez...', 'qAq...'];
 const FIST_BREAK: Mask = ['.ZZ...'];
 /** Chin fist per sleeve kind. */
 export type FistKind = 'bare' | 'long' | 'paw';
-const FISTS: Readonly<Record<FistKind, Mask>> = { bare: FIST, long: FIST_LONG, paw: FIST_PAW };
+/** Chin-fist masks per sleeve kind (exported so `createRigPack` runs them through `checkMask`). */
+export const FISTS: Readonly<Record<FistKind, Mask>> = { bare: FIST, long: FIST_LONG, paw: FIST_PAW };
 
 /** think: fists stamped over the bow/bib under the chin (after the head), each with its jaw break above. */
 export function stampChinFists(
@@ -311,7 +312,7 @@ export function silhouetteOutline(
 ): void {
   const byRamp = new Map<string, SilhouetteOutline>(outlines.map((o) => [o.ramp, o]));
   for (let i = 0; i < map.kind.length; i++) {
-    if ((map.kind[i] ?? 0) !== 1 || buf.material[i] === MAT.horn) continue;
+    if ((map.kind[i] ?? 0) !== OUTER || buf.material[i] === MAT.horn) continue;
     const ramp = buf.get(i % buf.width, Math.floor(i / buf.width)).ramp;
     const o = ramp === null ? undefined : byRamp.get(ramp);
     if (!o) continue;
@@ -345,7 +346,7 @@ export function sleeveRim(buf: IndexBuffer, shade: number): void {
 /** Outline px next to a horn take `ramp` shade 1 (so ivory never reads as a pale ear). */
 export function recolorHornOutline(buf: IndexBuffer, map: ReturnType<typeof outline>, ramp: RampName): void {
   for (let i = 0; i < map.kind.length; i++) {
-    if ((map.kind[i] ?? 0) !== 1) continue;
+    if ((map.kind[i] ?? 0) !== OUTER) continue;
     const x = i % buf.width;
     const y = Math.floor(i / buf.width);
     const nextToHorn = N4.some(

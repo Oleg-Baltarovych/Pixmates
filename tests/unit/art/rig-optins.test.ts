@@ -1,7 +1,7 @@
 // Behaviour of the rig's per-body opt-ins on the dummy bodies and small hand-built inputs (not through a character
 // pack): each test fails when the opt-in's code is removed.
 import { describe, expect, it } from 'vitest';
-import { createIndexBuffer } from '../../../assets-src/lib/buffer.ts';
+import { createIndexBuffer, type RampName } from '../../../assets-src/lib/buffer.ts';
 import { LEGEND } from '../../../assets-src/lib/mask.ts';
 import { MAT } from '../../../assets-src/lib/materials.ts';
 import { outline } from '../../../assets-src/lib/passes.ts';
@@ -16,6 +16,8 @@ import type { RgbaImage } from '../../../tools/lib/png.ts';
 import { loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
 
 const palette = loadMasterPalette();
+/** A ramp name the master palette does not have (runtime validation input; the type only allows real names). */
+const NOT_A_RAMP = 'not_a_ramp' as string as RampName;
 const ctx = renderContext(palette);
 const anim = (name: string): RigAnim => {
   const a = ANIMS.find((x) => x.name === name);
@@ -174,6 +176,43 @@ describe('createRigPack part validation', () => {
   ] as const)('rejects %s outside 0..5', (name, body) => {
     expect(() => createRigPack(body, ANIMS)).toThrow(name);
   });
+  const long = { ...DUMMY_B, sleeveOverHand: true as const };
+  it.each([
+    ['sleeve.shade', { ...DUMMY_A, sleeve: { shade: 6 } }, 'sleeve.shade'],
+    ['an unknown sleeve.ramp', { ...DUMMY_A, sleeve: { ramp: NOT_A_RAMP } }, 'not in the master palette'],
+    ['an unknown cuff.ramp', { ...long, cuff: { ramp: NOT_A_RAMP, shade: 3 } }, 'not in the master palette'],
+    [
+      'an unknown silhouetteOutline ramp',
+      { ...DUMMY_A, silhouetteOutline: [{ ramp: NOT_A_RAMP, lit: 4, shade: 2 }] },
+      'not in the master palette',
+    ],
+    [
+      'a duplicate silhouetteOutline ramp',
+      {
+        ...DUMMY_A,
+        silhouetteOutline: [
+          { ramp: 'cloth_teal', lit: 4, shade: 2 },
+          { ramp: 'cloth_teal', lit: 5, shade: 3 },
+        ],
+      },
+      'more than once',
+    ],
+    ['a fractional sleeveRim', { ...DUMMY_B, sleeveRim: 4.5 }, 'whole shade'],
+    ['a fractional cuff.shade', { ...long, cuff: { ramp: 'cloth_cream', shade: 2.5 } }, 'whole shade'],
+    [
+      'a fractional silhouetteOutline lit',
+      { ...DUMMY_A, silhouetteOutline: [{ ramp: 'cloth_teal', lit: 4.5, shade: 2 }] },
+      'whole shade',
+    ],
+    ['a dressShade the breath glow lifts past the ramp', { ...DUMMY_A, dressShade: 5 }, 'breath glow'],
+  ] as const)('rejects %s', (_, body, message) => {
+    expect(() => createRigPack(body, ANIMS)).toThrow(message);
+  });
+  it('accepts a fractional farLegShade (a tone between two steps)', () => {
+    expect(() =>
+      createRigPack({ ...DUMMY_A, views: { q34: { ...q34Of(DUMMY_A), farLegShade: 2.5 } } }, ANIMS),
+    ).not.toThrow();
+  });
 });
 
 describe('squashSeparator', () => {
@@ -195,7 +234,7 @@ describe('squashSeparator', () => {
     expect([rgb(out, 1, 0), rgb(out, 2, 0), rgb(out, 3, 0)]).toEqual([0xc8c8c8, 0xc8c8c8, 0xc8c8c8]);
   });
 });
-// ---- MA-29 (goth) opt-ins: R1 sleeveOverHand, R2 silhouetteOutline, R3 cuff, R4 trim split, dressShade ----------
+// ---- MA-29 (goth) opt-ins: sleeveOverHand, silhouetteOutline, cuff, outfit.trim vs ramps.trim, dressShade ----
 
 const LONG: Body = DUMMY_B;
 /** Px of one arm-end label (red channel of the label map) whose colour is on `ramp`. */
@@ -222,7 +261,7 @@ const frameWithR = (a: RigAnim, arm: string): number => {
   return f;
 };
 
-describe('rig opt-in: sleeveOverHand (R1)', () => {
+describe('rig opt-in: sleeveOverHand', () => {
   const over: Body = { ...LONG, sleeveOverHand: true };
   const skin = LONG.outfit.skin.ramp;
 
@@ -230,7 +269,7 @@ describe('rig opt-in: sleeveOverHand (R1)', () => {
     expect(() => createRigPack({ ...DUMMY_A, sleeveOverHand: true }, ANIMS)).toThrow('sleeveOverHand');
   });
 
-  it('covers the hand with the bell cuff: 1–2 fingertip skin px below it on a down arm (was more)', () => {
+  it('covers the hand with the bell cuff: 1–2 fingertip skin px below it on a down arm', () => {
     const f = frameWith(idle, 'down');
     const tips = endPx(over, idle, f, ARM_LABEL.endL, skin);
     expect(tips).toBeGreaterThanOrEqual(1);
@@ -247,23 +286,24 @@ describe('rig opt-in: sleeveOverHand (R1)', () => {
     expect(shown).toBeLessThanOrEqual(3);
   });
 
-  it('makes the chin fist a paw: 2 knuckle skin px over one lace row of 1–3 px (no procedural cuff or hand)', () => {
+  it('makes the chin fist a paw: fewer skin px than a plain long sleeve, no procedural cuff under it', () => {
     const think = anim('think');
     const f = think.frames.findIndex((p) => p.parts.armR === 'chin' || p.parts.armL === 'chin');
     const p = think.frames[f];
     if (!p) throw new Error('think chin frame');
     const label = p.parts.armR === 'chin' ? ARM_LABEL.endR : ARM_LABEL.endL;
     const paw = endPx(over, think, f, label, skin);
+    expect(paw).toBeGreaterThan(0);
     expect(paw).toBeLessThan(endPx(LONG, think, f, label, skin));
-    expect(paw).toBeGreaterThanOrEqual(2);
-    const lace = endPx(over, think, f, label, LONG.outfit.apron.ramp);
-    expect(lace).toBeGreaterThanOrEqual(1);
-    expect(lace).toBeLessThanOrEqual(3);
-    expect(paw).toBe(2);
+    // The procedural cuff takes `Body.cuff`; the paw mask's lace keeps the outfit apron slot.
+    const cuff = 'gem_garnet';
+    const marked: Body = { ...over, cuff: { ramp: cuff, shade: 3 } };
+    expect(endPx(marked, idle, frameWith(idle, 'down'), ARM_LABEL.endL, cuff)).toBeGreaterThan(0);
+    expect(endPx(marked, think, f, label, cuff)).toBe(0);
   });
 });
 
-describe('rig opt-in: cuff (R3)', () => {
+describe('rig opt-in: cuff', () => {
   it('draws the bell cuff in its own ramp/shade; the hem lace keeps clothAlt', () => {
     const tone = palette.ramps.get('cloth_rose')?.[5] ?? -1;
     const body: Body = { ...LONG, cuff: { ramp: 'cloth_rose', shade: 5 } };
@@ -276,7 +316,7 @@ describe('rig opt-in: cuff (R3)', () => {
   });
 });
 
-describe('rig: outfit.trim (masks) and ramps.trim (waist band) are independent (R4)', () => {
+describe('rig: outfit.trim (masks) and ramps.trim (waist band) are independent', () => {
   it('paints mask trim letters in outfit.trim and the waist band in ramps.trim', () => {
     const body: Body = {
       ...LONG,
@@ -307,7 +347,7 @@ describe('rig opt-in: dressShade', () => {
   });
 });
 
-describe('rig opt-in: silhouetteOutline (R2)', () => {
+describe('rig opt-in: silhouetteOutline', () => {
   it('gives outer-outline px of the listed ramps shade `lit` on the top-left, `shade` elsewhere; others untouched', () => {
     const buf = createIndexBuffer(5, 5, palette);
     buf.set(2, 2, {
@@ -447,5 +487,12 @@ describe('rig opt-in: lockLean', () => {
     const leaned = { ...DUMMY_B, lockLean: true as const };
     const differs = think.frames.some((_, f) => !same(render(leaned, think, f), render(DUMMY_B, think, f)));
     expect(differs).toBe(true);
+    // The default body has no lockLean, and the lean only moves side-lock points: without locks it is a no-op, so a
+    // body that does not opt in renders unchanged.
+    expect(DUMMY_B.lockLean).toBeUndefined();
+    const noLocks: Body = { ...DUMMY_B, sideLocks: false };
+    for (let f = 0; f < think.frames.length; f++) {
+      expect(same(render({ ...noLocks, lockLean: true }, think, f), render(noLocks, think, f))).toBe(true);
+    }
   });
 });

@@ -293,8 +293,9 @@ export interface Body {
    */
   readonly silhouetteOutline?: readonly SilhouetteOutline[];
   /**
-   * Opt-in: the near (screen-left) sleeve's outer edge px (left neighbour not arm or torso) take this sleeve-ramp shade
-   * (0..5), a 1-px lit rim from shoulder to cuff so a dark sleeve reads against dark hair; the far sleeve keeps its tone.
+   * Opt-in: only the near (L, screen-left) sleeve's outer edge px (left neighbour not arm or torso) take this whole
+   * sleeve-ramp shade (0..5), a 1-px lit rim from shoulder to cuff so a dark sleeve reads against dark hair; the far
+   * (R) sleeve is never lit, in front and q34 views alike.
    */
   readonly sleeveRim?: number;
   /** Authored head (skin, fringe, crown; horns when `headAcc` is `horns`); `at` from the head joint. */

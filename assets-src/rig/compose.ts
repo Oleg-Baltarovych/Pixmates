@@ -1,15 +1,21 @@
 // Rig composer (plan M-ART MA-23, docs/art/RIG.md), generalized from the 48-soft spike (assets-src/spike/maid.ts).
-// One renderer per body: every shared pose frame → joints (body.ts) → procedural parts in composite order (far →
-// back → behind → front; builders in chains.ts) → compose (light, texture, AO, dither) → authored masks stamped and
-// locked (apron, neck_acc, sash knot, far lock, head_acc, head + band, face parts, fists, spade, shoes) → opt-in tone
-// passes → outline on the whole composite (so part seams never show) → selective outline → AA → masks restored →
-// rim → arm over torso → quantize → squash rows at the waist → seam closer (passes in passes.ts).
+// One renderer per body, per shared pose frame (passes in passes.ts, builders in chains.ts):
+//  1. joints (body.ts) → procedural parts in composite order far → back → behind → front (back hair with the opt-in
+//     q34 `hairTipLag`, `lockLean` locks, q34 `farLegShade` far leg) → compose (light, texture, AO, dither);
+//  2. tone passes: spade tube tones, q34 `hideFarShoulder` clip, hand shadows;
+//  3. authored masks stamped and locked (apron panel, bib, ties, neck_acc, sash knot, far lock, head_acc, head + band,
+//     face parts, chin fists, spade, shoes) → `shinWrap`, q34 far-leg gap, knee creases;
+//  4. outline on the whole composite (so part seams never show) → `hornOutline` → selective outline → AA →
+//     `silhouetteOutline` → locked tones restored → rim → far-lock tones restored;
+//  5. arm over torso → `sleeveRim` → q34 `sleeveHairLine` → hand line over apron ties;
+//  6. quantize → squash rows at the waist → squash separator → seam closer.
 // Secondary motion (side locks, long hair hem, tails, scarf ends) comes from looped verlet chains per animation.
 import type { RgbaImage } from '../../tools/lib/png.ts';
 import { createIndexBuffer, quantize, type IndexBuffer, type RampName } from '../lib/buffer.ts';
 import type { Point } from '../lib/chain.ts';
 import { checkMask, maskSize, type Mask } from '../lib/mask.ts';
 import { toOklab } from '../lib/palette.ts';
+import MASTER from '../palettes/master.json' with { type: 'json' };
 import { MAT } from '../lib/materials.ts';
 import { compose, outline, selectiveOutline, type Part } from '../lib/passes.ts';
 import { antiAlias, rimLight } from '../lib/polish.ts';
@@ -32,6 +38,7 @@ import {
   FOX_TAIL_FRONT,
   FOX_TAIL_Q34,
   frontTailLine,
+  HAIR_TIP_MAX,
   q34FoxTail,
   simulateChains,
   type Chains,
@@ -46,6 +53,7 @@ import {
   closeSeams,
   cutSpadeNotches,
   farLegGap,
+  FISTS,
   handLineOverTies,
   handShadows,
   kneeCreases,
@@ -61,6 +69,7 @@ import {
   stampMask,
   tubeTones,
   WRAP_SHADE,
+  type FistKind,
   type Locked,
   type Stamp,
 } from './passes.ts';
@@ -119,8 +128,12 @@ export function squashRows(img: RgbaImage, cut: number, n: number): RgbaImage {
 const DEPTH_TIES = 1.6;
 const DEPTH_HAIR_FAR = 0.5;
 const DEPTH_TRIM_MASK = 1.7;
-/** Back-hair tip offset cap with `hairTipLag` (px). */
-const HAIR_TIP_MAX = 2;
+/** Bodice shade lift on breath frames (`PoseFrame.breath`). */
+const BREATH_GLOW = 0.4;
+
+/** Previous frame index: looped clips wrap; one-shot clips (land, startle) reuse frame 0 (no lag there). */
+const prevFrameOf = (anim: RigAnim, frame: number): number =>
+  anim.loop ? (frame + anim.frames.length - 1) % anim.frames.length : Math.max(0, frame - 1);
 
 export interface LabeledFrame {
   readonly image: RgbaImage;
@@ -177,10 +190,6 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
         apron: body.apron,
         sashKnot: body.sash?.knot,
         hairFar: undefined,
-        sleeveHairLine: undefined,
-        hideFarShoulder: false,
-        farLegShade: undefined,
-        hairTipLag: false,
       };
     }
     if (!q34 || !headMasks.q34) throw new Error(`${body.id}: q34 poses need Body.views.q34 (ADR 010)`);
@@ -192,10 +201,6 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       apron: q34.apron,
       sashKnot: q34.sashKnot,
       hairFar: q34.masks.hairFar,
-      sleeveHairLine: q34.sleeveHairLine,
-      hideFarShoulder: q34.hideFarShoulder === true,
-      farLegShade: q34.farLegShade,
-      hairTipLag: q34.hairTipLag === true,
     };
   };
   const jointCache = new Map<string, readonly JointMap[]>();
@@ -257,8 +262,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
   /** Procedural parts of a frame in draw order (q34: far arm + far leg first, behind everything; ADR 010). */
   const layers = (anim: RigAnim, frame: number, p: PoseFrame): Layers => {
     const j = joints(anim, frame);
-    // One-shot clips (land, startle) have no previous frame at frame 0: no lag there.
-    const prevIndex = anim.loop ? (frame + anim.frames.length - 1) % anim.frames.length : Math.max(0, frame - 1);
+    const prevIndex = prevFrameOf(anim, frame);
     const prev = joints(anim, prevIndex);
     const ch = chains(anim);
     const bv = bodyViewOf(anim, frame);
@@ -284,31 +288,20 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       if (line) tailParts.push(...buildFoxTailParts(body, line, q, tailFront.shine === true));
     }
     if (!q) back.push(...tailParts);
-    const headParts = viewParts(hv);
-    // Follow-through (opt-in): the tips add the previous frame's offset, capped at HAIR_TIP_MAX px.
-    const prevDx = headParts.hairTipLag ? (anim.frames[prevIndex]?.hairDx ?? 0) : 0;
+    // Follow-through (q34 opt-in `hairTipLag`): the tips add the previous frame's offset, capped at HAIR_TIP_MAX px.
+    const prevDx = hv === 'q34' && q34?.hairTipLag ? (anim.frames[prevIndex]?.hairDx ?? 0) : 0;
     const tipDx = Math.max(-HAIR_TIP_MAX, Math.min(HAIR_TIP_MAX, hairDx + prevDx));
-    back.push(
-      ...buildBackHair(
-        body,
-        p,
-        j,
-        prev,
-        hv,
-        headParts.hairFar !== undefined,
-        [ch.lockL[frame], ch.lockR[frame]],
-        tipDx,
-      ),
-    );
+    const tucked = viewParts(hv).hairFar !== undefined;
+    back.push(...buildBackHair(body, p, j, prev, hv, tucked, [ch.lockL[frame], ch.lockR[frame]], tipDx));
     if (q) back.push(...tailParts);
 
     // Legs, hem, torso.
-    const legs = buildLegs(body, p, j, q, q ? viewParts(bv).farLegShade : undefined);
+    const legs = buildLegs(body, p, j, q, q ? q34?.farLegShade : undefined);
     far.push(...legs.far);
     back.push(...legs.back);
     if (v.hem === 'skirt') back.push(...buildSkirt(body, p, j.hip, q));
     else back.push(buildShorts(body, p, j.hip, q));
-    behind.push(...buildTorso(body, j, q, p.breath === 1 ? 0.4 : 0));
+    behind.push(...buildTorso(body, j, q, p.breath === 1 ? BREATH_GLOW : 0));
 
     // Arms by draw order (q34: far arm behind the torso — only the hand/cuff that clears it shows).
     const order = q ? 'q34' : (p.order ?? 'arms_front');
@@ -406,7 +399,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     for (const fp of expressionParts(headParts.face, p.face, armsUp, p.irisDx === 1)) {
       stamp(fp.mask, j.face[0] + fp.at[0], j.face[1] + fp.at[1], 3.6, MAT.skin, MAT.hair);
     }
-    stampChinFists(stamp, p.parts, j, v.sleeves === 'short' ? 'bare' : body.sleeveOverHand ? 'paw' : 'long');
+    stampChinFists(stamp, p.parts, j, fistKindOf(body));
     const spade = v.back === 'spade_tail' ? body.masks.spade : undefined;
     if (spade && p.tailTucked) {
       // Tucked: the spade hangs under the hem near the centre, behind the skirt, lace and shoes (only its tip shows).
@@ -415,10 +408,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       stampMask(buf, body, spade, sx, sy, 0.15, MAT.shoe, locked, { allow: UNDER_HEM });
     } else if (spade) {
       const trailSide = q ? -1 : 1;
-      const prev = joints(
-        anim,
-        anim.loop ? (frame + anim.frames.length - 1) % anim.frames.length : Math.max(0, frame - 1),
-      );
+      const prev = joints(anim, prevFrameOf(anim, frame));
       const hipLag: Point = [prev.hip[0] - j.hip[0], prev.hip[1] - j.hip[1]];
       const tip: Point = [j.back[0] + trailSide * 9.5 + hipLag[0], j.back[1] + 5.2 + hipLag[1]];
       const sx = Math.round(tip[0] - 0.5) - (maskSize(spade).w >> 1);
@@ -464,7 +454,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     });
     // 2. Tone passes on the composed parts.
     if (v.back === 'spade_tail') tubeTones(buf);
-    if (q && bodyParts.hideFarShoulder) clipFarShoulder(buf, j.shoulderR[1]);
+    if (q && q34?.hideFarShoulder) clipFarShoulder(buf, j.shoulderR[1]);
     handShadows(buf, hands);
     // 3. Authored masks, then the opt-in locked tone passes over legs.
     const locked: Locked = new Map();
@@ -474,7 +464,7 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
       const wrap = body.shinWrap;
       shinWrap(buf, [j.footL, j.footR], wrap.row, wrap.shade ?? WRAP_SHADE, legsRamp, locked);
     }
-    if (q && bodyParts.farLegShade !== undefined) farLegGap(buf, locked);
+    if (q && q34?.farLegShade !== undefined) farLegGap(buf, locked);
     kneeCreases(buf, knees, locked);
     // 4. Outline, AA, locked tones restored, rim.
     const map = outline(buf, ctx.rampSize, { drop: style.drop, internal: true });
@@ -496,7 +486,8 @@ export function createRigRenderer(body: Body, frameH: number = RIG_H): RigRender
     // 5. Last tone passes: the arm-over-torso separator must survive AA and rim (RIG.md rule ii).
     armOverTorso(buf, ctx.palette, sleeveDir);
     if (body.sleeveRim !== undefined) sleeveRim(buf, body.sleeveRim);
-    if (bodyParts.sleeveHairLine) sleeveHairLine(buf, bodyParts.sleeveHairLine);
+    const hairLine = q ? q34?.sleeveHairLine : undefined;
+    if (hairLine) sleeveHairLine(buf, hairLine);
     const ties = bodyParts.apron?.ties;
     if (ties && tieAt) {
       const skinRamp = ctx.palette.rampNames.indexOf(body.outfit.skin.ramp);
@@ -544,6 +535,13 @@ const FALLBACKS = {
 
 /** Highest index of a six-tone ramp / swatch (shade opt-ins are 0..MAX_SHADE). */
 const MAX_SHADE = 5;
+/** Master palette ramp → tone count (validation only; rendering reads `ctx.palette`). */
+const MASTER_RAMP_SIZE: ReadonlyMap<string, number> = new Map(
+  Object.entries(MASTER.ramps).map(([name, tones]) => [name, tones.length]),
+);
+/** Chin-fist mask kind of a body: bare hands, long-sleeve cuff, or sleeve-over-hand paw. */
+const fistKindOf = (body: Body): FistKind =>
+  body.variants.sleeves === 'short' ? 'bare' : body.sleeveOverHand ? 'paw' : 'long';
 
 /**
  * All body-part validation before rendering: every authored mask (front, q34, apron, sash knot), shade opt-ins in
@@ -577,24 +575,50 @@ function validateBody(body: Body, anims: readonly RigAnim[], frameH: number): vo
       ['q34/sashKnot', q34.sashKnot?.mask],
     );
   }
+  masks.push(['chinFist', FISTS[fistKindOf(body)]]);
   for (const [name, mask] of masks) if (mask) checkMask(mask, `${body.id}/${name}`);
-  const shades: [string, number | undefined][] = [
-    ['shorts.shade', body.shorts?.shade],
-    ['shinWrap.shade', body.shinWrap?.shade],
-    ['views.q34.farLegShade', q34?.farLegShade],
-    ['dressShade', body.dressShade],
-    ['cuff.shade', body.cuff?.shade],
-    ['sleeveRim', body.sleeveRim],
-    ...(body.silhouetteOutline ?? []).flatMap((o): [string, number][] => [
-      [`silhouetteOutline.${o.ramp}.lit`, o.lit],
-      [`silhouetteOutline.${o.ramp}.shade`, o.shade],
-    ]),
+  const partProblems: string[] = [];
+  const sleeveRamp = body.sleeve?.ramp ?? body.ramps.cloth;
+  const outlines = body.silhouetteOutline ?? [];
+  const ramps: [string, RampName | undefined][] = [
+    ['sleeve', body.sleeve?.ramp],
+    ['cuff', body.cuff?.ramp],
+    ...outlines.map((o, i): [string, RampName] => [`silhouetteOutline[${String(i)}]`, o.ramp]),
   ];
-  for (const [name, s] of shades) {
-    if (s !== undefined && !(s >= 0 && s <= MAX_SHADE)) {
-      throw new Error(`${body.id}: ${name} ${String(s)} is outside 0..${String(MAX_SHADE)}`);
+  for (const [name, ramp] of ramps) {
+    if (ramp !== undefined && !MASTER_RAMP_SIZE.has(ramp)) {
+      partProblems.push(`${body.id}: ${name} ramp "${ramp}" is not in the master palette`);
     }
   }
+  /** Highest shade index of a ramp (its tone count − 1; an unknown ramp is reported above). */
+  const topOf = (ramp: RampName): number => (MASTER_RAMP_SIZE.get(ramp) ?? MAX_SHADE + 1) - 1;
+  const outlineRamps = outlines.map((o) => o.ramp);
+  for (const r of new Set(outlineRamps.filter((r, i) => outlineRamps.indexOf(r) !== i))) {
+    partProblems.push(`${body.id}: silhouetteOutline lists ramp "${r}" more than once`);
+  }
+  /** Shade opt-ins: 0..MAX_SHADE, within their ramp when it is known, whole when written straight into buf.shade. */
+  const shades: { name: string; s: number | undefined; ramp?: RampName; int?: true }[] = [
+    { name: 'shorts.shade', s: body.shorts?.shade },
+    { name: 'shinWrap.shade', s: body.shinWrap?.shade },
+    // Fractional on purpose (a far-leg tone between two steps).
+    { name: 'views.q34.farLegShade', s: q34?.farLegShade },
+    // The bodice lifts by BREATH_GLOW on breath frames.
+    { name: 'dressShade + breath glow', s: dressShadeOf(body) + BREATH_GLOW, ramp: body.ramps.cloth },
+    { name: 'sleeve.shade', s: body.sleeve?.shade, ramp: sleeveRamp },
+    ...(body.cuff ? [{ name: 'cuff.shade', s: body.cuff.shade, ramp: body.cuff.ramp, int: true as const }] : []),
+    { name: 'sleeveRim', s: body.sleeveRim, ramp: sleeveRamp, int: true },
+    ...outlines.flatMap((o) => [
+      { name: `silhouetteOutline.${o.ramp}.lit`, s: o.lit, ramp: o.ramp, int: true as const },
+      { name: `silhouetteOutline.${o.ramp}.shade`, s: o.shade, ramp: o.ramp, int: true as const },
+    ]),
+  ];
+  for (const { name, s, ramp, int } of shades) {
+    if (s === undefined) continue;
+    const top = Math.min(MAX_SHADE, ramp === undefined ? MAX_SHADE : topOf(ramp));
+    if (!(s >= 0 && s <= top)) partProblems.push(`${body.id}: ${name} ${String(s)} is outside 0..${String(top)}`);
+    else if (int && !Number.isInteger(s)) partProblems.push(`${body.id}: ${name} ${String(s)} must be a whole shade`);
+  }
+  if (partProblems.length > 0) throw new Error(partProblems.join('\n'));
   if (body.sleeveOverHand && body.variants.sleeves !== 'long') {
     throw new Error(`${body.id}: sleeveOverHand needs sleeves 'long'`);
   }
