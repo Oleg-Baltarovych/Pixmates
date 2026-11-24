@@ -6,6 +6,13 @@ closes M-ART. All art is made by code (D-11): masks and geometry
 are authored in `assets-src/`, and procedural code is used only for material texture.
 
 ## 1. Grid and frame
+> **D-19 (owner, 2026-11-24): superseded by the adult rules (ADR 011, proposed — frame pending the style spike).**
+> New target frame: **B = 48 × 56 (≈ 3.2 heads) or C = 48 × 64 (≈ 4.5 heads)**, picked by the owner from
+> `reports/sprites/style-spike/`. Still 48 wide, body axis x = 24, headroom (row 0 transparent), pivot at the feet,
+> integer scale, one atlas ≤ 1024² (C ≈ 1008 × 400). C changes `scaleRef` (≈ 58 → S ×2 / M ×3 / L ×4 at
+> 1080p / 125 %). Adult build and face rules: §11 «D-19». The text below is **historical** (chibi, phase 2) until
+> MA-41 rewrites it.
+
 - Frame **48 × 56** (ADR 009): a 48 × 48 figure box (feet on row 46, row 47 free for the outline) plus 8 rows of
   headroom on top, so horns, ears and the happy jump never clip. Row 0 stays transparent in every frame (builder
   check). Manifests carry `scaleRef: 48`, so sizing follows the figure, not the frame (S/M/L ×3/×4/×5 at
@@ -133,13 +140,27 @@ are authored in `assets-src/`, and procedural code is used only for material tex
 Every built-in character is pixel anime. The style is a technique, not IP: originality (§9, ADR 005) is checked on
 every review. Numbers below are the spike `maid`'s (`assets-src/spike/maid-{48,64}/rig.ts`); ADR 009 fixes one size.
 
-### 11.1 Proportions (chibi)
+### 11.0 D-19 — adult rules (new target; ADR 011 proposed, frame B | C pending the spike)
+> **§11.1 and §11.2 below are superseded and kept as history.** Owner D-19: adult, tough characters, not childish.
+> Pixel anime, «anime soft», authored faces, hair clumps with an angel ring and FX marks (§11.4–11.6) still hold.
+
+- **Build.** B ≈ 3.2 heads at 48 × 56 | C ≈ 4.5 heads at 48 × 64. A neck; shoulders wider than the head; a waist;
+  elbows and knees (rig joints in C, shading breaks in B); arms reach mid-thigh; long legs; stance with feet apart,
+  never together. Male and female **build presets** on one skeleton (male: broader shoulders, narrow hips, straighter
+  waist; female: narrower shoulders, defined waist, wider hips).
+- **Face.** Eyes ¼–⅕ of the face height, 2–3 rows (iris colour + highlight + lash; no ⅓-face anime eye); visible
+  brows (the emotion carrier together with the eyes); a nose-shadow px; a defined jaw line to the chin; no blush
+  outside `petted`. Adult face shape, never round baby cheeks.
+- **Colour.** Each character: a dark anchor ramp + one saturated accent (e.g. ronin oxblood); no all-pastel sets.
+  Outline 3 steps darker than the fill; a hard shadow terminator on body and face (ramps, AA and rim as §3, §11.5).
+
+### 11.1 Proportions (chibi) — historical, superseded by §11.0 (D-19)
 - About 2 heads to the feet (target 2–2.5): the skull (crown to chin, horns excluded) is 23 rows of 48 / 28 of 64.
 - The head is much wider than the shoulders: 24 px at 48 (face 20), 32 px at 64 (face 26). The body stays small and
   simple: short arms, mitten hands, short legs. Detail goes to the head first.
 - Big forehead under the fringe, eyes on the lower half of the face, small chin rounded over the last 3–4 rows.
 
-### 11.2 Eyes (the main emotion carrier)
+### 11.2 Eyes (the main emotion carrier) — historical, superseded by §11.0 (D-19: eyes ¼–⅕ of the face)
 Shared: eye height ≈ ⅓ of the face (lash to iris bottom); the iris is taller than wide. Light is top-left, so both
 highlights sit the same way in both eyes (never mirror them); the lash shape is mirrored.
 - Upper lid: an arched ink lash line (higher in the middle), a thick outer corner and a 1-px outer **flick**
