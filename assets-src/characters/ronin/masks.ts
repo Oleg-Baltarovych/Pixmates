@@ -57,28 +57,6 @@ export const HEAD: Mask = [
 export const BAND = 12;
 
 /**
- * Mantle collar (front, 18 × 3 from neck + (−9, 4): x 15–32, symmetric about x = 24; top row 2 rows under the chin):
- * mist (horn letters: n 2, o 3, O 4, u 5) with a straight lit top edge (square shoulders), 2 lobes per side with a
- * 1-px curl px (mist 3) over each dip, rounded outer corners; the 1-px throat V shows a cream underlayer px and the
- * ash kosode collar (crossover, dress letters).
- */
-export const COLLAR: Mask = [
-  'u'.repeat(7) + 'vADv' + 'u'.repeat(7),
-  // Art round 2: under the top row (square corner px kept) the mantle stops at the hanging sleeves, so no mantle
-  // sliver + sleeve separator reads as a strap at either shoulder end.
-  '..' + 'OoOOOO' + 'vv' + 'OOOOoOO' + '.',
-  '..' + 'N'.repeat(15) + '.',
-  '.'.repeat(10) + 'v' + '.'.repeat(7),
-];
-/** q34 mantle (16 px, 1 px narrower toward the facing; the V 1 px toward the facing). */
-export const COLLAR_Q34: Mask = [
-  'u'.repeat(8) + 'vADv' + 'u'.repeat(4),
-  'OOOoOOOOO' + 'vv' + 'OOoOO',
-  'N'.repeat(16),
-  '.'.repeat(11) + 'v' + '.'.repeat(4),
-];
-
-/**
  * Sword (front prop, 31 × 13 from hip + (−15, −10.5): figure x 9–39, rows 29–41), sheathed on his left hip: the
  * hilt rises out of the hip outline up/out ≈ 35° at x 33–39 — kashira cap ash 4 + lit px, a 4-px grip of cream `p` /
  * ink `X` diamonds, a 3 × 1 brass tsuba (trim 4) with trim 2 under it, a 2-px saya mouth (ash 1, lit px ash 3); the
@@ -90,15 +68,13 @@ export const SWORD: Mask = [
   '..........................wXX..',
   '.........................WpX...',
   '........................rrr....',
-  '.....................ddDvV.....',
-  '.................ddddvv........',
-  '.............ddddvvvv..........',
-  '.........ddddvvvv..............',
-  '.....ddddvvvv..................',
-  '....Vvvvv......................',
+  '.....................bbBmM.....',
+  '.................bbbbmm........',
+  '.............bbbbmmmm..........',
+  '.........bbbbmmmm..............',
+  '.....bbbbmmmm..................',
+  '....Mmmmm......................',
 ];
-/** Paper charm (front dangle, from the sword origin + (26, 6)): 1-px ochre cord, a 2 × 3 cream slip, 1 ink stroke. */
-export const CHARM: Mask = ['t.', 't.', 'Pq', 'Xq', 'pq'];
 
 /**
  * q34 sword (23 × 12 from hip + (−14, −11.5)): the hilt pokes 3 px ahead of the belly at waist height (the near arm
@@ -109,21 +85,19 @@ export const SWORD_Q34: Mask = [
   '...................wXp.',
   '..................wXX..',
   '.................rpX...',
-  '..............ddDrr....',
-  '............ddvvvV.....',
-  '..........ddvv.........',
-  '.......dddvv...........',
-  '.....ddvvv.............',
-  '...ddvv................',
-  '...Vvv.................',
+  '..............bbBrr....',
+  '............bbmmmM.....',
+  '..........bbmm.........',
+  '.......bbbmm...........',
+  '.....bbmmm.............',
+  '...bbmm................',
+  '...Mmm.................',
 ];
-/** q34 charm (from the q34 sword origin + (21, 5)), clear of the far hakama edge. */
-export const CHARM_Q34: Mask = ['t.', 't.', 'Pq', 'Xq', 'pq'];
 
 /** Zori (front): warm bare foot (skin), a 1-px cream thong strap, umber sole with a lit toe px. */
-export const SHOE: Mask = ['.Ss.', 'SpSs', 'LBbm'];
+export const SHOE: Mask = ['.Ss.', 'SpSs', 'RTtg'];
 /** Side zori (q34, toe forward = screen-right): strap over the instep, lit toe px. */
-export const SHOE_Q34: Mask = ['.Ss..', 'sSSpS', 'mbbBL'];
+export const SHOE_Q34: Mask = ['.Ss..', 'sSSpS', 'gttTR'];
 
 // ── q34 (three-quarter, facing screen-right; RIG.md «Views») ─────────────────────────────────────────────────────────
 // Fringe parted toward the facing; the back of the head is the authored `HAIR_BACK_Q34` (no procedural mass): the skull
@@ -192,3 +166,55 @@ export const HAIR_BACK_Q34: Mask = [
  * outline adds the dark outer px) behind the far cheek, ending on the eye's top row (lash row 15).
  */
 export const HAIR_FAR_Q34: Mask = ['..H', '..H', '..H'];
+
+// ── D-20 armour (MA-65, docs/art/ronin.md §1). Slots: `shoe` = lacquer_black (M 0 · m 1 · b 2 · B 3 · l 4 · L 6 spec),
+// `horn` = lacquer_red (N 1 · n 2 · o 3 · O 4 · u 5 · U 6 spec), `trim` = cloth_ochre (studs, tsuba, straw).
+
+/**
+ * Menpō (`Body.mask` front, from the face anchor): red lacquer from under the iris (row 10) to the chin, cheek to cheek
+ * inside the head; a lit nose ridge on the axis flanked by black nostrils, 1 lit + 1 spec px top-left, black dragon
+ * whiskers (3 px each) sweeping to the cheek edges, a 2-px black mouth slot with upturned corners, darker chin rows.
+ */
+export const MENPO: Mask = [
+  '.NouonnnMooMnnnnnNN.',
+  '..NmmmnnmnnmnnmmmN..',
+  '...NNnnnnMMnnnnNN...',
+  '......NNNNNNNN......',
+];
+/** q34 menpō: 1 px narrower toward the facing, the near whisker only. */
+export const MENPO_Q34: Mask = [
+  '.NouonnnMooMnnnnNN..',
+  '..NmmmnnmnnmnnnnN...',
+  '..NNnnnnMMnnnnN.....',
+  '......NNNNNNNN......',
+];
+/** Down (happy / petted / sleep): the menpō hangs under the chin as a 6 × 3 red plate over the throat guard. */
+export const MENPO_DOWN: Mask = ['NnnnnN', 'NonnnN', '.NNNN.'];
+
+/** Yodare-kake (throat guard, `neckAcc: 'collar'`): 2 rows of red lacing under the chin. */
+export const THROAT: Mask = ['.NnNnNnN.', 'MNMNMNMNM'];
+export const THROAT_Q34: Mask = ['.NnNnNnN', 'MNMNMNMN'];
+
+/**
+ * Dō (`Body.torsoMask`, from the chest joint): black lacquer cuirass, a lit top edge with the 1-px spec streak at the
+ * top-left, 2 lacquer plate rows with 2 offset vermilion odoshi dashes each (every-2-px lacing read as a checker at 1×), shade-1 plate lines between them.
+ */
+export const DO: Mask = ['mLlbbbbbbbm', 'mbobbbbbobm', 'mmmmmmmmmmm', 'mbbbobobbbm', 'MmmmmmmmmmM'];
+export const DO_Q34: Mask = ['mLlbbbbbbm', 'mbbobbbobm', 'mmmmmmmmmm', 'mbbbobobbm', 'MmmmmmmmmM'];
+
+/** Sode (`Body.sode`, from the near shoulder joint): square 6 × 5 plates, 2 lace rows, a spec px. */
+export const SODE: Mask = ['mLbbbm', 'mbobbm', 'mmmmmm', 'mbbobm', 'MmmmmM'];
+
+/** Kusazuri (`Body.tassets`, from the hip joint): 4 hanging plates, a red lace row each, 1-px gaps (hakama shows). */
+export const KUSAZURI: Mask = [
+  'mLm.mlm.mlm.mbm',
+  'mom.mom.mom.mom',
+  'mbm.mbm.mbm.mbm',
+  'mbm.mbm.mbm.mbm',
+  'MmM.MmM.MmM.MmM',
+];
+export const KUSAZURI_SEATED: Mask = ['mLm.mlm.mlm.mbm', 'mom.mom.mom.mom', 'MmM.MmM.MmM.MmM'];
+export const KUSAZURI_Q34: Mask = ['mLm.mlm.mbm', 'mom.mom.mom', 'mbm.mbm.mbm', 'mbm.mbm.mbm', 'MmM.MmM.MmM'];
+
+/** Crown tuft (`headAcc: 'clip'`): 2 umber px × 2 rows above the crown, tied with a 1-px red cord on the crown row. */
+export const TUFT: Mask = ['jh', 'Hh', 'oN'];

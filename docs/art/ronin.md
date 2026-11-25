@@ -13,6 +13,17 @@
 > (Mortal Kombat), armour black with red lacing (not all-red Sanada, not black-on-black with red eyes), no helmet or
 > blades (Vader, Shredder, For Honor, Nioh), hair umber with a tuft (no ponytail / bun / topknot of a named hero).
 
+## As built — round 0 (MA-65, 2026-11-25; before art-director)
+- Masks in `characters/ronin/masks.ts`: `MENPO` / `_Q34` / `_DOWN` (red one step darker than spec — step 3 read orange at
+  1×), `THROAT` (yodare-kake as the `collar` neck accessory: dark red + black lacing; the menpō itself must stay inside
+  the head), `DO` (2 offset red dashes per plate row — every-2-px lacing read as a checker), `SODE`, `KUSAZURI` (+
+  seated, q34), `TUFT` (`headAcc: 'clip'`). Slots: shoe = lacquer_black, horn = lacquer_red, trim = ochre (zori straw).
+- Face = the shared stern kit: talk_a stern / talk_b glance / talk_c lid + brows up 1 row; worried / startle 1 row
+  higher (iris ends ≥ 1 skin row above the menpō); **think keeps the stern open eye** (stern rule; spec said closed);
+  happy / petted blush with the mask down. q34: kit eye + set brows.
+- Kote on both forearms = `kote.both` (studs on the near one); kusazuri have no hip-lag dangle yet; no sageo on the
+  saya yet. The cefa873 mist cloak, collar and charm are deleted.
+
 ## 0. Base
 Start from the chibi ronin character files at `cefa873` (MA-29b WIP: head mask, dome skull, hakama, sword prop),
 adapted to today's rig. Keep: `hair_umber`, `jade` eyes, chibi head, the q34 owner rules (§6).
