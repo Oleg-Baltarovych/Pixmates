@@ -17,10 +17,27 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 | `passes.ts` | `stampMask` and the buffer / image passes (shin wraps, far-leg gap, knee creases, far-shoulder clip, chin fists, spade notches, apron panel, arm over torso, sleeve/hair line, hand over ties, labels, squash separator, seam closer) |
 | `part-ids.ts` | `PART_ID` table, `LABEL_OF`, part sets (`SLEEVE_PARTS`, `TORSO_PARTS`, `LEG_PARTS`, …); no bare part numbers elsewhere |
 | `face.ts`, `checks.ts`, `style.ts`, `q34.ts`, `dummies.ts`, `anims/` | face library + validator, arm-over-torso check, SOFT preset, q34 masks for dummies only, review bodies, shared poses |
-| `layout.ts` | `RigLayout` per body (`Body.layout` / `Body.build`, `layoutOf`): frame, rests, arm / leg shapes, knees, torso + hem geometry, hair scale, cloak bound, face rules; `LAYOUT_LEGACY` (48 × 56) and `LAYOUT_ADULT.male` / `.female` (56 × 72) |
-| `dummies-adult.ts` | adult review bodies `rig-adult-male` (shorts, cloak, collar) / `rig-adult-female` (skirt, long hair) |
+| `layout.ts` | `RigLayout` (frame, rests, arm / leg shapes, torso + hem geometry, cloak bound, face rules); after MA-61 one layout `LAYOUT` (48 × 56) |
+| `dummies-adult.ts` | adult review bodies — deleted in MA-61 |
 
-## Layouts (D-19 MA-42…MA-44, ADR 011; tests `tests/unit/art/rig-adult.test.ts`)
+## D-20 (ADR 012, 2026-11-25): chibi 48 × 56 is the only layout
+The adult layer below is **removed in MA-61** (kept here until then as a map of what to delete): `LAYOUT_ADULT`,
+`Body.layout` / `build`, `anims/adult.ts`, `dummies-adult.ts`, `ADULT_PROP`, two-segment limbs, adult face rules,
+`WALK_TRAVEL.adult`, `--adult` sheets. `RigLayout` stays with one layout (`LAYOUT`). D-19 opt-ins kept for chibi
+re-validation (deleted in MA-69 if unused): `Prop.over`, `Body.kote`, `Body.tamoto`, `skirtSplit.notchHalf` /
+`q34.clear`, `Cloak.hem.wisps`, `Body.hakama`, `Body.despeckle`, front `masks.hairBack`.
+New opt-ins (D-20, unset = byte-identical):
+- **`Body.face.style: 'stern'`** (MA-62) — shared kit `rig/faces/stern.ts`; `validateFace` stern rules (ART-BIBLE
+  §11.9): lid covers the iris top row on stern expressions, ≥ 3 iris rows visible, brows present with inner end 1 row
+  lower on the stern set and not on happy / worried / startle / petted / sleep, no blush px outside `petted`.
+- **`Body.mask` {front, q34, down, downQ34?, downExpressions}** (MA-63) — mouth mask stamped after face parts, part id
+  16 (`mask`, label none); hides every mouth px; `down` mask at the neck joint on `downExpressions` frames; validator:
+  mask px inside the head contour, ≥ 1 skin row under the iris, `talk_a/b/c` differ outside the mouth rows.
+- **Armour** (MA-65, ronin; knight/coder reuse): `Body.puff` (shoulder plates; knight R3) with `square` shape and lace
+  rows; `Body.torsoMask` (= coder R-C3 `Body.front`: authored torso overlay on the chest/hip joints, part 7, for dō
+  plates + lacing); `Body.tassets` (authored hip mask over the hem per view + seated variant, dangle ±1 px on hip lag).
+
+## Layouts (D-19 MA-42…MA-44, ADR 011; tests `tests/unit/art/rig-adult.test.ts`) — REMOVED in MA-61
 - Every size the composer, chains, passes and validators used to take from module constants now comes from the
   body's `RigLayout`. `LAYOUT_LEGACY` holds the pre-D-19 numbers verbatim, so the chibi packs (maid, kitsune, goth,
   witch, ronin) are byte-identical until each is redrawn; `REST`, `REST_Q34`, `ARMS`, `RIG_W`, `RIG_H`, `FIGURE_H`
@@ -91,12 +108,7 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 `LABEL_OF` maps sleeve / end / torso / trim ids to the arm-over-torso check labels; every other id is `none`.
 
 ## Frame and sizing
-> **ADR 011 (accepted 2026-11-24): frame 56 × 72, to be re-measured in MA-42.** Targets: `RIG_W` 56, `RIG_H` 72,
-> soles on row 70 (row 71 free), crown ≈ row 6, rows 1–5 headroom (budget: extra above crown + happy apex + head lag
-> ≤ 5; else H 76 with feet on row 74, smallest fit chosen by the gate), body axis x = 28, `scaleRef` 66 in every
-> built-in manifest, atlas ≈ 1008 × 432. Rest skeleton, build presets and joints: ART-BIBLE §1, §11.0. The numbers
-> below (48 × 56, feet row 46, x = 24, `scaleRef` 48, raised hands x ≤ 10 / ≥ 38, chin-fist cols, REST geometry,
-> stride) describe the shipped chibi rig and all change in MA-42…45.
+> **D-20 / ADR 012: the numbers below are current** (ADR 011's 56 × 72 is void).
 
 - **Frame 48 × 56.** The figure box is 48 × 48 (feet on row 46, row 47 free for the outline). The frame adds
   **8 rows of headroom on top** (`RIG_H = 56`), so feet stay on the same row and the extra rows are only headroom.
@@ -110,8 +122,6 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 - Pivot at the feet `anchor (0.5, 1)`; `sit_edge` has a per-animation `anchor` on the seat joint (≈ 0.5, 0.866).
 
 ## Coordinates and joints
-- *(to be re-measured in MA-42/43 for 56 × 72: units, axis x = 28, REST from the spike C+ numbers, elbow + knee
-  joints, male/female builds.)*
 - 48-px figure units, origin top-left of the figure box; body axis x = 24 on a pixel boundary (left/right mirror).
 - Joints (parent → child): root → hip → {seat, chest, footL/R}; chest → {back, neck, shoulderL/R}; neck → head →
   {face, acc, fx}; shoulder → hand. Rest positions = the 48-soft spike geometry (`REST` in `body.ts`).

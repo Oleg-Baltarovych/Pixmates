@@ -4,6 +4,18 @@ Originality gate: **PASS** (art-director, 2026-11-24). Owner decisions 2026-11-2
 opaque black tights. Brief: ART-BIBLE §9, costume recipe §11.8, black rule R6. A stylized archetype, not a portrait:
 no tattoos or identifying details, no reference images. Frame 48 × 56, chibi ≈ 2.2 heads.
 
+## D-20 stern pass + richness (MA-64; re-sign-off; everything not listed stays as signed off 2026-11-24)
+- **Stern face** (`face.style: 'stern'`, ART-BIBLE §11.9): keep the flat thick lash (already covers the iris top
+  row); highlight 1 × 2 → 1 × 1; **brows visible** through two fringe gaps (2nd and 3rd splits), hair_black 1, inner
+  end 1 row lower; neutral mouth = the half-smile becomes a **smirk** (2-px `XX` + 1-px corner up on screen-right,
+  no skin softener); **no `ff` blush in neutral** (petted only). Happy / startle / worried / petted as §4 but brows
+  must flatten or invert (validator). Lifts the §4 «brows hidden» rule for goth.
+- **Richness** (§12): layers — dress + a **leather corset belt** over the bodice waist (`sash` rows 3, `leather_black`
+  or `cloth_black` 1 with a soft 1-px sheen at shade 4, the 3-rung tonal lacing ladder restored on it) + the long
+  sleeves; signature — moth clip + choker (kept); materials — cloth, lace, leather, metal (2 pewter buckle px on the
+  corset, `metal_steel` 5; never a cross or ankh); trims at 1× — corset lacing whole px.
+- Gates: maid/kitsune/witch/fx bytes unchanged; ≤ 2 art rounds; owner sees round 1.
+
 ## Lookalikes checked
 Highest risks: **Shinobu Kocho** (moth clip vs butterfly pin) and **Kuroneko** (black hair + gothic dress). Also:
 Kurumi Tokisaki, Yor Forger, Wednesday Addams, Mikasa, Rory Mercury, Akame, Black Rock Shooter, Raven, Marceline,

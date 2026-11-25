@@ -1,6 +1,8 @@
 # 011. Adult proportions for all built-in characters, frame 56 × 72
 
-- Status: **Accepted** (owner, 2026-11-24: Q-D19-1 = **C+**, Q-D19-2 = ronin crown tuft allowed; D-19)
+- Status: **Superseded by ADR 012** (owner D-20, 2026-11-25: «the adult versions are meh» — back to chibi 48 × 56 with
+  a stern-look face option). Was Accepted 2026-11-24 (Q-D19-1 = C+, Q-D19-2 = ronin crown tuft; D-19). Kept as
+  history; what survives and what is deleted is listed in ADR 012.
 - Date: 2026-11-24 (proposed and accepted)
 - Supersedes: ADR 009's frame (48 × 56), proportion and eye rules and its S/M/L scale table. ADR 009's «anime soft»
   shading, authored-mask faces and the headroom rule stay. Revises ADR 010's numbers (see Consequences).

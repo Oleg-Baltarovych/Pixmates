@@ -7,6 +7,16 @@ coder boy in an oversized hoodie with dry humour — the Dev companion. Frame 48
 Must read clearly **male** at 1× (kitsune read as a girl because of bob hair to the jaw, big up-flicked eyes, hidden
 brows and bare legs — every boy cue below targets one of these).
 
+## D-20 stern + richness (MA-66; chibi 48 × 56 stays)
+- **Stern face** (`face.style: 'stern'`, ART-BIBLE §11.9) on top of §4: the 2-row flat lid already covers the iris
+  top; brows (via the fringe gaps) get the stern step — inner end 1 row lower (this **replaces** §4 «the inner end
+  never lower»); neutral mouth stays the flat 3-px `XXX` (set); highlight 1 × 1; eye bags kept; no blush outside
+  petted. Read = "unimpressed senior dev", not sleepy: keep 3 iris rows.
+- **Richness** (§12): layers — a cream **tee hem** 1 row under the hoodie rib + hoodie + rolled jeans; signature — a
+  **lanyard with a blank badge** (cream 1-px cord, 3 × 4 badge in cream 4 with a 2-px amber `>_` mark, no logo);
+  materials — knit cloth, denim, rubber sneaker soles, metal (2 zipper-pull px on a half-zip collar, `metal_steel` 5);
+  trims at 1× — badge, aglets, rib ticks.
+
 **Cast rule — the only boy in trousers, the only warm-yellow mass.**
 
 | | kitsune | ronin | coder |

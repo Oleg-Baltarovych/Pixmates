@@ -2,8 +2,8 @@
 
 - Status: Accepted (owner, 2026-11-23: front walk retired, q34 faces neutral + blink, 2-frame turn, mirroring of one-sided details accepted)
 - Date: 2026-11-23
-- Revised by ADR 011 (2026-11-24, frame 56 × 72): mirror axis x = 24 → 28; the q34 stride and `WALK_TRAVEL` are
-  re-derived from the longer leg in MA-45. Head-steady, the 2-frame turn and `facing` stay.
+- *(ADR 011's revision — axis x = 28, adult stride — is void: ADR 012 (D-20, 2026-11-25) supersedes ADR 011, so this
+  ADR's own numbers hold again: axis x = 24, 8-px stride, `WALK_TRAVEL` 2 px/frame = 20 native px/s.)*
 
 ## Context
 The M-ART rig (ADR 004, 009) draws every pose front-facing. In M1 the character travels horizontally along the

@@ -3,6 +3,12 @@
 Originality gate: **PASS** (art-director, 2026-11-24). Owner decisions 2026-11-24 (§8): biscuit-cream fur + pewter steel + raspberry-rose tabard, ears per emotion (R5) now, worn wooden sword at the hip. Brief: ART-BIBLE §9 (D-17). A cat
 knight in oversized armour, a noble coward. Frame 48 × 56 (holds), chibi ≈ 2.2 heads, shared rig poses only.
 
+**D-20 (2026-11-25):** chibi stands (D-19 adult update cancelled); normal face, no stern option. **Richness** (ART-BIBLE
+§12): layers — gambeson (1-row rose quilted edge under the faulds) + plate + tabard; signature — the paw tabard;
+materials — steel, leather (1-px brown pauldron straps with a brass buckle px), cloth, wood (toy sword), plus a 1-row
+mail edge under the faulds (2-px checker texture in steel 2/4, texture only). Shares `Body.puff` with ronin's sode
+(MA-65 builds it). Not black/red: steel + raspberry-rose stays apart from ronin (ronin.md §2 gates).
+
 ## Lookalikes checked
 - Puss in Boots (ginger, feathered cavalier hat, cuffed boots, cape, rapier, "pleading eyes"): cream fur, steel helmet
   without feather, plated sabatons (no cuffs), a short blunt wooden sword, no cape; the dilated pleading pupil only on

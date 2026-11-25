@@ -1,8 +1,7 @@
 # 009. Character frame 48 px, style «anime soft»
 
-- Status: Accepted; **partly superseded by ADR 011 (accepted 2026-11-24, D-19)** — the 48 × 56 frame, the chibi
-  proportion and eye rules and the S/M/L ×3/×4/×5 table (now frame 56 × 72, `scaleRef` 66). «Anime soft», authored
-  faces and the headroom rule stay.
+- Status: Accepted. *(2026-11-24 ADR 011 superseded its frame, chibi rules and scale table; 2026-11-25 ADR 012 (D-20)
+  superseded ADR 011 and **restored all of this ADR**: frame 48 × 56, chibi, `scaleRef` 48, S/M/L ×3/×4/×5.)*
 - Date: 2026-11-23
 
 ## Context

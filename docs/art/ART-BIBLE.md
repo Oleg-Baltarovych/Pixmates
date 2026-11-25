@@ -1,43 +1,28 @@
-# Pixmates ART-BIBLE v0.6 (M-ART phase 3: ADR 011 adult rules, frame 56 × 72, anime soft only)
+# Pixmates ART-BIBLE v0.7 (M-ART D-20: chibi 48 × 56, stern look, mouth mask, costume richness; anime soft only)
 
 The source of style for every built-in character (rules/art.md). v0 holds what the spike needs. v0.5 adds the
 numbers chosen in ADR 009 (frame size, style) and the arm-over-torso rule (§3) with the goth recipe (§11.8); v0.6
-(MA-41) sets the adult frame and rules of ADR 011 (§1, §11.0), chibi text kept as history; v1 closes M-ART. All art is made by code (D-11): masks and geometry
-are authored in `assets-src/`, and procedural code is used only for material texture.
+(MA-41) set the adult rules of ADR 011; **v0.7 (D-20, ADR 012) restores chibi** (§1, §11.1–11.3), adds the stern look
+(§11.9), the mouth mask (§11.10) and costume richness (§12); the adult §11.0 is history. v1 closes M-ART. All art is
+made by code (D-11): masks and geometry are authored in `assets-src/`, and procedural code is used only for material
+texture.
 
 ## 1. Grid and frame
-ADR 011 (accepted 2026-11-24, owner pick C+ from `reports/sprites/style-spike/`). Code numbers are re-measured in the
-rig in MA-42; until then the shipped packs are still 48 × 56 (history below).
+ADR 009, restored by ADR 012 (D-20, 2026-11-25).
 
-- Frame **56 × 72**, rows top to bottom (male build, standing):
-
-  | rows | use |
-  |---|---|
-  | 0 | always transparent (builder + headroom gate) |
-  | 1–5 | headroom above the crown: ears, horns, hats, the ronin tuft, the happy apex, head lag |
-  | ≈ 6 | crown (top of the skull) |
-  | 6–20 | skull 14 × 15, face 12 rows (hairline → chin at row 20) |
-  | 21–23 | neck 3 rows (shadow on the top 2) |
-  | 24 | shoulder line; chest → hip 17 rows |
-  | 41 | hip joint (female 40); hip → sole 30 rows |
-  | 70 | soles (feet row) |
-  | 71 | free for the outline / ground contact |
-
-  Standing figure ≈ 66 rows → **`scaleRef` 66 in every built-in manifest** (sizing follows the figure, not the frame;
-  S/M/L ×2/×3/×4 at 1080p / 125 % with the 0.30 clamp and L 200 DIP, SPEC §3.3).
-- **Headroom budget:** tallest extra above the crown + happy apex + 1-frame head lag ≤ 5 rows (spike ronin: tuft 2 +
-  hop 2 = 4). A character that needs more (kitsune ears, witch hat) makes the frame grow by 4 rows on top (H 76, feet
-  row 74) — the gate picks the smallest fit; ears and hats are never shrunk to fit.
-- **Width 56:** the figure stays inside x ≈ 14–42; the extra columns are for the saya, haori sleeves, cloaks, tails
-  and wide arm poses. Body axis on a pixel boundary at **x = 28**, so left and right mirror exactly.
+- Frame **48 × 56** = a 48 × 48 figure box (feet on row 46, row 47 free for the outline) + **8 rows of headroom on
+  top**. Row 0 is always transparent (builder + headroom gate); the tallest extra (kitsune ears, witch hat, maid
+  horns, ronin tuft) + happy apex + 1-frame head lag must fit (RIG.md «Why 56»). The frame never grows without the
+  owner.
+- Body axis on a pixel boundary at **x = 24**, so left and right mirror exactly.
+- **`scaleRef` 48 in every built-in manifest** (sizing follows the figure, not the frame): S/M/L ×3/×4/×5 at
+  1080p / 125 %, ×2/×3/×4 at 100 % (clamp 0.25, L 176 DIP; SPEC §3.3, ADR 012).
 - Pivot at the feet: anchor (0.5, 1); `sit_edge` pivots on the seat (per-animation `anchor`). Rig details:
   `docs/art/RIG.md`.
 - Integer scale on screen (`computeScale`). Never resample art. Squash means inserting or removing whole rows. One
-  art pixel at M is ×3 (was ×4): detail comes from the bigger frame, not bigger pixels.
-- One atlas per character, strips shelf-packed (≤ 1024², ≈ 1008 × 432 = 18 × 6 cells for 105 frames, ≈ 1.66 MiB),
-  `origin` per animation in the manifest.
-- *History (phase 2, ADR 009):* frame 48 × 56 = a 48 × 48 figure box (feet row 46) + 8 rows of headroom, axis x = 24,
-  `scaleRef` 48, S/M/L ×3/×4/×5, atlas 1008 × 336.
+  art pixel at M is ×4.
+- One atlas per character, strips shelf-packed (≤ 1024², 1008 × 336 for 105 frames), `origin` per animation.
+- *History (D-19, ADR 011, superseded):* frame 56 × 72, ≈ 4.4 heads, `scaleRef` 66.
 
 ## 2. Light
 - One light from the top-left (`SUN` in `passes.ts`). Every shading pass uses it.
@@ -45,7 +30,7 @@ rig in MA-42; until then the shipped packs are still 48 × 56 (history below).
 - Cast shadow and AO from part depth: under the chin, under the bib, behind the arms.
 
 ## 3. Outline and rim
-- Outline is coloured: the neighbour's own ramp, 2 steps darker (anime soft; D-19 adult rule: 3 steps, 2 on the lit side — §11.0). Never `#000`. The ink ramp starts at a dark plum.
+- Outline is coloured: the neighbour's own ramp, 2 steps darker (anime soft). Never `#000`. The ink ramp starts at a dark plum.
 - Selective outline: one step lighter on the lit (top-left) side.
 - Internal lines appear only where materials meet and the part behind gets the line.
 - Rim light: the inner edge on the side away from the light gets 2 steps brighter (anime soft), so the sprite holds on dark wallpapers.
@@ -66,7 +51,8 @@ rig in MA-42; until then the shipped packs are still 48 × 56 (history below).
 
 ## 6. Faces
 - Faces are authored masks, one face layer per emotion, placed on the head's face anchor (`mask.ts` legend: slot + tone 0–5).
-- Eyes, mouth, nose and blush follow §11.0 (adult face, D-19); §11.2–11.3 are history except where §11.0 keeps them.
+- Eyes, mouth, nose and blush follow §11.2–11.3 (chibi); bodies with `face.style: 'stern'` add §11.9; bodies with a
+  mouth mask add §11.10.
 - An emotion must read within 2–4 frames at real size.
 
 ## 7. Motion
@@ -156,10 +142,8 @@ rig in MA-42; until then the shipped packs are still 48 × 56 (history below).
 Every built-in character is pixel anime. The style is a technique, not IP: originality (§9, ADR 005) is checked on
 every review. Numbers below are the spike `maid`'s (`assets-src/spike/maid-{48,64}/rig.ts`); ADR 009 fixes one size.
 
-### 11.0 D-19 — adult rules (final; ADR 011 accepted 2026-11-24, frame 56 × 72)
-> **§11.1 and §11.2 below are superseded and kept as history; §11.3 blush and nose rules too.** Owner D-19: adult,
-> tough characters, not childish. Pixel anime, «anime soft», authored faces, hair clumps with an angel ring and FX
-> marks (§11.4–11.6) still hold. Numbers are the spike C+ targets; MA-42…44 re-measure them in the rig.
+### 11.0 D-19 — adult rules — HISTORY (superseded by D-20 / ADR 012, 2026-11-25; do not apply)
+> Kept only as a record of what was tried. §11.1–11.3 (chibi) are the rules again; toughness comes from §11.9.
 
 - **Build.** ≈ 4.4 heads in 56 × 72 (rows in §1). Skull 14 × 15, neck 3, chest → hip 17, hip → foot 30 (≈ 45 %).
   Shoulders wider than the head: male 21 / female 17; neck width male 5 / female 3. Arms upper 10 + fore 9 + fist 3,
@@ -178,13 +162,13 @@ every review. Numbers below are the spike `maid`'s (`assets-src/spike/maid-{48,6
   on the shadow side, 2-step rim on the lit side. A hard shadow terminator on body and face (ramps, AA and rim as §3,
   §11.5).
 
-### 11.1 Proportions (chibi) — historical, superseded by §11.0 (D-19)
+### 11.1 Proportions (chibi) — current (D-20)
 - About 2 heads to the feet (target 2–2.5): the skull (crown to chin, horns excluded) is 23 rows of 48 / 28 of 64.
 - The head is much wider than the shoulders: 24 px at 48 (face 20), 32 px at 64 (face 26). The body stays small and
   simple: short arms, mitten hands, short legs. Detail goes to the head first.
 - Big forehead under the fringe, eyes on the lower half of the face, small chin rounded over the last 3–4 rows.
 
-### 11.2 Eyes (the main emotion carrier) — historical, superseded by §11.0 (D-19: eyes ¼–⅕ of the face)
+### 11.2 Eyes (the main emotion carrier) — current (D-20); 48-px rules apply, 64 is spike history
 Shared: eye height ≈ ⅓ of the face (lash to iris bottom); the iris is taller than wide. Light is top-left, so both
 highlights sit the same way in both eyes (never mirror them); the lash shape is mirrored.
 - Upper lid: an arched ink lash line (higher in the middle), a thick outer corner and a 1-px outer **flick**
@@ -203,7 +187,7 @@ highlights sit the same way in both eyes (never mirror them); the lash shape is 
   row between fringe tips and the lash line.
 
 ### 11.3 Mouth, nose, blush
-> D-19: the nose px, mouth size and «blush only in `petted`» rules of §11.0 replace the nose and blush lines below.
+> D-20: the chibi rules below hold again. Exception: stern bodies (§11.9) have no blush outside `petted`.
 
 - Mouth minimal: calm symmetric smile = corners `x..x` + centre `XX` (4 px), never a v/cat mouth; keep ≥ 1 skin row
   above the chin (48: lifted 1 px in round 3). Happy: open 4-px `XXXX` + rose tongue.
@@ -251,3 +235,44 @@ Black costumes must still separate on dark wallpapers and across the arm/torso e
 - bell cuff flaring 1 px with a 1–2 px lace edge (off-white or deep red); hand skin always 1–2 px below the cuff
   (think / wave must show the hand — the arm-over-torso rule iii);
 - a light front detail (collar, lacing or ribbon) to break the bodice mass.
+
+### 11.9 Stern look (D-20; per-body face option `face.style: 'stern'` — goth, ronin, coder)
+Toughness "or just the gaze" inside chibi proportions. Shared part kit in the rig (`rig/faces/stern.ts`, slot
+letters, so each body keeps its eye ramp); a body may override a part but the validator rules hold.
+- **Eye (48):** iris 4 × 5; an ink **lid line** 1 row thick that runs flat (or 1 row lower at the outer end) and covers
+  the iris top row, so 4 × 3–4 × 4 of iris shows (never < 3 rows: a slit reads asleep); the lid extends 1 px past the
+  outer corner as a square tick, no up-flick. Optional 1-px lower-lid px at the outer 2 cols (narrowed eye). Pupil
+  2 × 2 touching the lid; highlight **1 × 1** top-left (+ optional 1-px lower), not the cute 1 × 2.
+- **Brows:** always visible (fringe gaps or tips ≥ 1 row above the brow row), 3–4 px × 1 row, hair ramp shade ≤ 1,
+  **inner end 1 row lower** (one 1-px step over 3–4 px = "set"); exactly 1 skin row between brow and lid (0 rows
+  merges into a blob at 1×).
+- **Mouth options:** set flat `XXX` (3 px); short `XX` + 1-px skin-2 corner pulled down on one side (grim); 1-px
+  corner up on one side (smirk — goth). Never a symmetric smile in neutral, never a `v`/cat mouth.
+- **Blush:** none outside `petted` (and the FX blush mark).
+- **Readable at M (×4):** the lid line and the brow are the darkest face px (ΔL ≥ 0.25 vs skin); the brow angle is a
+  whole-px step, never AA'd away; checked on real-size previews at S and M on light + dark wallpapers.
+- **Not angry all the time — emotions break it** (validated): only `neutral`, `blink`, `half`, `talk_*`, `think`,
+  `wince` keep the stern lid + inward brow; `happy` (lids lift or closed arcs, brows flat/up), `worried` (brows
+  inner-up — the reverse angle), `startle` (lid fully up, sclera both sides, brows up), `petted` (closed, blush),
+  `sleep` (closed) must change the brow angle and the lid. Anger is never the baseline: 2-step brows + the vein FX
+  are an anger-only reaction (M1+).
+- Stance: confident = chest 1 px up / head level in idles via `tweaks` only; no forked poses.
+
+### 11.10 Mouth mask (D-20; per-body rig option `Body.mask` — ronin's menpō)
+- An authored mask over the lower face (front + q34), stamped after the face parts: it **hides the mouth rows** and
+  sits ≥ 1 skin row below the iris bottom, inside the head contour (q34 facing contour stays monotonic).
+- `downExpressions` (ronin: `happy`, `petted`, `sleep`): on those frames the face mouth shows and an alternate
+  `down` mask hangs at the neck (under the chin, over neck/collar, ≤ 3 rows).
+- Mask up = no mouth: `talk_a/b/c` must differ in eye/brow px (validator), so talk reads through the eyes; the speech
+  bubble carries the words.
+
+## 12. Costume richness (D-20; applies to every character not yet signed off)
+Owner: "standard costumes read boring". Each spec (`docs/art/<id>.md` §«Richness») names:
+1. **Layers** — at least 2 visible garment layers (under + over: kosode under dō, dress under corset, tee under hoodie).
+2. **One signature piece** — the thing you'd draw from memory (ronin menpō, goth moth + corset, coder lanyard badge,
+   knight paw tabard, vampire collar).
+3. **Material contrast** — ≥ 3 materials from lacquer, metal, cloth, leather/cord, fur, each with its own ramp and
+   specular rule (lacquer = hard 1-px streak, metal = hard step, leather = soft 1-px sheen, cloth = folds).
+4. **Trims at 1×** — every trim/accessory ≥ 2 px in one direction and ≥ 1 ramp step off its ground; drop it if it
+   becomes noise at 1×. Silhouette still reads first (§5).
+maid, kitsune, witch stay as signed off (richness ideas are a later owner call).

@@ -1,8 +1,15 @@
 # vampire — design spec (MA-29e)
 
 Originality gate: **PASS** (art-director, 2026-11-24); a crimson lining (Q1-C) would reopen it. Owner decisions 2026-11-24 (§8): Q1 A midnight + old gold, Q2 crimson eyes, Q3 paired fangs in neutral. Brief: D-18. A chibi aristocrat count — theatrical, afraid of the light theme and of mornings, tied to
-night mode. Frame 48 × 56, chibi ≈ 2.2 heads. An archetype, not a portrait; no reference images. Depends on ronin's
-rig items R1 (`back: 'cloak'`), R3 (`neckAcc: 'collar'`), R5 (`headAcc: 'none'`) — build after MA-29b.
+night mode. Frame 48 × 56, chibi ≈ 2.2 heads. An archetype, not a portrait; no reference images. Rig items R1
+(`back: 'cloak'`), R3 (`neckAcc: 'collar'`) exist (built in MA-29b); D-20 ronin no longer uses the cloak, so vampire
+is now its only user (keep it general).
+
+**D-20 (2026-11-25):** chibi stands (D-19 adult update cancelled); normal face. **Richness** (ART-BIBLE §12): layers —
+shirt + ascot, **brocade waistcoat** (tonal 2-px damask dither in midnight 4/5, texture only), cloak with gold lining;
+signature — the gold-faced stand collar; materials — wool cloth, satin lining, silk ascot, metal (brooch rim, buckle);
+trims at 1× — 1-px cream shirt cuff frill. No gold edge trim or chains (Alucard rule holds). Colour vs ronin: midnight
+blue-black + old gold, never vermilion (ronin.md §2).
 
 **Cast rule — not a second goth, not a second ronin.**
 
