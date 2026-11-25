@@ -5,7 +5,13 @@
 > **menpō** (lower-face mask). Same id, same persona (calm, aphorisms) — a masterless samurai who kept his own armour
 > (persona note for `persona-designer`: «the armour is his; the lord is gone»). He talks with his eyes; the speech
 > bubble carries the words. The mist cloak and the bell silhouette are dropped (they read "kindergarten" + "robe").
-> Originality gate must be re-run (art-director) before any art: **pending**.
+> Originality gate (MA-65, 2026-11-25): **PASS — lead-developer pre-art check against §4, art-director to confirm on
+> round 1.** The design as specced (black-lacquer dō with vermilion odoshi, square sode, kusazuri over ash hakama, kote,
+> red lacquer half-menpō with an original whisker + mouth-slot dragon motif, umber chibi hair with a crown tuft, one
+> katana at the hip, no helmet / crest / horns / hood / cloth wrap / back sword / mon) breaks every §4 rule's lookalike:
+> not a full-face, oni, bone or metal-grille mask (Ghost of Tsushima, Genji, Raiden), not a hooded ninja colourway
+> (Mortal Kombat), armour black with red lacing (not all-red Sanada, not black-on-black with red eyes), no helmet or
+> blades (Vader, Shredder, For Honor, Nioh), hair umber with a tuft (no ponytail / bun / topknot of a named hero).
 
 ## 0. Base
 Start from the chibi ronin character files at `cefa873` (MA-29b WIP: head mask, dome skull, hakama, sword prop),
@@ -48,6 +54,10 @@ cuirass, a tasset skirt over a split hakama, feet apart, one hilt at the hip. No
   0.63/0.165/42 · 0.73/0.130/50 · 0.84/0.090/62. Gates (Oklab, at steps 2–4): vs `gem_garnet` (goth, h 12–22, L ≤ 0.50)
   Δh ≥ 12° and ΔL ≥ +0.04 — vermilion, not wine; vs `fx_red` (vampire eyes) Δab ≥ 0.05; vs `cloth_rose` (knight
   raspberry-rose) Δh ≥ 20° and C ≥ +0.05. Red/black area ratio ≈ 1 : 3 (lacing, menpō, obi, sageo, cord).
+- **As built (MA-65):** `lacquer_black` = the spec OKLCH steps. `lacquer_red` steps 2–4 retuned (sRGB gamut clips the
+  spec chroma and the gates failed as written): 0.53/0.185/46 · 0.61/0.18/50 · 0.68/0.155/55, step 5 0.75/0.125/58 —
+  a more orange shu; every §2 gate is tested per step in `tests/unit/art/ronin-palette.test.ts` (fx_red compared at
+  the same step, like the other gates).
 - Reuse: `hair_umber`, `jade` (eyes), `cloth_ash` (hakama, sleeves under the kote), `cloth_ochre` (studs, tsuba),
   `cloth_cream` (grip, sclera, highlights), `skin`, `cloth_rose` (petted blush only), `ink`. `mist`, `gem_garnet` no
   longer on ronin.
