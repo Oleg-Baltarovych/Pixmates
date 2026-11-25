@@ -241,7 +241,8 @@ Toughness "or just the gaze" inside chibi proportions. Shared part kit in the ri
 letters, so each body keeps its eye ramp); a body may override a part but the validator rules hold.
 - **Eye (48):** iris 4 × 5; an ink **lid line** 1 row thick that runs flat (or 1 row lower at the outer end) and covers
   the iris top row, so 4 × 3–4 × 4 of iris shows (never < 3 rows: a slit reads asleep); the lid extends 1 px past the
-  outer corner as a square tick, no up-flick. Optional 1-px lower-lid px at the outer 2 cols (narrowed eye). Pupil
+  outer corner as a square tick, no up-flick. Optional 1-px lower-lid px at the outer 2 cols (narrowed eye) — not
+  required, and goth has none (owner 2026-11-25: at 1× they read as eye bags or tears). Pupil
   2 × 2 touching the lid; highlight **1 × 1** top-left (+ optional 1-px lower), not the cute 1 × 2.
 - **Brows:** always visible (fringe gaps or tips ≥ 1 row above the brow row), 3–4 px × 1 row, hair ramp shade ≤ 1,
   **inner end 1 row lower** (one 1-px step over 3–4 px = "set"); exactly 1 skin row between brow and lid (0 rows

@@ -55,8 +55,7 @@ const OPEN_EYES = GOTH_FACE.eyes.open;
 if (!OPEN_EYES) throw new Error('goth has no open eyes');
 /** Head-mask row of the open-eye lash (the eye part's first ink row) and of the eyes' last row. */
 const LASH_ROW = FACE_AT[1] + OPEN_EYES.at[1] + OPEN_EYES.mask.findIndex((row) => row.includes('X'));
-// The lowest iris row (MA-64 round 1 adds a 1-px skin-shadow lower lid under it; the garnet gap is measured from the
-// eye itself, as before the lid existed).
+// The lowest iris row: the garnet gap is measured from the eye itself.
 const EYE_BOTTOM_ROW =
   FACE_AT[1] +
   OPEN_EYES.at[1] +

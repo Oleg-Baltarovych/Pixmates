@@ -18,7 +18,8 @@ no tattoos or identifying details, no reference images. Frame 48 × 56, chibi �
 - **Art-director round 1 (2026-11-25):** eye, brows, blush and mouth items applied; the belt is **deleted** (AD
   fallback): a 4-row cincher does not fit the chibi waist without moving the signed-off choker + garnet drop, and the
   waist-band rows below are the skirt flare. No `leather_oxblood` ramp added (nothing would use it). The garnet gap
-  test now measures from the lowest iris row (the new lower-lid px sits 1 row under it).
+  test now measures from the lowest iris row. **Owner 2026-11-25:** the lower-lid px are removed (at 1× they read as eye
+  bags or tears); **goth signed off**.
 - **Implementation deviations (MA-64, before art round 1; the belt items are superseded above):** no `leather_black` / `metal_steel` ramps exist, so the belt
   is `cloth_black` 1 with a `D` (shade 4) sheen and the buckle is 2 cream px (`cloth_cream` 4/5); the belt sits on the
   default waist-band rows (the garnet drop reaches row 29 on bowed frames, so the belt's top centre is left open and
