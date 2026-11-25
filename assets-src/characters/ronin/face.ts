@@ -43,7 +43,7 @@ export const RONIN_FACE: FaceLibrary = {
     level: part(['.JJJJ..JJJJ.'], 0, 1),
   },
   mouths: {
-    flat: part(['.....ZZZ....'], 0, 8),
+    flat: part(['.....ZZ.....'], 0, 8),
     // Talk (art round 2 F4): a centred 2-px skin-0 opening over a 1-px lit lower lip (never a moustache-like blob).
     talk_a: part(['.....ZZ.....', '.....EE.....'], 0, 8),
     talk_b: part(['.....ZZ.....', '.....ZZ.....', '.....EE.....'], 0, 8),

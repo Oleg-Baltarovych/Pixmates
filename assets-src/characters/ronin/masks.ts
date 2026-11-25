@@ -18,7 +18,7 @@ export const HEAD: Mask = [
   '.......yh.......',
   '.......TT.......',
   '....JjjhhjjJ....',
-  '..JjhyYYyhhhjJ..',
+  '..JjhYYYyhhhjJ..',
   '.JhhHhhyhhhHhhJ.',
   '.JheEEeeeeesshJ.',
   '.JheEeeeeeesshJ.',
@@ -26,11 +26,11 @@ export const HEAD: Mask = [
   '.JjeeeeeeeessjJ.',
   '..zeeeeeeeessz..',
   '..seEeeeeeessz..',
-  '...eEeeeeeess...',
-  '...eeeeeeeess...',
-  '....eeeeeess....',
-  '.....seeess.....',
-  '......sSz.......',
+  '...eEeeeeeees...',
+  '...eeeeeeeees...',
+  '....eeeeeees....',
+  '.....eeeees.....',
+  '......eeS.......',
 ];
 /**
  * Front back hair (`Body.masks.hairBack`, from the head joint − (1, 4)): one hair px hidden inside the skull — it only
