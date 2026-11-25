@@ -64,9 +64,8 @@ const OUTFIT: Outfit = {
 export const HAORI: Cloak = {
   ramp: 'mist',
   shade: 4,
-  litShade: 5,
   top: 0,
-  hemRow: 7,
+  hemRow: 12,
   widths: { top: 12, hem: 13, shape: 'column' },
   shoulder: 'square',
   hem: { lobes: 0, wisps: { count: 2, length: 3, span: 8, tipShade: 4 } },
