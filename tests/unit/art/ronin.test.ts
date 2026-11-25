@@ -357,14 +357,57 @@ describe('art gate (ronin.md): q34 contour (RIG.md owner rules)', () => {
     return best;
   };
 
-  it('tapers the facing-side contour monotonically from the eye row to a 1-px chin point', () => {
-    const rights = HEAD_Q34.slice(LASH_ROW).map((r) => Math.max(...skinCols(r)));
-    for (let k = 1; k < rights.length; k++) {
-      const step = (rights[k - 1] ?? 0) - (rights[k] ?? 0);
-      expect(step, `row ${String(LASH_ROW + k)}`).toBeGreaterThanOrEqual(0);
-      expect(step, `row ${String(LASH_ROW + k)}`).toBeLessThanOrEqual(1);
+  /** q34 nose px (head-mask coordinates): the only px allowed forward of the forehead column. */
+  const nosePx = new Set(
+    (q34.face.nose?.mask ?? []).flatMap((row, r) =>
+      row
+        .split('')
+        .flatMap((c, x) =>
+          c === '.'
+            ? []
+            : [
+                `${String(FACE_AT_Q34[0] + (q34.face.nose?.at[0] ?? 0) + x)},${String(FACE_AT_Q34[1] + (q34.face.nose?.at[1] ?? 0) + r)}`,
+              ],
+        ),
+    ),
+  );
+  const contour = (y: number): number =>
+    Math.max(-1, ...skinCols(HEAD_Q34[y] ?? '').filter((x) => !nosePx.has(`${String(x)},${String(y)}`)));
+
+  it('tapers the facing-side contour (nose px aside) from the eye row to a flat ≤ 2-px chin, ≤ 2 px per row', () => {
+    for (let y = LASH_ROW + 1; y < HEAD_Q34.length; y++) {
+      const step = contour(y - 1) - contour(y);
+      expect(step, `row ${String(y)}`).toBeGreaterThanOrEqual(0);
+      expect(step, `row ${String(y)}`).toBeLessThanOrEqual(2);
     }
-    expect(skinCols(HEAD_Q34[HEAD_Q34.length - 1] ?? '')).toHaveLength(1);
+    const chin = skinCols(HEAD_Q34[HEAD_Q34.length - 1] ?? '');
+    expect(chin.length).toBeGreaterThanOrEqual(1);
+    expect(chin.length).toBeLessThanOrEqual(2);
+  });
+
+  it('no cheekbone bump (art round 2 F2): from the brow down, nothing but the nose sits forward of the forehead column', () => {
+    const browAt = q34.face.brows[q34.face.expressions.neutral?.brows ?? '']?.at[1] ?? 0;
+    const browRow = FACE_AT_Q34[1] + browAt;
+    const forehead = Math.max(contour(browRow), contour(browRow + 1));
+    for (let y = browRow; y < HEAD_Q34.length; y++)
+      expect(contour(y), `row ${String(y)} skin past the forehead column ${String(forehead)}`).toBeLessThanOrEqual(
+        forehead,
+      );
+    // Face parts (brows, eyes, mouth) also stay inside it; the brow end 1 px inside.
+    const neutral = q34.face.expressions.neutral;
+    const parts = [
+      q34.face.brows[neutral?.brows ?? ''],
+      q34.face.eyes[neutral?.eyes ?? ''],
+      q34.face.mouths[neutral?.mouth ?? ''],
+    ];
+    for (const part of parts) {
+      part?.mask.forEach((row, r) =>
+        row.split('').forEach((c, x) => {
+          if (c !== '.')
+            expect(FACE_AT_Q34[0] + (part.at[0] ?? 0) + x, `face px row ${String(r)}`).toBeLessThan(forehead);
+        }),
+      );
+    }
   });
   it('keeps the q34 face skin no wider than the front face skin on every row the front has', () => {
     for (let y = 0; y < HEAD.length; y++)

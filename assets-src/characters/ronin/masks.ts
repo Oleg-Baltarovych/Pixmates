@@ -44,9 +44,10 @@ export const BAND = 4;
 
 /**
  * q34 head (facing screen-right), same 16 × 16 placement: the tuft 1 px toward the back, short swept-back hair cut
- * above and behind the ear (the ear at cols 5–6 and the temple show, no bob over them), the facing contour tapering
- * ≤ 1 px per row from the lash row to a 1-px chin point, a jaw corner at col 7–8 with a 1-px skin-1 under-jaw shade
- * (`z`, never ink: no stubble read).
+ * above and behind the ear (the ear at cols 5–6 and the temple show, no bob over them). Facing contour (art round 2 F2): forehead column 14, the
+ * eye row and the 2 rows under it pulled back to 13 (no cheekbone bump), the nose px the only one forward (col 14,
+ * row 11), then 13, 12, 11, 9 to a flat 2-px chin; a skin-0 jaw-corner px 2 rows above the chin (never ink: no
+ * stubble read).
  */
 export const HEAD_Q34: Mask = [
   '......yh........',
@@ -54,17 +55,17 @@ export const HEAD_Q34: Mask = [
   '...JjjhhjjJJ....',
   '.JjhhHyyHhhhjJ..',
   'JjhhHhhhhhhhhhJ.',
-  '.JjhhhjeEEehhJ..',
-  'JjhhhhjeEEEEEe..',
+  '.JjhhhjeEEjEehJ.',
+  'JjhhhhjeEEEEEEe.',
   '.JjhhhjeEEEEEEe.',
-  '..JjhhjeEEEEEEEe',
-  '...Jjszeeeeeeeee',
-  '...Jjszeeeeeeeee',
-  '....J.zeeeeeeeee',
-  '.......zeeeeeeee',
-  '........zseeees.',
-  '.........zseeS..',
-  '............S...',
+  '..JjhhjeEEEEEe..',
+  '...Jjszeeeeeee..',
+  '...Jjszeeeeeee..',
+  '....J.zeeeeeeee.',
+  '.......zeeeees..',
+  '.......Zseeee...',
+  '........zseS....',
+  '........sS......',
 ];
 
 /**
