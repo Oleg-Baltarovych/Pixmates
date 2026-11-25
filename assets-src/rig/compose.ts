@@ -642,6 +642,35 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
         const arm = side === 'L' ? p.parts.armL : p.parts.armR;
         const el = elbowOf(j, side, arm, view, layout);
         const seamY = Math.round(sh[1]) + 1;
+        // Square shoulder: rows above the seam extend to the seam row's outer edge (1-px chamfer on the top row).
+        const out = side === 'L' ? -1 : 1;
+        const outerAt = (y: number): number | undefined => {
+          let best: number | undefined;
+          for (let x = 0; x < W; x++) if (isSleeve(y * W + x) && (best === undefined || (x - best) * out > 0)) best = x;
+          return best;
+        };
+        let top = seamY;
+        while (top > 0 && outerAt(top - 1) !== undefined) top--;
+        let edge: number | undefined;
+        for (let y = top; y <= seamY; y++) {
+          const e = outerAt(y);
+          if (e !== undefined && (edge === undefined || (e - edge) * out > 0)) edge = e;
+        }
+        if (edge !== undefined) {
+          for (let y = top; y <= seamY; y++) {
+            const from = outerAt(y);
+            if (from === undefined) continue;
+            const src = buf.get(from, y);
+            const to = y === top ? edge - out : edge;
+            for (let x = from + out; (to - x) * out >= 0; x += out) {
+              const i = y * W + x;
+              if ((buf.ramp[i] ?? -1) >= 0 && buf.partId[i] !== PART_ID.cloak) continue;
+              if (src.ramp === null) continue;
+              buf.set(x, y, { ...src, ramp: src.ramp });
+              locked.set(i, [sRamp, tm.shade]);
+            }
+          }
+        }
         for (let x = Math.round(sh[0]) - 3; x <= Math.round(sh[0]) + 3; x++) paint(x, seamY, tm.lineShade);
         const dir = side === 'L' ? 1 : -1;
         for (const dy of [0, 2])
