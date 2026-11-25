@@ -44,6 +44,8 @@ const BOB = [1, 1, 0, 0, 1, 1, 0, 0] as const;
 export const ADULT_HIP_SWAY = [0, 1, 1, 0, 0, -1, -1, 0] as const;
 const HAIR = [0, 0, -1, 0, 0, 0, -1, 0] as const;
 const HEM = [0, 0, -1, 0, 0, 0, -1, 0] as const;
+/** q34 far-hand nudge per walk frame (back-swing frames 3–5; rig-contrast far-hand rule, art round 2 F6). */
+const FAR_HAND_PEEK: Readonly<Record<number, readonly [number, number]>> = { 3: [5, 0], 4: [5, 0], 5: [5, 0] };
 
 function walkFrames(build: BodyBuild): PoseFrame[] {
   const q = LAYOUT_ADULT[build].restQ34;
@@ -61,6 +63,8 @@ function walkFrames(build: BodyBuild): PoseFrame[] {
       root: o(0, bob),
       joints: {
         ...(s !== 0 ? { hip: o(s, 0), chest: o(-s, 0) } : {}),
+        // Far hand on the back-swing frames: nudged forward past the hakama edge so ≥ 2 × 2 px + the cuff show.
+        ...(FAR_HAND_PEEK[i] ? { handR: o(FAR_HAND_PEEK[i][0], FAR_HAND_PEEK[i][1]) } : {}),
         head: o(0, at(BOB, i - 1) - bob),
         footL: o(at(ADULT_STRIDE, i) - rest.L[0], at(LIFT, i) - rest.L[1]),
         footR: o(at(ADULT_STRIDE, i + 4) - rest.R[0], at(LIFT, i + 4) - rest.R[1]),

@@ -134,11 +134,8 @@ describe('pixmates.ronin pack (adult layout)', () => {
           problems.push(`${a.name}/${String(f)}: ${p}`);
       });
     }
-    // Known shared adult-pose findings (MA-45 pose tables; the adult dummies show the same list): the q34 far hand on
-    // the walk passing frames and the worried `neck` hand end with 0 visible px. Follow-up for the rig, not ronin
-    // art; any other problem (or a change to this list) fails here.
-    const known = [...[3, 4, 5].map((f) => `walk/${String(f)}: arm R end 0 px`)];
-    expect(problems.filter((p) => !known.includes(p))).toEqual([]);
+    // No known exceptions left (the worried `neck` hand and the walk far hand were fixed in the adult pose tables).
+    expect(problems).toEqual([]);
   });
 });
 
