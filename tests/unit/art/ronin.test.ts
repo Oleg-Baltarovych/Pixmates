@@ -386,7 +386,7 @@ describe('art gate (ronin.md): q34 contour (RIG.md owner rules)', () => {
   });
 
   it('no cheekbone bump (art round 2 F2): from the brow down, nothing but the nose sits forward of the forehead column', () => {
-    const browAt = q34.face.brows[q34.face.expressions.neutral?.brows ?? '']?.at[1] ?? 0;
+    const browAt = q34.face.brows?.[q34.face.expressions.neutral?.brows ?? '']?.at[1] ?? 0;
     const browRow = FACE_AT_Q34[1] + browAt;
     const forehead = Math.max(contour(browRow), contour(browRow + 1));
     for (let y = browRow; y < HEAD_Q34.length; y++)
@@ -396,17 +396,17 @@ describe('art gate (ronin.md): q34 contour (RIG.md owner rules)', () => {
     // Face parts (brows, eyes, mouth) also stay inside it; the brow end 1 px inside.
     const neutral = q34.face.expressions.neutral;
     const parts = [
-      q34.face.brows[neutral?.brows ?? ''],
+      q34.face.brows?.[neutral?.brows ?? ''],
       q34.face.eyes[neutral?.eyes ?? ''],
       q34.face.mouths[neutral?.mouth ?? ''],
     ];
     for (const part of parts) {
-      part?.mask.forEach((row, r) =>
+      if (!part) continue;
+      part.mask.forEach((row, r) => {
         row.split('').forEach((c, x) => {
-          if (c !== '.')
-            expect(FACE_AT_Q34[0] + (part.at[0] ?? 0) + x, `face px row ${String(r)}`).toBeLessThan(forehead);
-        }),
-      );
+          if (c !== '.') expect(FACE_AT_Q34[0] + part.at[0] + x, `face px row ${String(r)}`).toBeLessThan(forehead);
+        });
+      });
     }
   });
   it('keeps the q34 face skin no wider than the front face skin on every row the front has', () => {
