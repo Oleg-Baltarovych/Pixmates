@@ -194,6 +194,9 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
         masks: body.masks,
         apron: body.apron,
         sashKnot: body.sash?.knot,
+        torsoMask: body.torsoMask,
+        tassets: body.tassets,
+        sode: body.sode,
         prop: body.prop,
         hairFar: undefined,
         hairBack: body.masks.hairBack,
@@ -207,6 +210,9 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
       masks: q34.masks,
       apron: q34.apron,
       sashKnot: q34.sashKnot,
+      torsoMask: q34.torsoMask,
+      tassets: q34.tassets,
+      sode: q34.sode,
       prop: q34.prop,
       hairFar: q34.masks.hairFar,
       hairBack: q34.masks.hairBack,
@@ -442,6 +448,38 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
         allow: NOT_ARM,
       });
     }
+    // Armour (MA-65): doMask over the bodice, kusazuri over the hem and legs (never over an arm), sode over the upper arms.
+    const doMask = bodyParts.torsoMask;
+    if (doMask) {
+      const [x, y] = [Math.round(j.chest[0] + doMask.at[0]), Math.round(j.chest[1] + doMask.at[1])];
+      stampMask(buf, body, doMask.mask, x, y, DEPTH_TRIM_MASK, MAT.cloth, locked, {
+        partId: PART_ID.torso,
+        allow: NOT_ARM,
+      });
+    }
+    const ts = bodyParts.tassets;
+    if (ts) {
+      const seated = (p.parts.legs === 'sit' || p.parts.legs === 'curl') && ts.seated ? ts.seated : ts.front;
+      const [x, y] = [Math.round(j.hip[0] + seated.at[0]), Math.round(j.hip[1] + seated.at[1])];
+      stampMask(buf, body, seated.mask, x, y, DEPTH_TIES, MAT.cloth, locked, { partId: PART_ID.hem, allow: NOT_ARM });
+    }
+    const sd = bodyParts.sode;
+    if (sd) {
+      const w = maskSize(sd.mask).w;
+      const sides: [readonly string[], number, number, number][] = [
+        [sd.mask, Math.round(j.shoulderL[0] + sd.at[0]), Math.round(j.shoulderL[1] + sd.at[1]), ARM_IDS_L.upper],
+      ];
+      if (!q) {
+        const mirrored = sd.mask.map((r) => r.padEnd(w, '.').split('').reverse().join(''));
+        sides.push([
+          mirrored,
+          Math.round(j.shoulderR[0] - sd.at[0] - w),
+          Math.round(j.shoulderR[1] + sd.at[1]),
+          ARM_IDS_R.upper,
+        ]);
+      }
+      for (const [m, x, y, id] of sides) stampMask(buf, body, m, x, y, DEPTH_TIES, MAT.cloth, locked, { partId: id });
+    }
     // Authored back hair (`masks.hairBack`, replaces the procedural mass) and the far lock: behind the head, neck and
     // torso, over the cloak; both keep their authored tones through rim light.
     const hairFarPx = [headParts.hairBack, headParts.hairFar].flatMap((m) =>
@@ -580,8 +618,21 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
       skirtSplitQ34(buf, top, j.footL, j.footR, split, clothRamp, locked);
     }
     // `Body.kote`: the cuff px (apron material) of one arm end become a lacquer forearm guard with brass studs (final, locked).
-    if (body.kote) {
-      const k = body.kote;
+    const kotes = body.kote
+      ? [
+          body.kote,
+          ...(body.kote.both
+            ? [
+                {
+                  ...body.kote,
+                  side: body.kote.side === 'L' ? ('R' as const) : ('L' as const),
+                  stud: { ...body.kote.stud, count: 0 },
+                },
+              ]
+            : []),
+        ]
+      : [];
+    for (const k of kotes) {
       const ids = k.side === 'L' ? ARM_IDS_L : ARM_IDS_R;
       const kRamp = ctx.palette.rampNames.indexOf(k.ramp);
       const sRamp = ctx.palette.rampNames.indexOf(k.stud.ramp);

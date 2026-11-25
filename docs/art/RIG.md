@@ -33,6 +33,11 @@ New opt-ins (D-20, unset = byte-identical):
 - **`Body.mask` {front, q34, down, downQ34?, downExpressions}** (MA-63) — mouth mask stamped after face parts, part id
   16 (`mask`, label none); hides every mouth px; `down` mask at the neck joint on `downExpressions` frames; validator:
   mask px inside the head contour, ≥ 1 skin row under the iris, `talk_a/b/c` differ outside the mouth rows.
+- **Armour as built (MA-65):** authored masks, not procedural plates — `Body.torsoMask` (dō, from the chest joint,
+  part torso, never over an arm), `Body.tassets` {front, seated?} (kusazuri from the hip joint over hem + legs, part hem,
+  never over an arm; `seated` on sit/curl frames; no hip-lag dangle yet), `Body.sode` (square plate from the near
+  shoulder joint, mirrored onto the far shoulder in front, stamped as the upper-arm sleeve part), per-view copies in
+  `BodyView` (q34 sode = near only), and `kote.both` (the other forearm too, no studs). Tests `rig-armour.test.ts`.
 - **Armour** (MA-65, ronin; knight/coder reuse): `Body.puff` (shoulder plates; knight R3) with `square` shape and lace
   rows; `Body.torsoMask` (= coder R-C3 `Body.front`: authored torso overlay on the chest/hip joints, part 7, for dō
   plates + lacing); `Body.tassets` (authored hip mask over the hem per view + seated variant, dangle ±1 px on hip lag).

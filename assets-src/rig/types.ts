@@ -340,6 +340,10 @@ export interface BodyView {
   readonly farLegShade?: number;
   /** Prop in this view (from the hip joint); required when the body has `Body.prop`. */
   readonly prop?: Prop;
+  /** Armour in this view (MA-65; see `Body.torsoMask` / `tassets` / `sode`). q34 sode: near shoulder only. */
+  readonly torsoMask?: PlacedMask;
+  readonly tassets?: { readonly front: PlacedMask; readonly seated?: PlacedMask };
+  readonly sode?: PlacedMask;
   /** Sash knot in this view (from the hip joint); default none. */
   readonly sashKnot?: PlacedMask;
   /** Scarf ends in this view (required with `neckAcc: 'scarf'`). */
@@ -416,6 +420,8 @@ export interface Body {
    */
   readonly kote?: {
     readonly side: 'L' | 'R';
+    /** MA-65: the other forearm gets the same guard too (no studs). */
+    readonly both?: true;
     /** Guard height in rows (default 1 = the cuff only); extra rows climb the forearm, lighter and 1 px narrower. */
     readonly rows?: number;
     readonly ramp: RampName;
@@ -515,6 +521,16 @@ export interface Body {
   readonly prop?: Prop;
   /** Mouth mask slot (MA-63); unset = no mask. */
   readonly mask?: MouthMask;
+  /**
+   * Armour opt-ins (MA-65, RIG.md «D-20»; unset = byte-identical). `torsoMask`: an authored torso overlay (dō plates)
+   * from the chest joint, part torso, never over an arm. `tassets`: authored hip plates (kusazuri) from the hip joint
+   * over the hem and legs, part hem, never over an arm; `seated` on `sit` / `curl` leg frames. `sode`: square
+   * shoulder plates from the near (L) shoulder joint, mirrored onto the far shoulder in front view, stamped over the
+   * upper arm as its sleeve part.
+   */
+  readonly torsoMask?: PlacedMask;
+  readonly tassets?: { readonly front: PlacedMask; readonly seated?: PlacedMask };
+  readonly sode?: PlacedMask;
   /**
    * Front only: a 1-px centre line `rows` high from the skirt hem in cloth `shade` (0..5, whole), e.g. a hakama split;
    * `notch` cuts a 2-px gap that many rows up from the hem between the legs (default 0).
