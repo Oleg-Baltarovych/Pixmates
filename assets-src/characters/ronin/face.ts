@@ -41,9 +41,22 @@ export const RONIN_FACE = sternFace({
     /** Worried brows 1 row higher (over the raised eye). */
     up: part(['......h......h......', '...hhh........hhh...'], 0, 1),
   },
+  cheeks: {
+    /** The lit cheek row (skin 4) between the eyes and the menpō: the mask reads as a separate shell on the face. */
+    lit: part(['..eeeeeeeeeeeeeeee..'], 0, 9),
+  },
   expressions: {
-    talk_b: { eyes: 'side', brows: 'set', mouth: 'talk_b', cheeks: 'none' },
-    talk_c: { eyes: 'lid_up', brows: 'set_up', mouth: 'talk_c', cheeks: 'none' },
+    neutral: { eyes: 'stern', brows: 'set', mouth: 'set', cheeks: 'lit' },
+    blink: { eyes: 'closed', brows: 'set', mouth: 'set', cheeks: 'lit' },
+    half: { eyes: 'half', brows: 'set', mouth: 'talk_a', cheeks: 'lit' },
+    talk_a: { eyes: 'stern', brows: 'set', mouth: 'talk_a', cheeks: 'lit' },
+    think: { eyes: 'stern', brows: 'set', mouth: 'grim', cheeks: 'lit' },
+    wince: { eyes: 'wince', brows: 'set', mouth: 'gritted', cheeks: 'lit' },
+    glance: { eyes: 'side', brows: 'set', mouth: 'set', cheeks: 'lit' },
+    worried: { eyes: 'worried', brows: 'up', mouth: 'worried', cheeks: 'lit' },
+    startle: { eyes: 'startle', brows: 'flat', mouth: 'small_o', cheeks: 'lit' },
+    talk_b: { eyes: 'side', brows: 'set', mouth: 'talk_b', cheeks: 'lit' },
+    talk_c: { eyes: 'lid_up', brows: 'set_up', mouth: 'talk_c', cheeks: 'lit' },
     petted: { eyes: 'closed', brows: 'flat', mouth: 'happy', cheeks: 'blush' },
     happy: { eyes: 'happy', brows: 'flat', mouth: 'happy', cheeks: 'blush' },
   },
@@ -55,9 +68,9 @@ export const RONIN_FACE_Q34: ViewFaceLibrary = {
   eyes: { stern: kitEye('stern'), closed: kitEye('closed') },
   brows: { set: part(['...hhh........hhh...', '......h......h......'], 0, 2) },
   mouths: { set: part(['..........XXX.......'], 0, 11) },
-  cheeks: { none: part([], 0, 9) },
+  cheeks: { lit: part(['..eeeeeeeeeeeeeee...'], 0, 9) },
   expressions: {
-    neutral: { eyes: 'stern', brows: 'set', mouth: 'set', cheeks: 'none' },
-    blink: { eyes: 'closed', brows: 'set', mouth: 'set', cheeks: 'none' },
+    neutral: { eyes: 'stern', brows: 'set', mouth: 'set', cheeks: 'lit' },
+    blink: { eyes: 'closed', brows: 'set', mouth: 'set', cheeks: 'lit' },
   },
 };

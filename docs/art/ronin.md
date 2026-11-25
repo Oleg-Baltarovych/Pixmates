@@ -37,6 +37,10 @@
   and knight-rose gates are one perceptual gate on the base colours: `lacquer_red` step 3 vs each ramp's base step
   (mask tone 2 on a T6 outfit = index 2), OKLab ΔE ≥ 0.06. The art-director vermilion ramp passes unchanged and is
   applied (base #b02a14, h ≈ 32, L ≈ 0.50); ronin maps horn tones to steps 0 / 2 / 3 / 4 / 5 / 6 (tie and lace #8a1f12).
+- **Owner head pass + sign-off (2026-11-25):** the round bowl crown is replaced by spiky clumps angled up and out
+  (`SPIKY_CROWN`, rows 2–8 of both head masks: 1–2 px tips past the old outline, angel ring kept, temples squared —
+  the side walls rise straight to row 5); a lit skin row (cheeks `lit`, skin 4) sits between the eyes and the menpō
+  on every mask-up expression, front and q34. **ronin signed off.**
 - Side locks: straight down 1 row further with a square corner (front), breaking the round bowl taper.
 
 ## 0. Base

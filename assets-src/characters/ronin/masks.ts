@@ -13,7 +13,25 @@ const BLANK = '.'.repeat(30);
 const LOCK_ROW = '....j' + 'S'.repeat(18) + 'ss' + 'j....';
 
 /** 30 × 26, top-left at head joint − (15, 14). Face anchor at mask (5, 12); lash row 15. */
-export const HEAD: Mask = [
+
+/**
+ * Owner pass (MA-65 sign-off): the round bowl crown becomes spiky clumps angled up and out — 1–2 px tips past the old
+ * outline (rows 2–3 on top, rows 5–6 at the sides), the angel ring kept on rows 7–8, the temples squared (the side
+ * walls go straight up from row 11 to row 5). Rows 2–8 replace the round dome; the tuft (rows 2–4, cols 14–15) is
+ * stamped over it.
+ */
+const SPIKY_CROWN: Mask = [
+  '........y..........h..........',
+  '.......jyH..H.....hhj.........',
+  '.......jyHHHHHHHHHHHhhj.......',
+  '...j..jyHHHHHHHHHHHHhhhj..j...',
+  '...jHjyHHHHHHHHHHHHHhhhhjhj...',
+  '....jHHyHyYYyHHHHHHHhhhhhj....',
+  '...jjyYyHHHHHHHhhhyyhhhhhjj...',
+];
+const spiky = (head: Mask): Mask => [...head.slice(0, 2), ...SPIKY_CROWN, ...head.slice(9)];
+
+const HEAD_ROUND: Mask = [
   BLANK,
   BLANK,
   BLANK,
@@ -54,6 +72,7 @@ export const HEAD: Mask = [
   '.......' + 'S'.repeat(14) + 'ss' + '.......',
   '.'.repeat(10) + 's'.repeat(10) + '.'.repeat(10),
 ];
+export const HEAD: Mask = spiky(HEAD_ROUND);
 /** Last head row the forehead hair-shadow band (`withBand`) may use. */
 export const BAND = 12;
 
@@ -109,7 +128,7 @@ export const SHOE_Q34: Mask = ['.Ss..', 'sSSpS', 'gttTR'];
 const Q_SKIN = 'S'.repeat(17) + 's' + '....';
 
 /** 30 × 27, top-left at head joint − (15, 14). q34 face anchor at mask (7, 12). */
-export const HEAD_Q34: Mask = [
+const HEAD_Q34_ROUND: Mask = [
   BLANK,
   BLANK,
   BLANK,
@@ -142,6 +161,7 @@ export const HEAD_Q34: Mask = [
   '.'.repeat(13) + 's'.repeat(10) + '.'.repeat(7),
   '.'.repeat(21) + 's' + '.'.repeat(8),
 ];
+export const HEAD_Q34: Mask = spiky(HEAD_Q34_ROUND);
 
 /**
  * q34 back hair (`BodyView.masks.hairBack`, from the head joint + (−12, −4) = head-mask col 3, row 10): the skull back
