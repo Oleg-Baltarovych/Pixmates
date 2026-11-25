@@ -299,7 +299,7 @@ function cloakShades(body: Body): { name: string; s: number | undefined; ramp?: 
  * and ≤ `maxOut` px past the rest outline (hem / bodice half above the hem, the leg's outer edge below it, + 1 outline).
  */
 export const ADULT_PROP = {
-  q34: { minLen: 33, maxLen: 37, topRow: 36 },
+  q34: { minLen: 33, maxLen: 37, topRow: 36, overTopRow: 32 },
   front: {
     topRow: 36,
     tipRow: 56,
@@ -437,8 +437,10 @@ function adultPropProblems(body: Body): string[] {
     if (len < rule.minLen || len > rule.maxLen) {
       out.push(`${body.id}: q34 prop spans ${len.toFixed(1)} px (adult ${String(rule.minLen)}…${String(rule.maxLen)})`);
     }
+    // `Prop.over` (hilt over the near arm, worn at the obi): the tsuba may sit on the obi's lower edge.
+    const topRow = prop.over ? rule.overTopRow : rule.topRow;
     const top = layout.rest.hip[1] + prop.at[1];
-    if (top < rule.topRow) out.push(`${body.id}: q34 prop top row ${String(top)} above ${String(rule.topRow)}`);
+    if (top < topRow) out.push(`${body.id}: q34 prop top row ${String(top)} above ${String(topRow)}`);
   }
   return out;
 }

@@ -146,9 +146,8 @@ export function swordQ34(length = 35, angleDeg = 25, hilt = 8): Mask {
       put(x, y, 'w');
       put(x, y + 1, k % 2 === 0 ? 'p' : 'X');
     } else if (along < hilt + 3) {
-      put(x, y, 'b');
-      put(x, y + 1, 'b');
-      put(x, y + 2, 'm');
+      put(x, y, 'x');
+      put(x, y + 1, 'X');
     } else if (x === 0) {
       put(x, y, 'X');
       put(x, y + 1, 'X');
@@ -162,8 +161,9 @@ export function swordQ34(length = 35, angleDeg = 25, hilt = 8): Mask {
   const tk = Math.ceil(hilt * Math.cos(rad));
   const tx = w - 1 - tk - 1;
   const ty = Math.round(tk * Math.tan(rad)) - 1;
-  for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) put(tx + dx, ty + dy, 'b');
-  put(tx, ty, 'L');
+  // Tsuba 3 × 3: 1 lit px top-left, mid brass, a dark-brass outline on the right and bottom.
+  const TSUBA = ['Lbm', 'bbm', 'mmm'];
+  for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) put(tx + dx, ty + dy, TSUBA[dy]?.charAt(dx) ?? 'b');
   return rows.map((r) => r.join(''));
 }
 export const SWORD_Q34: Mask = swordQ34();

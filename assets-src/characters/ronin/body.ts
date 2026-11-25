@@ -85,7 +85,7 @@ const RONIN_Q34: BodyView = {
   },
   prop: {
     mask: SWORD_Q34,
-    at: [-23, -4],
+    at: [-23, -7],
     hilt: { mask: HILT_Q34, at: [HILT_Q34_COL, 0] },
     over: 'hilt',
     dangle: { mask: CHARM_Q34, at: [19, 8], overHem: true },
