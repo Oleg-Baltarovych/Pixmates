@@ -218,6 +218,8 @@ const STERN_EYES: readonly ExpressionId[] = STERN_SET.filter((id) => id !== 'bli
 /** Emotions that must break both the brow angle and the lid. */
 const STERN_BREAK: readonly ExpressionId[] = ['happy', 'worried', 'startle', 'petted', 'sleep'];
 const STERN_IRIS_ROWS = [3, 4] as const;
+/** Expressions a stern face may blush on (art-director MA-64 round 1; ART-BIBLE §11.9). */
+const STERN_BLUSH: readonly ExpressionId[] = ['happy', 'petted'];
 
 const slotOf = (ch: string): Slot | undefined => LEGEND[ch]?.[0];
 const maskW = (mask: Mask): number => Math.max(0, ...mask.map((r) => r.length));
@@ -316,9 +318,9 @@ function sternProblems(lib: ViewFaceLibrary, name: string, required: readonly Ex
       if (setBrows) problems.push(`${at}: brows must break the stern angle (flat, up or none)`);
       if (eyeHalfs.some(isSternEye)) problems.push(`${at}: the stern lid must break (closed, lifted or off the iris)`);
     }
-    if (id !== 'petted') {
+    if (!STERN_BLUSH.includes(id)) {
       // Cheeks only: an open mouth may use the blush ramp for the tongue.
-      if (blushPx(lib.cheeks[e.cheeks])) problems.push(`${at}: stern faces show blush only on petted`);
+      if (blushPx(lib.cheeks[e.cheeks])) problems.push(`${at}: stern faces show blush only on happy and petted`);
     }
   }
   return problems;

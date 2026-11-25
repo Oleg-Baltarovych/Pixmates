@@ -80,10 +80,17 @@ describe('validateFace stern rules', () => {
       expect(has(sternEyes, new RegExp(`${id}.*lid`))).toBe(true);
     },
   );
-  it('allows blush only on petted', () => {
+  it('allows blush only on happy and petted (never neutral, talk, think, wince)', () => {
+    const blushHappy = { ...STERN_FACE.expressions.happy, cheeks: 'blush' };
+    expect(check({ ...STERN_FACE, expressions: { ...STERN_FACE.expressions, happy: blushHappy } })).toEqual([]);
+    for (const id of ['neutral', 'think', 'wince'] as const) {
+      const e = { ...STERN_FACE.expressions[id], cheeks: 'blush' };
+      const p = check({ ...STERN_FACE, expressions: { ...STERN_FACE.expressions, [id]: e } });
+      expect(has(p, new RegExp(`${id}.*blush`))).toBe(true);
+    }
     const blushTalk = { ...STERN_FACE.expressions.talk_b, cheeks: 'blush' };
-    const p = check({ ...STERN_FACE, expressions: { ...STERN_FACE.expressions, talk_b: blushTalk } });
-    expect(has(p, /talk_b.*blush/)).toBe(true);
+    const pt = check({ ...STERN_FACE, expressions: { ...STERN_FACE.expressions, talk_b: blushTalk } });
+    expect(has(pt, /talk_b.*blush/)).toBe(true);
     expect(STERN_FACE.expressions.petted.cheeks).toBe('blush');
   });
 });

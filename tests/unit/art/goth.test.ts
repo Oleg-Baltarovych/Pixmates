@@ -55,7 +55,12 @@ const OPEN_EYES = GOTH_FACE.eyes.open;
 if (!OPEN_EYES) throw new Error('goth has no open eyes');
 /** Head-mask row of the open-eye lash (the eye part's first ink row) and of the eyes' last row. */
 const LASH_ROW = FACE_AT[1] + OPEN_EYES.at[1] + OPEN_EYES.mask.findIndex((row) => row.includes('X'));
-const EYE_BOTTOM_ROW = FACE_AT[1] + OPEN_EYES.at[1] + OPEN_EYES.mask.length - 1;
+// The lowest iris row (MA-64 round 1 adds a 1-px skin-shadow lower lid under it; the garnet gap is measured from the
+// eye itself, as before the lid existed).
+const EYE_BOTTOM_ROW =
+  FACE_AT[1] +
+  OPEN_EYES.at[1] +
+  OPEN_EYES.mask.findLastIndex((row) => row.split('').some((ch) => LEGEND[ch]?.[0] === 'eye'));
 const hue = (rgb: number): { c: number; h: number } => {
   const [, a, b] = toOklab(rgb);
   return { c: Math.hypot(a, b), h: ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360 };
@@ -361,18 +366,14 @@ describe('D-20 stern pass + richness (goth.md «D-20», MA-64)', () => {
     expect(GOTH_FACE.style).toBe('stern');
     expect(GOTH.views?.q34?.face.style).toBe('stern');
   });
-  it('shows the set brows, no blush and the thick lid in neutral; petted keeps the only blush', () => {
+  it('shows the set brows and no blush in neutral; blush only on happy and petted', () => {
     const e = GOTH_FACE.expressions;
     expect(e.neutral.brows).toBe('set');
     expect(e.neutral.cheeks).toBe('none');
-    expect(EXPRESSIONS.filter((id) => e[id].cheeks !== 'none')).toEqual(['petted']);
+    expect(EXPRESSIONS.filter((id) => e[id].cheeks !== 'none')).toEqual(['happy', 'petted']);
   });
-  it('wears a 3-row corset belt with a cream buckle and a lacing rung in both views', () => {
-    expect(GOTH.sash?.rows).toBe(3);
-    for (const knot of [GOTH.sash?.knot.mask, GOTH.views?.q34?.sashKnot?.mask]) {
-      expect(knot).toHaveLength(3);
-      expect(knot?.join('')).toContain('pP');
-      expect(knot?.join('')).toContain('wWw');
-    }
+  it('has no waist belt (art-director round 1: the cincher does not fit the chibi waist, deleted)', () => {
+    expect(GOTH.sash).toBeUndefined();
+    expect(GOTH.views?.q34?.sashKnot).toBeUndefined();
   });
 });

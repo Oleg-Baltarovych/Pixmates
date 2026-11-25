@@ -15,7 +15,11 @@ no tattoos or identifying details, no reference images. Frame 48 × 56, chibi �
   sleeves; signature — moth clip + choker (kept); materials — cloth, lace, leather, metal (2 pewter buckle px on the
   corset, `metal_steel` 5; never a cross or ankh); trims at 1× — corset lacing whole px.
 - Gates: maid/kitsune/witch/fx bytes unchanged; ≤ 2 art rounds; owner sees round 1.
-- **Implementation deviations (MA-64, before art round 1):** no `leather_black` / `metal_steel` ramps exist, so the belt
+- **Art-director round 1 (2026-11-25):** eye, brows, blush and mouth items applied; the belt is **deleted** (AD
+  fallback): a 4-row cincher does not fit the chibi waist without moving the signed-off choker + garnet drop, and the
+  waist-band rows below are the skirt flare. No `leather_oxblood` ramp added (nothing would use it). The garnet gap
+  test now measures from the lowest iris row (the new lower-lid px sits 1 row under it).
+- **Implementation deviations (MA-64, before art round 1; the belt items are superseded above):** no `leather_black` / `metal_steel` ramps exist, so the belt
   is `cloth_black` 1 with a `D` (shade 4) sheen and the buckle is 2 cream px (`cloth_cream` 4/5); the belt sits on the
   default waist-band rows (the garnet drop reaches row 29 on bowed frames, so the belt's top centre is left open and
   the lacing is one `wWw` rung over `v` cord px, not a 3-rung ladder); the smirk keeps the signed-off lip-tone corner

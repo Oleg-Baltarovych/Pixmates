@@ -248,12 +248,13 @@ letters, so each body keeps its eye ramp); a body may override a part but the va
   merges into a blob at 1×).
 - **Mouth options:** set flat `XXX` (3 px); short `XX` + 1-px skin-2 corner pulled down on one side (grim); 1-px
   corner up on one side (smirk — goth). Never a symmetric smile in neutral, never a `v`/cat mouth.
-- **Blush:** none outside `petted` (and the FX blush mark).
+- **Blush:** only on `happy` and `petted` (and the FX blush mark); never on neutral, talk, think or wince (art-director
+  MA-64 round 1; validated).
 - **Readable at M (×4):** the lid line and the brow are the darkest face px (ΔL ≥ 0.25 vs skin); the brow angle is a
   whole-px step, never AA'd away; checked on real-size previews at S and M on light + dark wallpapers.
 - **Not angry all the time — emotions break it** (validated): only `neutral`, `blink`, `half`, `talk_*`, `think`,
   `wince` keep the stern lid + inward brow; `happy` (lids lift or closed arcs, brows flat/up), `worried` (brows
-  inner-up — the reverse angle), `startle` (lid fully up, sclera both sides, brows up), `petted` (closed, blush),
+  inner-up — the reverse angle), `startle` (lid fully up, sclera both sides, brows up), `petted` (lid lifted or closed, blush),
   `sleep` (closed) must change the brow angle and the lid. Anger is never the baseline: 2-step brows + the vein FX
   are an anger-only reaction (M1+).
 - Stance: confident = chest 1 px up / head level in idles via `tweaks` only; no forked poses.

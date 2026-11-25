@@ -33,9 +33,9 @@ export const HEAD: Mask = [
   // Clumps: A cols 5–7, B 9–14, C 16–20, D tip (col 23, 5 rows); V gaps of forehead skin between them.
   '...Hj' + 'HHhSHHHHHhSHHHhhSShS' + 'jh...',
   '...Hj' + 'ShSSSHHHhSSSHHhSSSSS' + 'jh...',
-  '...Hj' + 'SSSSSSHhSSSSShSSSSSS' + 'jh...',
+  '...Hj' + 'SSSSSSHhSSSSSSSSSSSS' + 'jh...',
   // B (centre-left, longest) ends in a 1-px point; the next row is the skin row above the lash.
-  '...Hj' + 'SSSSSShSSSSSSSSSSSSS' + 'jh...',
+  '...Hj' + 'SSSSSSSSSSSSSSSSSSSS' + 'jh...',
   FACE_ROW,
   FACE_ROW,
   FACE_ROW,

@@ -29,7 +29,7 @@ re-validation (deleted in MA-69 if unused): `Prop.over`, `Body.kote`, `Body.tamo
 New opt-ins (D-20, unset = byte-identical):
 - **`Body.face.style: 'stern'`** (MA-62) — shared kit `rig/faces/stern.ts`; `validateFace` stern rules (ART-BIBLE
   §11.9): lid covers the iris top row on stern expressions, ≥ 3 iris rows visible, brows present with inner end 1 row
-  lower on the stern set and not on happy / worried / startle / petted / sleep, no blush px outside `petted`.
+  lower on the stern set and not on happy / worried / startle / petted / sleep, blush px only on `happy` / `petted` (MA-64 round 1).
 - **`Body.mask` {front, q34, down, downQ34?, downExpressions}** (MA-63) — mouth mask stamped after face parts, part id
   16 (`mask`, label none); hides every mouth px; `down` mask at the neck joint on `downExpressions` frames; validator:
   mask px inside the head contour, ≥ 1 skin row under the iris, `talk_a/b/c` differ outside the mouth rows.
