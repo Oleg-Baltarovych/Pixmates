@@ -52,7 +52,7 @@ import {
 import { cloakGeometry, cloakPart, cloakTones, type CloakGeometry } from './cloak.ts';
 import { darkerMask, tipToe } from './q34.ts';
 import { expressionParts } from './face.ts';
-import { BEHIND_TORSO, NOT_ARM, PART_ID, TORSO_PARTS, UNDER_HEM } from './part-ids.ts';
+import { ARM_IDS_L, ARM_IDS_R, BEHIND_TORSO, NOT_ARM, PART_ID, TORSO_PARTS, UNDER_HEM } from './part-ids.ts';
 import {
   apronPanel,
   armOverTorso,
@@ -563,6 +563,30 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
       const top = j.hip[0] + (p.parts.hem?.dx ?? 0);
       const clothRamp = ctx.palette.rampNames.indexOf(skirtRampOf(body));
       skirtSplitQ34(buf, top, j.footL, j.footR, split, clothRamp, locked);
+    }
+    // `Body.kote`: the cuff px (apron material) of one arm end become a lacquer forearm guard with brass studs (final, locked).
+    if (body.kote) {
+      const k = body.kote;
+      const endId = (k.side === 'L' ? ARM_IDS_L : ARM_IDS_R).end;
+      const kRamp = ctx.palette.rampNames.indexOf(k.ramp);
+      const sRamp = ctx.palette.rampNames.indexOf(k.stud.ramp);
+      const guard: number[] = [];
+      for (let i = 0; i < buf.width * buf.height; i++) {
+        if (buf.partId[i] === endId && buf.material[i] === MAT.apron && (buf.ramp[i] ?? -1) >= 0) guard.push(i);
+      }
+      // Studs spread evenly along the guard (row-major), never on its first px.
+      const studAt = new Set(
+        Array.from(
+          { length: k.stud.count },
+          (_, s) => guard[Math.floor(((s + 1) * guard.length) / (k.stud.count + 1))],
+        ),
+      );
+      for (const i of guard) {
+        const stud = studAt.has(i);
+        buf.ramp[i] = stud ? sRamp : kRamp;
+        buf.shade[i] = stud ? k.stud.shade : k.shade;
+        locked.set(i, [buf.ramp[i] ?? -1, buf.shade[i] ?? 0]);
+      }
     }
     // 4. Outline, AA, locked tones restored, rim.
     const map = outline(buf, ctx.rampSize, { drop: style.drop, internal: true });

@@ -409,6 +409,16 @@ export interface Body {
   /** Bell-cuff ramp and shade (0..5); default the clothAlt ramp at shade 3 (the hem lace keeps clothAlt). */
   readonly cuff?: { readonly ramp: RampName; readonly shade: number };
   /**
+   * Opt-in (MA-46): a forearm guard on one arm (rig side; front `L` = the character's right): that arm's cuff px
+   * take `ramp` / whole `shade`, `stud.count` of them spread evenly (row-major) the stud tone (e.g. 2 brass px).
+   */
+  readonly kote?: {
+    readonly side: 'L' | 'R';
+    readonly ramp: RampName;
+    readonly shade: number;
+    readonly stud: { readonly ramp: RampName; readonly shade: number; readonly count: number };
+  };
+  /**
    * Opt-in outer silhouette outline for dark ramps: outer-outline px taken from each listed ramp get its shade `lit`
    * on the lit (top-left) side and `shade` elsewhere (0..5), so a near-black figure never melts into a dark backdrop.
    */

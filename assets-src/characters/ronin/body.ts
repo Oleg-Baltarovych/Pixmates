@@ -105,6 +105,8 @@ export const RONIN: Body = {
   dressShade: 1,
   sleeve: { ramp: 'mist', shade: 4 },
   cuff: { ramp: 'cloth_ash', shade: 1 },
+  // Black-lacquer kote on the right forearm (rig side L) with 2 brass studs (never oxblood: hard rule 5).
+  kote: { side: 'L', ramp: 'ink', shade: 1, stud: { ramp: 'cloth_ochre', shade: 4, count: 2 } },
   head: { mask: HEAD, at: HEAD_AT, band: BAND },
   face: RONIN_FACE,
   masks: { shoe: SHOE, neckAcc: { mask: COLLAR, at: [-5, 1] }, hairBack: { mask: HAIR_BACK, at: [-8, -2] } },
