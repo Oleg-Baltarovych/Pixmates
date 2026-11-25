@@ -421,6 +421,8 @@ export interface Body {
    */
   readonly kote?: {
     readonly side: 'L' | 'R';
+    /** Guard height in rows (default 1 = the cuff only); extra rows climb the forearm, lighter and 1 px narrower. */
+    readonly rows?: number;
     readonly ramp: RampName;
     readonly shade: number;
     readonly stud: { readonly ramp: RampName; readonly shade: number; readonly count: number };

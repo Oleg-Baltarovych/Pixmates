@@ -571,12 +571,37 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
     // `Body.kote`: the cuff px (apron material) of one arm end become a lacquer forearm guard with brass studs (final, locked).
     if (body.kote) {
       const k = body.kote;
-      const endId = (k.side === 'L' ? ARM_IDS_L : ARM_IDS_R).end;
+      const ids = k.side === 'L' ? ARM_IDS_L : ARM_IDS_R;
       const kRamp = ctx.palette.rampNames.indexOf(k.ramp);
       const sRamp = ctx.palette.rampNames.indexOf(k.stud.ramp);
-      const guard: number[] = [];
-      for (let i = 0; i < buf.width * buf.height; i++) {
-        if (buf.partId[i] === endId && buf.material[i] === MAT.apron && (buf.ramp[i] ?? -1) >= 0) guard.push(i);
+      const W = buf.width;
+      const cuffPx: number[] = [];
+      for (let i = 0; i < W * buf.height; i++) {
+        if (buf.partId[i] === ids.end && buf.material[i] === MAT.apron && (buf.ramp[i] ?? -1) >= 0) cuffPx.push(i);
+      }
+      // `rows` > 1: the guard climbs the forearm (sleeve px) above the cuff, 1 px narrower per row (taper to the
+      // elbow); tones lit top row → mid → the cuff rows at `shade`.
+      const extra: [number, number][] = [];
+      if (cuffPx.length > 0 && (k.rows ?? 1) > 1) {
+        const top = Math.floor((cuffPx[0] ?? 0) / W);
+        const xs = cuffPx.filter((i) => Math.floor(i / W) === top).map((i) => i % W);
+        let lo = Math.min(...xs);
+        const hi = Math.max(...xs);
+        for (let r = 1; r < (k.rows ?? 1); r++) {
+          lo += r === 1 ? 0 : 1;
+          const y = top - r;
+          for (let x = lo; x <= hi; x++) {
+            const i = y * W + x;
+            if (y >= 0 && buf.partId[i] === ids.fore && (buf.ramp[i] ?? -1) >= 0) extra.push([i, r]);
+          }
+        }
+      }
+      const guard = cuffPx;
+      for (const [i, r] of extra) {
+        buf.ramp[i] = kRamp;
+        buf.shade[i] = Math.min(k.shade + r, 4);
+        buf.material[i] = MAT.apron;
+        locked.set(i, [kRamp, buf.shade[i] ?? 0]);
       }
       // Studs spread evenly along the guard (row-major), never on its first px.
       const studAt = new Set(

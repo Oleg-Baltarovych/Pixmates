@@ -166,3 +166,6 @@ export function swordQ34(length = 35, angleDeg = 25, hilt = 8): Mask {
   return rows.map((r) => r.join(''));
 }
 export const SWORD_Q34: Mask = swordQ34();
+/** q34 hilt + tsuba (the right 11 columns of `SWORD_Q34`), restamped over the near arm (`Prop.over: 'hilt'`, F6). */
+export const HILT_Q34_COL = SWORD_Q34[0] ? SWORD_Q34[0].length - 11 : 0;
+export const HILT_Q34: Mask = SWORD_Q34.map((r) => r.slice(HILT_Q34_COL)).filter((r) => /[^.]/.test(r));

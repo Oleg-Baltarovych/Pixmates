@@ -24,6 +24,8 @@ import {
   HEAD,
   HEAD_Q34,
   HILT_FRONT,
+  HILT_Q34,
+  HILT_Q34_COL,
   SHOE,
   SHOE_Q34,
   SWORD_FRONT,
@@ -81,7 +83,13 @@ const RONIN_Q34: BodyView = {
     neckAcc: { mask: COLLAR_Q34, at: [-5, 1] },
     hairBack: { mask: HAIR_BACK_Q34, at: [-9, -4] },
   },
-  prop: { mask: SWORD_Q34, at: [-23, -4], dangle: { mask: CHARM_Q34, at: [19, 8], overHem: true } },
+  prop: {
+    mask: SWORD_Q34,
+    at: [-23, -4],
+    hilt: { mask: HILT_Q34, at: [HILT_Q34_COL, 0] },
+    over: 'hilt',
+    dangle: { mask: CHARM_Q34, at: [19, 8], overHem: true },
+  },
   farLegShade: 0,
 };
 
@@ -104,9 +112,10 @@ export const RONIN: Body = {
   // Charcoal kosode (ash 1, the dark anchor); haori sleeves mist 4; dark ash kosode cuffs at the wrist.
   dressShade: 1,
   sleeve: { ramp: 'mist', shade: 4 },
-  cuff: { ramp: 'cloth_ash', shade: 1 },
+  // Off-arm cuff: a light ash edge (no second dark band; art round 2 F5).
+  cuff: { ramp: 'cloth_ash', shade: 4 },
   // Black-lacquer kote on the right forearm (rig side L) with 2 brass studs (never oxblood: hard rule 5).
-  kote: { side: 'L', ramp: 'ink', shade: 1, stud: { ramp: 'cloth_ochre', shade: 4, count: 2 } },
+  kote: { side: 'L', rows: 3, ramp: 'ink', shade: 1, stud: { ramp: 'cloth_ochre', shade: 4, count: 2 } },
   head: { mask: HEAD, at: HEAD_AT, band: BAND },
   face: RONIN_FACE,
   masks: { shoe: SHOE, neckAcc: { mask: COLLAR, at: [-5, 1] }, hairBack: { mask: HAIR_BACK, at: [-8, -2] } },
