@@ -355,3 +355,24 @@ describe('art gate (goth.md): art round 2 — mouth corner', () => {
     },
   );
 });
+
+describe('D-20 stern pass + richness (goth.md «D-20», MA-64)', () => {
+  it('uses the stern face option in both views (the stern rules run in validateFace above)', () => {
+    expect(GOTH_FACE.style).toBe('stern');
+    expect(GOTH.views?.q34?.face.style).toBe('stern');
+  });
+  it('shows the set brows, no blush and the thick lid in neutral; petted keeps the only blush', () => {
+    const e = GOTH_FACE.expressions;
+    expect(e.neutral.brows).toBe('set');
+    expect(e.neutral.cheeks).toBe('none');
+    expect(EXPRESSIONS.filter((id) => e[id].cheeks !== 'none')).toEqual(['petted']);
+  });
+  it('wears a 3-row corset belt with a cream buckle and a lacing rung in both views', () => {
+    expect(GOTH.sash?.rows).toBe(3);
+    for (const knot of [GOTH.sash?.knot.mask, GOTH.views?.q34?.sashKnot?.mask]) {
+      expect(knot).toHaveLength(3);
+      expect(knot?.join('')).toContain('pP');
+      expect(knot?.join('')).toContain('wWw');
+    }
+  });
+});

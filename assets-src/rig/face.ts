@@ -234,7 +234,7 @@ interface EyeHalf {
   readonly rows: number;
   /** Every iris px of the top iris row has an ink px right above it. */
   readonly lid: boolean;
-  /** Mask row of the lid (top iris row − 1). */
+  /** Mask row of the lid top (the top of the ink run over the top iris row; a thick lash counts as one lid). */
   readonly lidRow: number;
 }
 
@@ -251,7 +251,10 @@ function eyeHalves(mask: Mask): EyeHalf[] {
     const top = rows[0];
     if (top === undefined) continue;
     const lid = top > 0 && irisCols(top).every((x) => slotOf(mask[top - 1]?.charAt(x) ?? '.') === 'ink');
-    out.push({ rows: rows.length, lid, lidRow: top - 1 });
+    let lidRow = top - 1;
+    const x0 = irisCols(top)[0] ?? from;
+    while (lid && lidRow > 0 && slotOf(mask[lidRow - 1]?.charAt(x0) ?? '.') === 'ink') lidRow--;
+    out.push({ rows: rows.length, lid, lidRow });
   }
   return out;
 }
@@ -314,9 +317,8 @@ function sternProblems(lib: ViewFaceLibrary, name: string, required: readonly Ex
       if (eyeHalfs.some(isSternEye)) problems.push(`${at}: the stern lid must break (closed, lifted or off the iris)`);
     }
     if (id !== 'petted') {
-      const parts = [lib.cheeks[e.cheeks], eyes, brows, lib.mouths[e.mouth]];
-      if (e.raisedMouth !== undefined) parts.push(lib.mouths[e.raisedMouth]);
-      if (parts.some(blushPx)) problems.push(`${at}: stern faces show blush only on petted`);
+      // Cheeks only: an open mouth may use the blush ramp for the tongue.
+      if (blushPx(lib.cheeks[e.cheeks])) problems.push(`${at}: stern faces show blush only on petted`);
     }
   }
   return problems;

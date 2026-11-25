@@ -20,22 +20,31 @@ const part = (mask: Mask, x: number, y: number): FacePart => ({ mask, at: [x, y]
 const LASH_AA = '..S..............S..';
 const LASH = '..XXXXXX....XXXXXX..';
 const LASH_LOW = '.XXXccc......cccXXX.';
+/**
+ * D-20 stern pass (goth.md «D-20», ART-BIBLE §11.9): the lower lash row is solid ink over the iris top row (one thick
+ * flat lid with a square outer tick), so 4 × 4 of iris shows; the soft `LASH_LOW` (iris sliver under the lash) is kept
+ * for the expressions that break the stern read (petted, worried).
+ */
+const LID = '.XXXXXX......XXXXXX.';
 /** Iris rows below the heavy lid (rows 2–6), shared by open / think / worried. */
 const IRIS: Mask = [
   '..XXccc......cccXX..',
   '..pPcci......Pccip..',
-  '...PXXi......PXXi...',
+  // Stern: 1 × 1 highlight (the second highlight row is iris now).
+  '...iXXi......iXXi...',
   '...iXXI......iXXI...',
   '....kp........kp....',
 ];
-/** Neutral: flick, flat thick lash, the iris top row under the lid. */
-const OPEN: Mask = [LASH_AA, LASH, LASH_LOW, ...IRIS.slice(1)];
+/** Neutral: flat thick lid (2 ink rows), the iris top row under it. */
+const OPEN: Mask = [LASH_AA, LASH, LID, ...IRIS.slice(1)];
+/** The pre-D-20 soft lash (iris sliver under it): petted's glance breaks the stern lid with it. */
+const SOFT_OPEN: Mask = [LASH_AA, LASH, LASH_LOW, ...IRIS.slice(1)];
 /** Think: the screen-right eye 1 row more lidded. */
 const THINK: Mask = [
   LASH_AA,
   LASH,
-  '.XXXccc......XXXXXX.',
-  '..pPcci......Pccip..',
+  LID,
+  '..pPcci......XXXXX..',
   '...PXXi......PXXi...',
   '...iXXI......iXXI...',
   '....kp........kp....',
@@ -56,14 +65,15 @@ const STARTLE: Mask = [
 const WINCE: Mask = [
   '..S.................',
   '..XXXXXX............',
-  '.XXXccc......xX.....',
+  '.XXXXXX......xX.....',
   '..pPcci........XX...',
-  '...PXXi......xX.....',
+  '...iXXi......xX.....',
   '...iXXI.............',
   '....kp..............',
 ];
 
 export const GOTH_FACE: FaceLibrary = {
+  style: 'stern',
   eyes: {
     open: part(OPEN, 0, 2),
     think: part(THINK, 0, 2),
@@ -76,11 +86,21 @@ export const GOTH_FACE: FaceLibrary = {
     wince: part(WINCE, 0, 2),
     /** Glance / petted: neutral with iris + pupil 1 px toward screen-right (lash, outline and shine stay). */
     side: part(irisShift(OPEN, 10), 0, 2),
+    /** Petted: the glance under the soft lash (the lid lifts off the iris top — breaks the stern read). */
+    soft_side: part(irisShift(SOFT_OPEN, 10), 0, 2),
+  },
+  /**
+   * Brows (D-20): hair_black 1 (`j`) through the fringe gaps beside the B point, 4 px with one step. Set = inner end
+   * 1 row lower, 1 skin row above the lid; flat on happy / startle / petted; inner ends up on worried.
+   */
+  brows: {
+    set: part(['..jjj..........jjj..', '.....j........j.....'], 0, 0),
+    flat: part(['..jjjj........jjjj..'], 0, 0),
+    up: part(['.....j........j.....', '..jjj..........jjj..'], 0, 0),
   },
   mouths: {
-    /** Half-smile: 2-px flat line 1 px right of the axis, the screen-right corner 1 row up. */
-    /** Half-smile: XX ink 1 px right of the axis, the raised corner a lip tone (skin z, ≥ 0.15 ΔL under the cheek). */
-    half_smile: part(['.............z......', '...........XX.......'], 0, 10),
+    /** Smirk (D-20 neutral): 2-px `XX` 1 px right of the axis + the 1-px lip-tone corner up on screen-right (signed-off tone). */
+    smirk: part(['.............z......', '...........XX.......'], 0, 10),
     /** Small open smile: an ink top line with soft corners over a rose tongue (never a v). */
     smile_open: part(['........xXXx........', '........XffX........'], 0, 10),
     pulled: part(['.........XXx........'], 0, 11),
@@ -104,20 +124,21 @@ export const GOTH_FACE: FaceLibrary = {
     strong: part(['..FFFF........FFFF..', '..fFFf........fFFf..'], 0, 9),
   },
   expressions: {
-    neutral: { eyes: 'open', mouth: 'half_smile', cheeks: 'light' },
-    blink: { eyes: 'closed', mouth: 'half_smile', cheeks: 'light' },
-    half: { eyes: 'half', mouth: 'talk_a', cheeks: 'light' },
-    talk_a: { eyes: 'open', mouth: 'talk_a', cheeks: 'light' },
-    talk_b: { eyes: 'open', mouth: 'talk_b', cheeks: 'light' },
-    talk_c: { eyes: 'open', mouth: 'talk_c', cheeks: 'light' },
-    happy: { eyes: 'happy', mouth: 'smile_open', cheeks: 'soft' },
-    worried: { eyes: 'low', mouth: 'flat_open', cheeks: 'none' },
-    think: { eyes: 'think', mouth: 'pulled', cheeks: 'light' },
-    sleep: { eyes: 'closed', mouth: 'sleep', cheeks: 'soft' },
-    startle: { eyes: 'startle', mouth: 'small_o', cheeks: 'none' },
-    petted: { eyes: 'side', mouth: 'wavy', cheeks: 'strong' },
-    wince: { eyes: 'wince', mouth: 'gritted', cheeks: 'soft' },
-    glance: { eyes: 'side', mouth: 'half_smile', cheeks: 'light' },
+    // D-20 stern: set brows + the thick lid on the calm set, no blush outside petted.
+    neutral: { eyes: 'open', brows: 'set', mouth: 'smirk', cheeks: 'none' },
+    blink: { eyes: 'closed', brows: 'set', mouth: 'smirk', cheeks: 'none' },
+    half: { eyes: 'half', brows: 'set', mouth: 'talk_a', cheeks: 'none' },
+    talk_a: { eyes: 'open', brows: 'set', mouth: 'talk_a', cheeks: 'none' },
+    talk_b: { eyes: 'open', brows: 'set', mouth: 'talk_b', cheeks: 'none' },
+    talk_c: { eyes: 'open', brows: 'set', mouth: 'talk_c', cheeks: 'none' },
+    happy: { eyes: 'happy', brows: 'flat', mouth: 'smile_open', cheeks: 'none' },
+    worried: { eyes: 'low', brows: 'up', mouth: 'flat_open', cheeks: 'none' },
+    think: { eyes: 'think', brows: 'set', mouth: 'pulled', cheeks: 'none' },
+    sleep: { eyes: 'closed', mouth: 'sleep', cheeks: 'none' },
+    startle: { eyes: 'startle', brows: 'flat', mouth: 'small_o', cheeks: 'none' },
+    petted: { eyes: 'soft_side', brows: 'flat', mouth: 'wavy', cheeks: 'strong' },
+    wince: { eyes: 'wince', brows: 'set', mouth: 'gritted', cheeks: 'none' },
+    glance: { eyes: 'side', brows: 'set', mouth: 'smirk', cheeks: 'none' },
   },
 };
 
@@ -126,26 +147,32 @@ export const GOTH_FACE: FaceLibrary = {
 const OPEN_Q34: Mask = [
   '..S.................',
   '..XXXXXX.....XXXXX..',
-  '.XXXccc......cccXX..',
+  '.XXXXXX......XXXXX..',
   '..pPcci......Pcip...',
-  '...PXXi......PXX....',
+  '...iXXi......iXX....',
   '...iXXI......iXX....',
   '....kp........kp....',
 ];
 
 export const GOTH_FACE_Q34: ViewFaceLibrary = {
+  style: 'stern',
   eyes: {
     open: part(OPEN_Q34, 0, 2),
     closed: part(['..xXXXXX.....XXXXx..', '.x................x.'], 0, 6),
   },
+  brows: {
+    // Far brow foreshortened to 2 + 2 px through the fringe gaps (cols 16–17 / 14–15).
+    set: part(['..jjj...........jj..', '.....j........jj....'], 0, 0),
+  },
   mouths: {
-    half_smile: part(['..............z.....', '............XX......'], 0, 10),
+    /** Smirk 1 px toward the facing, the raised corner on the facing side. */
+    smirk: part(['..............z.....', '............XX......'], 0, 10),
   },
   cheeks: {
-    light: part(['...ff...............'], 0, 9),
+    none: part([], 0, 9),
   },
   expressions: {
-    neutral: { eyes: 'open', mouth: 'half_smile', cheeks: 'light' },
-    blink: { eyes: 'closed', mouth: 'half_smile', cheeks: 'light' },
+    neutral: { eyes: 'open', brows: 'set', mouth: 'smirk', cheeks: 'none' },
+    blink: { eyes: 'closed', brows: 'set', mouth: 'smirk', cheeks: 'none' },
   },
 };

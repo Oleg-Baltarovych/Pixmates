@@ -5,7 +5,7 @@
 // sleeves past the hands with cream lace cuffs (fingertips only), a black velvet choker with cream lace and the only
 // red on the figure — a small garnet drop — opaque black tights, black Mary Janes, warm brown heavy-lidded eyes.
 // Owner decisions 2026-11-24: tonal plum hem lace (not cream), opaque black tights. Shared rig poses only.
-import type { Outfit } from '../../lib/mask.ts';
+import type { Mask, Outfit } from '../../lib/mask.ts';
 import type { PackDef } from '../../lib/types.ts';
 import { ANIMS } from '../../rig/anims/index.ts';
 import { createRigPack } from '../../rig/compose.ts';
@@ -36,6 +36,15 @@ const OUTFIT: Outfit = {
   ink: { ramp: 'ink', tones: [0, 1, 2, 3, 4, 4] },
 };
 
+/**
+ * D-20 richness (goth.md «D-20», ART-BIBLE §12): a leather corset belt over the bodice waist — 3 rows of cloth_black 1
+ * (`V`), a soft 3-px sheen at shade 4 (`D`) on the lit top-left, the tonal lacing (a `wWw` rung over `v` cord px; the top
+ * centre is left open so the garnet drop that reaches the waist on bowed frames stays on top) at the centre front and a 2-px cream buckle (`pP`) on the near hip. Stamped as the sash
+ * "knot" over the whole belt (trim, never over an arm); q34 = 10 px wide with the lacing 1 px toward the facing.
+ */
+const CORSET: Mask = ['VDDDV...VVV', 'VpPVVwWwVVV', 'VVVVVvVvVVV'];
+const CORSET_Q34: Mask = ['VDDDVV...V', 'VpPVVVwWwV', 'VVVVVVvVvV'];
+
 const GOTH_Q34: BodyView = {
   head: { mask: HEAD_Q34, at: [-15, -14], band: BAND },
   face: GOTH_FACE_Q34,
@@ -47,6 +56,7 @@ const GOTH_Q34: BodyView = {
   },
   // The far puff sits behind the neck (no back-hair block under the jaw with the far lock).
   hideFarShoulder: true,
+  sashKnot: { mask: CORSET_Q34, at: [-5, -10.5] },
   // Far tights one step darker with a touch outline (no merged black patch on the contact frames).
   farLegShade: 2.6,
   // Long hair follows the stride a frame late (≤ 2 px) instead of moving as one slab.
@@ -83,6 +93,7 @@ export const GOTH: Body = {
   ],
   head: { mask: HEAD, at: [-15, -14], band: BAND },
   face: GOTH_FACE,
+  sash: { rows: 3, knot: { mask: CORSET, at: [-5, -10.5] } },
   masks: {
     shoe: SHOE,
     headAcc: { mask: MOTH, at: [-9, 0] },
