@@ -5,8 +5,8 @@
 > **menpō** (lower-face mask). Same id, same persona (calm, aphorisms) — a masterless samurai who kept his own armour
 > (persona note for `persona-designer`: «the armour is his; the lord is gone»). He talks with his eyes; the speech
 > bubble carries the words. The mist cloak and the bell silhouette are dropped (they read "kindergarten" + "robe").
-> Originality gate (MA-65, 2026-11-25): **PASS — lead-developer pre-art check against §4, art-director to confirm on
-> round 1.** The design as specced (black-lacquer dō with vermilion odoshi, square sode, kusazuri over ash hakama, kote,
+> Originality gate (MA-65, 2026-11-25): **PASS — confirmed by the art-director (round 1, 2026-11-25)** after the
+> lead-developer pre-art check against §4. The design as specced (black-lacquer dō with vermilion odoshi, square sode, kusazuri over ash hakama, kote,
 > red lacquer half-menpō with an original whisker + mouth-slot dragon motif, umber chibi hair with a crown tuft, one
 > katana at the hip, no helmet / crest / horns / hood / cloth wrap / back sword / mon) breaks every §4 rule's lookalike:
 > not a full-face, oni, bone or metal-grille mask (Ghost of Tsushima, Genji, Raiden), not a hooded ninja colourway

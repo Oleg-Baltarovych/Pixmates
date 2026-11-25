@@ -1,6 +1,7 @@
 // M-ART MA-65 (D-20, docs/art/ronin.md §2): the lacquer ramps' numeric gates — `lacquer_black` warm near-neutral, far in
 // hue from goth's plum black; `lacquer_red` vermilion (not goth's garnet wine, not the vampire's fx red, not the
 // knight's rose). Steps are 0-based ramp indices.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { toOklab } from '../../../assets-src/lib/palette.ts';
 import MASTER from '../../../assets-src/palettes/master.json' with { type: 'json' };
@@ -31,6 +32,15 @@ describe('lacquer_black (ronin armour, urushi)', () => {
     const c = lab('lacquer_black', s);
     expect(chroma(c)).toBeLessThanOrEqual(0.02);
     expect(hueGap(hueDeg(c), hueDeg(lab('cloth_black', s)))).toBeGreaterThanOrEqual(90);
+  });
+});
+
+describe('master palette source', () => {
+  it('has no duplicate ramp keys (JSON.parse would silently keep the last one)', () => {
+    const raw = readFileSync(new URL('../../../assets-src/palettes/master.json', import.meta.url), 'utf8');
+    const keys = [...raw.matchAll(/^\s*"([a-z_]+)": \[/gm)].map((m) => m[1]);
+    expect(keys.length).toBeGreaterThan(20);
+    expect(keys.filter((k, i) => keys.indexOf(k) !== i)).toEqual([]);
   });
 });
 
