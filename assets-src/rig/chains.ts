@@ -531,8 +531,9 @@ export function buildSkirt(body: Body, p: PoseFrame, hip: Point, q: boolean): Pa
   // `skirtLace: false`: the plain cloth runs down over the rows the lace would take (same hem length).
   const plain = body.skirtLace === false ? (p.parts.legs === 'sit' ? 1 : 2) : 0;
   const sk = layoutOf(body).torso.skirt;
-  const standing = p.parts.legs === 'stand';
-  const hemY = hip[1] + sk.hemDy - lift + plain + (standing ? (body.hakama?.drop ?? 0) : 0);
+  // `Body.hakama.drop`: the hakama reaches the ankles on every leg pose (standing, dangling, seated, curled) — the
+  // legs never show bare under a knee-length hem (art round 3 N2).
+  const hemY = hip[1] + sk.hemDy - lift + plain + (body.hakama?.drop ?? 0);
   // `Body.skirtSplit.notch` (front): a 2-px gap between the legs at the hem (divided skirt / hakama).
   const notch = q ? 0 : (body.skirtSplit?.notch ?? 0);
   const hemHalf = body.skirtSplit?.hemHalf ?? sk.hemHalf;

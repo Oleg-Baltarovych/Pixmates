@@ -129,10 +129,10 @@ export const RONIN: Body = {
     // A see-through gap between the legs from ≈ row 52 down (4 px wide), not umber-on-umber.
     notch: 12,
     notchHalf: 2,
-    hemHalf: 9,
+    hemHalf: 10,
     pleats: { offsets: [3, 6], shade: 0, lit: 4 },
     rim: { shade: 2, lit: 4 },
-    q34: { rows: 8, notch: 6, passNotch: 3, pleat: 0, clear: true },
+    q34: { rows: 8, notch: 6, passNotch: 3, clear: true },
   },
   skirtLace: false,
   cloak: HAORI,

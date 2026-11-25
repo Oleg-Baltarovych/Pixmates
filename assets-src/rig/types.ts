@@ -524,8 +524,8 @@ export interface Body {
    */
   /**
    * Opt-in hakama (MA-46): the skirt (and every `skirtSplit` tone) in its own `ramp` / whole `shade` instead of the
-   * cloth ramp + `dressShade`, and `drop` extra hem rows on standing frames (≤ `HAKAMA_DROP_MAX`; seated, dangling
-   * and curled legs keep the default hem) so the trapezoid reaches the ankles over the split legs.
+   * cloth ramp + `dressShade`, and `drop` extra hem rows on every leg pose (≤ `HAKAMA_DROP_MAX`) so the trapezoid
+   * reaches the ankles over the split legs (standing, dangling, seated and curled alike; never bare legs).
    */
   readonly hakama?: { readonly ramp: RampName; readonly shade: number; readonly drop: number };
   readonly skirtSplit?: {

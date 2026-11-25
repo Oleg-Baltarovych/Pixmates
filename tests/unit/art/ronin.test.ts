@@ -301,6 +301,31 @@ describe('art gate (ronin.md): adult lookalike hard rules', () => {
   });
 });
 
+describe('art gate (round 3 N2): the hakama covers the legs on every pose', () => {
+  it('no leg px above the ankles in any frame or view (legs probed in a unique ramp)', () => {
+    const probe: Body = { ...RONIN, ramps: { ...RONIN.ramps, legs: 'cloth_rose' } };
+    const r = createRigRenderer(probe);
+    // The q34 far leg is drawn at `farLegShade` 0 (the hakama's deepest tone class, it reads as the far hakama leg
+    // past the hem edge); every other leg tone is a bare-leg read.
+    const farLeg = q34.farLegShade ?? -1;
+    const rose = new Set(ramp('cloth_rose').filter((_, k) => k !== farLeg));
+    const bad: string[] = [];
+    for (const a of ANIMS) {
+      a.frames.forEach((_, f) => {
+        const img = r.render(a, f, ctx);
+        const j = r.joints(a, f);
+        // Ankle zone: the 6 rows over the higher sole (the zori + the ankle under the hem on a jump).
+        const ankle = Math.min(j.footL[1], j.footR[1]) - 6;
+        for (let y = Math.round(j.hip[1]); y < ankle; y++)
+          for (let x = 0; x < W; x++)
+            if (opaque(img, x, y) && rose.has(rgbAt(img, x, y)))
+              bad.push(`${a.name}/${String(f)} (${String(x)}, ${String(y)})`);
+      });
+    }
+    expect(bad.slice(0, 5)).toEqual([]);
+  });
+});
+
 describe('art gate (ronin.md): spirit without horror', () => {
   it('feet always visible: both zori show on every front frame (sit_edge and sleep included), the near one on q34', () => {
     const shoe = new Set(ramp(RONIN.outfit.shoe.ramp));
