@@ -1,0 +1,45 @@
+// Sprite fingerprint: resources/characters/ and resources/fx/ are git-ignored, so the committed
+// assets-src/sprites.lock.json holds a SHA-256 per output file. Every pack is built in memory exactly as
+// `pnpm sprites` writes it; a change to any pack must arrive as a reviewable lock diff (`pnpm sprites:lock`).
+import { describe, expect, it } from 'vitest';
+import {
+  buildAllOutputs,
+  LOCK_UPDATE_COMMAND,
+  lockMismatch,
+  lockOf,
+  readLock,
+  type SpritesLock,
+} from '../../../tools/lib/sprite-outputs.ts';
+import { loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
+
+const outputs = buildAllOutputs(renderContext(loadMasterPalette()));
+const actual = lockOf(outputs);
+
+describe('sprites.lock.json', () => {
+  it('matches every pack built from assets-src (run the printed command if the change is intended)', () => {
+    expect(lockMismatch(readLock(), actual), 'sprite packs differ from the lock').toBeNull();
+  });
+
+  it('names the changed pack and file and prints the update command for a wrong lock', () => {
+    const wrong: SpritesLock = structuredClone(actual);
+    const ronin = wrong['pixmates.ronin'];
+    if (!ronin) throw new Error('pixmates.ronin is not built');
+    ronin['sprites/atlas.png'] = '0'.repeat(64);
+    const message = lockMismatch(wrong, actual) ?? '';
+    expect(message).toContain('pixmates.ronin');
+    expect(message).toContain('sprites/atlas.png');
+    expect(message).toContain(LOCK_UPDATE_COMMAND);
+    expect(message).not.toContain('pixmates.maid');
+  });
+
+  it('reports packs missing from or extra in the lock', () => {
+    const noFx = Object.fromEntries(Object.entries(actual).filter(([id]) => id !== 'fx'));
+    expect(lockMismatch(noFx, actual)).toContain('fx');
+    expect(lockMismatch({ ...actual, 'pixmates.ghost': {} }, actual)).toContain('pixmates.ghost');
+  });
+
+  it('covers every pack and the FX atlas, two files each', () => {
+    expect(outputs.map((o) => o.id)).toContain('fx');
+    for (const o of outputs) expect(o.files.map((f) => f.path)).toHaveLength(2);
+  });
+});
