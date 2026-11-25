@@ -11,6 +11,7 @@ import { RIG_48 } from '../spike/maid-48/rig.ts';
 import { ANIMS } from './anims/index.ts';
 import { createRigPack } from './compose.ts';
 import { irisShift, type FaceLibrary, type FacePart } from './face.ts';
+import { STERN_FACE } from './faces/stern.ts';
 import { deriveQ34Face, deriveQ34Head, deriveQ34Shoe } from './q34.ts';
 import type { Body, BodyView } from './types.ts';
 
@@ -224,5 +225,9 @@ export const MAID_PREVIEW: Body = {
   views: { q34: dummyQ34(RIG_48.head.mask, { neckAcc: { mask: RIG_48.bow.mask, at: [-2, 3] } }) },
 };
 
+/** Stern-look review body (MA-62): dummy B with the shared stern kit (front only; its q34 face stays the dummy one). */
+export const DUMMY_STERN: Body = { ...DUMMY_B, id: 'rig-dummy-stern', name: 'Rig dummy (stern)', face: STERN_FACE };
+
 /** Review packs for `pnpm sprites:sheet --review` (never written to resources/). */
-export const reviewPacks = (): PackDef[] => [DUMMY_A, DUMMY_B, MAID_PREVIEW].map((b) => createRigPack(b, ANIMS));
+export const reviewPacks = (): PackDef[] =>
+  [DUMMY_A, DUMMY_B, DUMMY_STERN, MAID_PREVIEW].map((b) => createRigPack(b, ANIMS));

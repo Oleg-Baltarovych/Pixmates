@@ -16,6 +16,7 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 | `chains.ts` | looped verlet chains per animation (side locks, fox tail, scarf ends) + procedural part builders (back hair, tails, scarf ends, legs, skirt / shorts, torso, arms) |
 | `passes.ts` | `stampMask` and the buffer / image passes (shin wraps, far-leg gap, knee creases, far-shoulder clip, chin fists, spade notches, apron panel, arm over torso, sleeve/hair line, hand over ties, labels, squash separator, seam closer) |
 | `part-ids.ts` | `PART_ID` table, `LABEL_OF`, part sets (`SLEEVE_PARTS`, `TORSO_PARTS`, `LEG_PARTS`, …); no bare part numbers elsewhere |
+| `faces/stern.ts` | stern-look kit (MA-62): `STERN_FACE`, `sternFace(overrides)`; rules in `face.ts` `sternProblems` |
 | `face.ts`, `checks.ts`, `style.ts`, `q34.ts`, `dummies.ts`, `anims/` | face library + validator, arm-over-torso check, SOFT preset, q34 masks for dummies only, review bodies, shared poses |
 | `layout.ts` | `RigLayout` (frame, rests, arm / leg shapes, torso + hem geometry, cloak bound, face rules); one layout `LAYOUT` (48 × 56, MA-61) |
 

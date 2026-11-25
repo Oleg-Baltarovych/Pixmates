@@ -48,6 +48,8 @@ export interface Expression {
 }
 
 export interface FaceLibrary {
+  /** Stern-look option (D-20, ART-BIBLE §11.9): validated by `sternProblems`; kit in rig/faces/stern.ts. */
+  readonly style?: 'stern';
   readonly eyes: Readonly<Record<string, FacePart>>;
   readonly brows?: Readonly<Record<string, FacePart>>;
   readonly mouths: Readonly<Record<string, FacePart>>;
@@ -192,6 +194,129 @@ export function validateFace(
     if (!(e.cheeks in lib.cheeks)) problems.push(`${name}/${id}: unknown cheeks "${e.cheeks}"`);
     if (e.brows !== undefined && !(e.brows in (lib.brows ?? {}))) {
       problems.push(`${name}/${id}: unknown brows "${e.brows}"`);
+    }
+  }
+  if (lib.style === 'stern') problems.push(...sternProblems(lib, name, required));
+  return problems;
+}
+
+// ---- Stern look (D-20, ART-BIBLE §11.9; kit in rig/faces/stern.ts) -------------------------------------------------
+
+/** Expressions that keep the stern read (set brows); the eye rule skips the closing frames `blink` / `half`. */
+const STERN_SET: readonly ExpressionId[] = [
+  'neutral',
+  'blink',
+  'half',
+  'talk_a',
+  'talk_b',
+  'talk_c',
+  'think',
+  'wince',
+  'glance',
+];
+const STERN_EYES: readonly ExpressionId[] = STERN_SET.filter((id) => id !== 'blink' && id !== 'half');
+/** Emotions that must break both the brow angle and the lid. */
+const STERN_BREAK: readonly ExpressionId[] = ['happy', 'worried', 'startle', 'petted', 'sleep'];
+const STERN_IRIS_ROWS = [3, 4] as const;
+
+const slotOf = (ch: string): Slot | undefined => LEGEND[ch]?.[0];
+const maskW = (mask: Mask): number => Math.max(0, ...mask.map((r) => r.length));
+const halves = (mask: Mask): readonly (readonly [number, number])[] => {
+  const w = maskW(mask);
+  return [
+    [0, Math.floor(w / 2)],
+    [Math.floor(w / 2), w],
+  ];
+};
+
+interface EyeHalf {
+  /** Rows holding iris (eye-slot) px. */
+  readonly rows: number;
+  /** Every iris px of the top iris row has an ink px right above it. */
+  readonly lid: boolean;
+  /** Mask row of the lid (top iris row − 1). */
+  readonly lidRow: number;
+}
+
+/** Per eye half with iris px: iris row count and whether an ink lid runs over the top iris row. */
+function eyeHalves(mask: Mask): EyeHalf[] {
+  const out: EyeHalf[] = [];
+  for (const [from, to] of halves(mask)) {
+    const irisCols = (y: number): number[] => {
+      const xs: number[] = [];
+      for (let x = from; x < to; x++) if (slotOf(mask[y]?.charAt(x) ?? '.') === 'eye') xs.push(x);
+      return xs;
+    };
+    const rows = mask.map((_, y) => y).filter((y) => irisCols(y).length > 0);
+    const top = rows[0];
+    if (top === undefined) continue;
+    const lid = top > 0 && irisCols(top).every((x) => slotOf(mask[top - 1]?.charAt(x) ?? '.') === 'ink');
+    out.push({ rows: rows.length, lid, lidRow: top - 1 });
+  }
+  return out;
+}
+
+const isSternEye = (h: EyeHalf): boolean => h.lid && h.rows >= STERN_IRIS_ROWS[0] && h.rows <= STERN_IRIS_ROWS[1];
+
+/** Per brow half: the lowest row, or undefined when the half's inner end is not exactly 1 row below its outer end. */
+function setBrowLows(mask: Mask): (number | undefined)[] {
+  const centre = (maskW(mask) - 1) / 2;
+  return halves(mask).map(([from, to]) => {
+    const px: [number, number][] = [];
+    mask.forEach((row, y) => {
+      for (let x = from; x < to; x++) if (!['.', ' ', ''].includes(row.charAt(x))) px.push([x, y]);
+    });
+    if (px.length === 0) return undefined;
+    const dist = (p: [number, number]): number => Math.abs(p[0] - centre);
+    const outer = px.reduce((a, b) => (dist(b) > dist(a) ? b : a));
+    const inner = px.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+    return inner[1] - outer[1] === 1 ? Math.max(...px.map(([, y]) => y)) : undefined;
+  });
+}
+
+const blushPx = (part: FacePart | undefined): boolean =>
+  part !== undefined && part.mask.some((row) => row.split('').some((ch) => slotOf(ch) === 'blush'));
+
+/** Stern-look rules (ART-BIBLE §11.9) for the expressions in `required`. */
+function sternProblems(lib: ViewFaceLibrary, name: string, required: readonly ExpressionId[]): string[] {
+  const problems: string[] = [];
+  for (const id of required) {
+    const e = lib.expressions[id];
+    if (!e) continue;
+    const at = `${name}/${id}`;
+    const eyes = lib.eyes[e.eyes];
+    const brows = e.brows === undefined ? undefined : lib.brows?.[e.brows];
+    const eyeHalfs = eyes ? eyeHalves(eyes.mask) : [];
+    const browLows = brows ? setBrowLows(brows.mask) : [];
+    const setBrows = browLows.length > 0 && browLows.every((y) => y !== undefined);
+    if (STERN_EYES.includes(id) && eyes) {
+      for (const h of eyeHalfs) {
+        if (!h.lid) problems.push(`${at}: stern lid must run over the iris top row (ink right above it)`);
+        if (h.rows < STERN_IRIS_ROWS[0] || h.rows > STERN_IRIS_ROWS[1]) {
+          problems.push(`${at}: stern lid needs 3–4 iris rows (has ${String(h.rows)})`);
+        }
+      }
+      if (setBrows && brows) {
+        const lidRows = eyeHalfs.map((h) => eyes.at[1] + h.lidRow);
+        browLows.forEach((low, k) => {
+          const lid = lidRows[k];
+          if (lid !== undefined && lid - (brows.at[1] + low) !== 2) {
+            problems.push(`${at}: stern brow needs exactly 1 skin row above the lid`);
+          }
+        });
+      }
+    }
+    if (STERN_SET.includes(id) && !setBrows) {
+      problems.push(`${at}: stern brows must be set (both inner ends 1 row lower than the outer ends)`);
+    }
+    if (STERN_BREAK.includes(id)) {
+      if (setBrows) problems.push(`${at}: brows must break the stern angle (flat, up or none)`);
+      if (eyeHalfs.some(isSternEye)) problems.push(`${at}: the stern lid must break (closed, lifted or off the iris)`);
+    }
+    if (id !== 'petted') {
+      const parts = [lib.cheeks[e.cheeks], eyes, brows, lib.mouths[e.mouth]];
+      if (e.raisedMouth !== undefined) parts.push(lib.mouths[e.raisedMouth]);
+      if (parts.some(blushPx)) problems.push(`${at}: stern faces show blush only on petted`);
     }
   }
   return problems;
