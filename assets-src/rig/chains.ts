@@ -536,13 +536,14 @@ export function buildSkirt(body: Body, p: PoseFrame, hip: Point, q: boolean): Pa
   // `Body.skirtSplit.notch` (front): a 2-px gap between the legs at the hem (divided skirt / hakama).
   const notch = q ? 0 : (body.skirtSplit?.notch ?? 0);
   const hemHalf = body.skirtSplit?.hemHalf ?? sk.hemHalf;
+  const nh = body.skirtSplit?.notchHalf ?? 1;
   const gap: [number, number][] =
     notch > 0
       ? [
-          [hip[0] + 1 + hemDx, hemY],
-          [hip[0] + 1 + hemDx, hemY - notch],
-          [hip[0] - 1 + hemDx, hemY - notch],
-          [hip[0] - 1 + hemDx, hemY],
+          [hip[0] + nh + hemDx, hemY],
+          [hip[0] + nh + hemDx, hemY - notch],
+          [hip[0] - nh + hemDx, hemY - notch],
+          [hip[0] - nh + hemDx, hemY],
         ]
       : [];
   const skirt = poly([

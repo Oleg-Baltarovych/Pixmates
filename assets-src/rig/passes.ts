@@ -792,8 +792,13 @@ export function skirtSplitQ34(
   for (let y = bottom - rows + 1; y <= bottom; y++) {
     const g = gapAt(y);
     const cols = y > bottom - notch ? [g, g + 1] : [g + 1];
-    for (const x of cols)
-      if (isHem(x, y)) paint(x, y, y > bottom - notch ? (split.notchShade ?? split.shade) : split.shade);
+    for (const x of cols) {
+      if (!isHem(x, y)) continue;
+      if (sq.clear && y > bottom - notch) {
+        buf.clear(x, y);
+        locked.set(y * w + x, [-1, 0]);
+      } else paint(x, y, y > bottom - notch ? (split.notchShade ?? split.shade) : split.shade);
+    }
   }
   if (sq.pleat !== undefined) {
     for (let y = bottom - rows + 1; y <= bottom - 1; y++) {

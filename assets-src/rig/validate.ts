@@ -439,6 +439,7 @@ function slotProblems(body: Body, usesQ34: boolean): string[] {
     if (!whole(split.rows, 1, splitMax)) problems.push(`${id}: skirtSplit.rows must be a whole 1..${String(splitMax)}`);
     if (body.variants.hem !== 'skirt') problems.push(`${id}: skirtSplit needs hem 'skirt'`);
     if (!whole(split.notch, 0, split.rows)) problems.push(`${id}: skirtSplit.notch must be a whole 0..rows`);
+    if (!whole(split.notchHalf, 1, 3)) problems.push(`${id}: skirtSplit.notchHalf must be a whole 1..3`);
     const [lo, hi] = SKIRT_HEM_HALF_RANGE;
     if (split.hemHalf !== undefined && !(split.hemHalf >= lo && split.hemHalf <= hi))
       problems.push(`${id}: skirtSplit.hemHalf must be ${String(lo)}..${String(hi)}`);

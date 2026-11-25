@@ -78,13 +78,13 @@ export const RONIN_FACE: FaceLibrary = {
  * to the nose 1 px clear of the lid, a closed skin-0 mouth line, the nose shadow on the profile. */
 export const RONIN_FACE_Q34: ViewFaceLibrary = {
   eyes: {
-    open: part(['.....XXx.xX.', '......KC.C..'], 0, 3),
-    closed: part(['.....XXx.xX.'], 0, 4),
+    open: part(['.....XXx.xX.', '......KC.C..'], 1, 3),
+    closed: part(['.....XXx.xX.'], 1, 4),
   },
-  brows: { stern: part(['....JJ......', '......JJ.J..'], 0, 0) },
+  brows: { stern: part(['....JJ......', '......JJ....'], 1, 0) },
   mouths: { flat: part(['.......ZZ...'], 0, 8) },
   cheeks: { none: part([], 0, 6) },
-  nose: part(['S', 's'], 10, 5),
+  nose: part(['s'], 11, 6),
   expressions: {
     neutral: { eyes: 'open', brows: 'stern', mouth: 'flat', cheeks: 'none' },
     blink: { eyes: 'closed', brows: 'stern', mouth: 'flat', cheeks: 'none' },

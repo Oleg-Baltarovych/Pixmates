@@ -509,6 +509,8 @@ export interface Body {
     readonly notch?: number;
     /** Opt-in: the notch px (legs or the cloak behind) take this cloth shade (0..5): an inner leg shadow. */
     readonly notchShade?: number;
+    /** Opt-in (MA-46): notch half-width in px from the hip axis (default 1 = the 2-px gap; ≤ 3), legs read apart. */
+    readonly notchHalf?: number;
     /** Opt-in: skirt hem half-width in px (default 10; a straight trapezoid, e.g. hakama legs, not a bell). */
     readonly hemHalf?: number;
     /**
@@ -532,6 +534,8 @@ export interface Body {
       readonly notch: number;
       readonly passNotch: number;
       readonly pleat?: number;
+      /** Opt-in (MA-46): the notch px are cut out (see-through leg gap) instead of painted. */
+      readonly clear?: true;
     };
   };
   /** Fox tail shape per view (default: the rig's dummy-b tail). */
