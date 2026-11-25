@@ -44,9 +44,10 @@ export const RONIN_FACE: FaceLibrary = {
   },
   mouths: {
     flat: part(['.....ZZZ....'], 0, 8),
-    talk_a: part(['.....xXx....', '......z.....'], 0, 8),
-    talk_b: part(['.....XXX....', '......x.....'], 0, 8),
-    talk_c: part(['.....xXx....', '.....XzX....', '......x.....'], 0, 8),
+    // Talk (art round 2 F4): a centred 2-px skin-0 opening over a 1-px lit lower lip (never a moustache-like blob).
+    talk_a: part(['.....ZZ.....', '.....EE.....'], 0, 8),
+    talk_b: part(['.....ZZ.....', '.....ZZ.....', '.....EE.....'], 0, 8),
+    talk_c: part(['....zZZz....', '.....EE.....'], 0, 8),
     serene: part(['....x...x...', '.....xXx....'], 0, 8),
     frown: part(['.....xXx....', '....x...x...'], 0, 8),
     small_o: part(['.....xx.....', '.....xx.....'], 0, 8),

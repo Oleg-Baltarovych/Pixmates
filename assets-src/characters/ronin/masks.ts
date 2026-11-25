@@ -10,33 +10,33 @@ import type { Mask } from '../../lib/mask.ts';
 
 /**
  * Front head, 16 × 16 from the head joint − (8, 8) (frame rows 5…20): row 0 = the tuft (2 px, centred), row 1 the
- * oxblood cord binding it, then a 14-px adult skull (spike C+ width): angel ring on row 3, a centre strand and the
- * side locks over a 10-px face (cols 3–12), forehead light top-left, a cheek/jaw shade on the shadow side (cols 11–12),
+ * oxblood cord binding it, then a 14-px adult skull (spike C+ width): a 4-px angel-ring band on row 3, the fringe ending on row 4, the side
+ * locks over a 10-px face (cols 3–12), forehead light top-left, one solid 2-col shadow terminator (cols 11–12, no dither),
  * the jaw stepping 10 → 8 → 6 to a 3-px chin. Face anchor at mask (2, 5): brows rows 5–6, lids row 8.
  */
 export const HEAD: Mask = [
   '.......yh.......',
   '.......TT.......',
   '....JjjhhjjJ....',
-  '..JjhHyyHhhhjJ..',
+  '..JjhyYYyhhhjJ..',
   '.JhhHhhyhhhHhhJ.',
-  '.JheEEejheeeshJ.',
-  '.JheEeeeeeeeshJ.',
-  '.JheEEeeeeeesjJ.',
-  '.JjeeeeeeeeesjJ.',
-  '..zeeeeeeeeeSz..',
-  '..seEeeeeeeesz..',
+  '.JheEEeeeeesshJ.',
+  '.JheEeeeeeesshJ.',
+  '.JheEEeeeeessjJ.',
+  '.JjeeeeeeeessjJ.',
+  '..zeeeeeeeessz..',
+  '..seEeeeeeessz..',
   '...eEeeeeeess...',
-  '...eeeeeeesss...',
+  '...eeeeeeeess...',
   '....eeeeeess....',
   '.....seeess.....',
   '......sSz.......',
 ];
 /**
- * Front back hair (`Body.masks.hairBack`, from the head joint − (8, 2)): only two swept-back flicks past the skull
- * outline beside the temples (head mask rows 6–8); the rest of the short hair is the head mask itself (no bob).
+ * Front back hair (`Body.masks.hairBack`, from the head joint − (1, 4)): one hair px hidden inside the skull — it only
+ * replaces the procedural back-hair mass, so nothing flares past the head mask (no ear-level flare / bowl read).
  */
-export const HAIR_BACK: Mask = ['J..............J', 'jJ............Jj', '.J............J.'];
+export const HAIR_BACK: Mask = ['h'];
 /** q34 back hair (from the head joint − (9, 4)): one swept-back spike behind the crown, never a bob or nape mass. */
 export const HAIR_BACK_Q34: Mask = ['J.', 'jJ'];
 /** Last head row the forehead hair-shadow band (`withBand`) may use. */

@@ -118,7 +118,7 @@ export const RONIN: Body = {
   kote: { side: 'L', rows: 3, ramp: 'ink', shade: 1, stud: { ramp: 'cloth_ochre', shade: 4, count: 2 } },
   head: { mask: HEAD, at: HEAD_AT, band: BAND },
   face: RONIN_FACE,
-  masks: { shoe: SHOE, neckAcc: { mask: COLLAR, at: [-5, 1] }, hairBack: { mask: HAIR_BACK, at: [-8, -2] } },
+  masks: { shoe: SHOE, neckAcc: { mask: COLLAR, at: [-5, 1] }, hairBack: { mask: HAIR_BACK, at: [-1, -4] } },
   // Oxblood obi, 3 rows, no knot.
   sash: { rows: 3, knot: { mask: [], at: [0, 0] } },
   hakama: { ramp: 'hair_umber', shade: 1, drop: 13 },
