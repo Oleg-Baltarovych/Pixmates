@@ -63,16 +63,16 @@ export const BAND = 12;
  * saya (ash 1–2, cool) runs behind the body down to a tip at knee height past the screen-left hem corner.
  */
 export const SWORD: Mask = [
-  '............................WrR',
-  '...........................wXp.',
-  '..........................wXX..',
-  '.........................WpX...',
-  '........................rrr....',
-  '.....................bbBmM.....',
-  '.................bbbbmm........',
-  '.............bbbbmmmm..........',
-  '.........bbbbmmmm..............',
-  '.....bbbbmmmm..................',
+  '............................XxX',
+  '...........................xXp.',
+  '..........................xXX..',
+  '.........................XpX...',
+  '........................ttr....',
+  '.....................lbBnn.....',
+  '.................lbbbmm........',
+  '.............lbbbmmmm..........',
+  '.........lbbbmmmm..............',
+  '.....lbbbmmmm..................',
   '....Mmmmm......................',
 ];
 
@@ -81,16 +81,16 @@ export const SWORD: Mask = [
  * swings over it), the saya trails down/back ≈ 25° to a tip 2 px clear of the cloak's trailing edge.
  */
 export const SWORD_Q34: Mask = [
-  '....................WrR',
-  '...................wXp.',
-  '..................wXX..',
-  '.................rpX...',
-  '..............bbBrr....',
-  '............bbmmmM.....',
-  '..........bbmm.........',
-  '.......bbbmm...........',
-  '.....bbmmm.............',
-  '...bbmm................',
+  '....................XxX',
+  '...................xXp.',
+  '..................xXX..',
+  '.................tpX...',
+  '..............lbBrr....',
+  '............lbmmmM.....',
+  '..........lbmm.........',
+  '.......lbbmm...........',
+  '.....lbmmm.............',
+  '...lbmm................',
   '...Mmm.................',
 ];
 
@@ -167,54 +167,58 @@ export const HAIR_BACK_Q34: Mask = [
  */
 export const HAIR_FAR_Q34: Mask = ['..H', '..H', '..H'];
 
-// ── D-20 armour (MA-65, docs/art/ronin.md §1). Slots: `shoe` = lacquer_black (M 0 · m 1 · b 2 · B 3 · l 4 · L 6 spec),
-// `horn` = lacquer_red (N 1 · n 2 · o 3 · O 4 · u 5 · U 6 spec), `trim` = cloth_ochre (studs, tsuba, straw).
+// ── D-20 armour (MA-65, docs/art/ronin.md §1; art-director round 1). Slots: `shoe` = lacquer_black (M 0 · m 1 · b 2 ·
+// B 3 · l 5 · L 6), `horn` = lacquer_red (N 0 outline · n 1 · o 2 base · O 3 lit · u 4 · U 6 spec), `trim` = cloth_ochre.
+// The menpō is the only solid red shape; lacing is thin red lines, the black fill stays dark.
 
 /**
- * Menpō (`Body.mask` front, from the face anchor): red lacquer from under the iris (row 10) to the chin, cheek to cheek
- * inside the head; a lit nose ridge on the axis flanked by black nostrils, 1 lit + 1 spec px top-left, black dragon
- * whiskers (3 px each) sweeping to the cheek edges, a 2-px black mouth slot with upturned corners, darker chin rows.
+ * Menpō (`Body.mask` front, face anchor, rows 10–13 — the chibi head leaves 4 rows under the iris): a hard shell —
+ * r0 top edge (lit left half, base right) with the 2-px nose ridge on the axis flanked by black nostrils; r1 cheek
+ * flares 1 px past the lower rows, a 2-px step-6 spec streak on the left cheek, one connected black whisker per side
+ * (3 px out from the nostril, then 1 down on r2); r2 upturned mouth-slot corners; r3 the chin with the 3-px black
+ * slot, red-0 outline ends. 15 black motif px, no teeth or fangs.
  */
 export const MENPO: Mask = [
-  '.NouonnnMooMnnnnnNN.',
-  '..NmmmnnmnnmnnmmmN..',
-  '...NNnnnnMMnnnnNN...',
-  '......NNNNNNNN......',
+  '..NOUOOOMuoMoooooN..',
+  '..NOUMMMOOooMMMooN..',
+  '...NMooMoooMoooMN...',
+  '.....NnoMMMonN......',
 ];
-/** q34 menpō: 1 px narrower toward the facing, the near whisker only. */
+/** q34: the strokes on the near cheek only, the ridge 1 px toward the facing. */
 export const MENPO_Q34: Mask = [
-  '.NouonnnMooMnnnnNN..',
-  '..NmmmnnmnnmnnnnN...',
-  '..NNnnnnMMnnnnN.....',
-  '......NNNNNNNN......',
+  '..NOUOOOOMuoMoooN...',
+  '..NOUOMMMOOooooN....',
+  '..NooMooMoooMoN.....',
+  '......NnoMMMonN.....',
 ];
-/** Down (happy / petted / sleep): the menpō hangs under the chin as a 6 × 3 red plate over the throat guard. */
-export const MENPO_DOWN: Mask = ['NnnnnN', 'NonnnN', '.NNNN.'];
+/** Down (happy / petted / sleep): the menpō hangs under the chin as a 6 × 3 red plate. */
+export const MENPO_DOWN: Mask = ['NOOooN', 'nUoooN', '.NnnN.'];
 
-/** Yodare-kake (throat guard, `neckAcc: 'collar'`): 2 rows of red lacing under the chin. */
-export const THROAT: Mask = ['.NnNnNnN.', 'MNMNMNMNM'];
-export const THROAT_Q34: Mask = ['.NnNnNnN', 'MNMNMNMN'];
+/** Under the chin: a lacquer_black 0 gap row, then the yodare-kake (black 2) with one red lace row (1 on, 2 off). */
+export const THROAT: Mask = ['.MMMMMMM.', 'bnbbnbbnb'];
+export const THROAT_Q34: Mask = ['.MMMMMMM', 'bnbbnbbn'];
 
 /**
- * Dō (`Body.torsoMask`, from the chest joint): black lacquer cuirass, a lit top edge with the 1-px spec streak at the
- * top-left, 2 lacquer plate rows with 2 offset vermilion odoshi dashes each (every-2-px lacing read as a checker at 1×), shade-1 plate lines between them.
+ * Dō (`Body.torsoMask`, from the chest joint): a black top plate with a 2-px lacquer_black 5 spec streak (no red),
+ * then per plate a continuous red lace line broken by a black px every 3rd px, black plate fill between.
  */
-export const DO: Mask = ['mLlbbbbbbbm', 'mbobbbbbobm', 'mmmmmmmmmmm', 'mbbbobobbbm', 'MmmmmmmmmmM'];
-export const DO_Q34: Mask = ['mLlbbbbbbm', 'mbbobbbobm', 'mmmmmmmmmm', 'mbbbobobbm', 'MmmmmmmmmM'];
+export const DO: Mask = ['mllbbbbbbbm', 'mnnMnnMnnMm', 'mbbbbbbbbbm', 'mnnMnnMnnMm'];
+export const DO_Q34: Mask = ['mllbbbbbbm', 'mnnMnnMnnm', 'mbbbbbbbbm', 'mnnMnnMnnm'];
 
-/** Sode (`Body.sode`, from the near shoulder joint): square 6 × 5 plates, 2 lace rows, a spec px. */
-export const SODE: Mask = ['mLbbbm', 'mbobbm', 'mmmmmm', 'mbbobm', 'MmmmmM'];
+/** Sode (`Body.sode`): a lit top edge, one red lace line, black fill, an outline-0 column toward the dō. */
+export const SODE: Mask = ['lllllM', 'bbbbbM', 'nnMnnM', 'bbbbbM', 'mmmmmM'];
 
-/** Kusazuri (`Body.tassets`, from the hip joint): 4 hanging plates, a red lace row each, 1-px gaps (hakama shows). */
+/** Kusazuri (`Body.tassets`): 4 plates (lit top edge, one red lace row, black fill), 1-px gaps, aligned columns. */
 export const KUSAZURI: Mask = [
-  'mLm.mlm.mlm.mbm',
-  'mom.mom.mom.mom',
+  'mlm.mlm.mlm.mlm',
+  'nnn.nnn.nnn.nnn',
   'mbm.mbm.mbm.mbm',
   'mbm.mbm.mbm.mbm',
   'MmM.MmM.MmM.MmM',
 ];
-export const KUSAZURI_SEATED: Mask = ['mLm.mlm.mlm.mbm', 'mom.mom.mom.mom', 'MmM.MmM.MmM.MmM'];
-export const KUSAZURI_Q34: Mask = ['mLm.mlm.mbm', 'mom.mom.mom', 'mbm.mbm.mbm', 'mbm.mbm.mbm', 'MmM.MmM.MmM'];
+export const KUSAZURI_SEATED: Mask = ['mlm.mlm.mlm.mlm', 'nnn.nnn.nnn.nnn', 'MmM.MmM.MmM.MmM'];
+export const KUSAZURI_Q34: Mask = ['mlm.mlm.mlm', 'nnn.nnn.nnn', 'mbm.mbm.mbm', 'mbm.mbm.mbm', 'MmM.MmM.MmM'];
 
-/** Crown tuft (`headAcc: 'clip'`): 2 umber px × 2 rows above the crown, tied with a 1-px red cord on the crown row. */
-export const TUFT: Mask = ['jh', 'Hh', 'oN'];
+/** Crown tuft (`headAcc: 'clip'`): umber 1–3, 2 px wide, slanted 1 px, tied with one deep red px on the crown row. */
+export const TUFT: Mask = ['.j', 'jH', 'nh'];
+export const TUFT_Q34: Mask = ['j.', 'Hj', 'hn'];

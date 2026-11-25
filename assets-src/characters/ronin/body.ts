@@ -32,6 +32,7 @@ import {
   THROAT,
   THROAT_Q34,
   TUFT,
+  TUFT_Q34,
 } from './masks.ts';
 
 const T6 = [0, 1, 2, 3, 4, 5] as const;
@@ -41,13 +42,14 @@ const OUTFIT: Outfit = {
   skin: { ramp: 'skin', tones: T6UP },
   hair: { ramp: 'hair_umber', tones: T6 },
   // Vermilion lacquer: menpō, odoshi lacing, throat guard, tuft cord.
-  horn: { ramp: 'lacquer_red', tones: T6UP },
+  horn: { ramp: 'lacquer_red', tones: [0, 1, 2, 3, 4, 6] },
   dress: { ramp: 'cloth_ash', tones: T6 },
   apron: { ramp: 'cloth_cream', tones: T6 },
   trim: { ramp: 'cloth_ochre', tones: T6 },
   // Black lacquer: dō, sode, kusazuri, saya, menpō whiskers; `L` = the hard spec streak (step 6).
-  shoe: { ramp: 'lacquer_black', tones: [0, 1, 2, 3, 4, 6] },
-  eye: { ramp: 'jade', tones: T6 },
+  shoe: { ramp: 'lacquer_black', tones: [0, 1, 2, 3, 5, 6] },
+  // Jade one step darker (tougher read), the 1 × 1 highlight `K` keeps the top step.
+  eye: { ramp: 'jade', tones: [0, 0, 1, 2, 3, 5] },
   blush: { ramp: 'cloth_rose', tones: [3, 3, 4, 3, 3, 3] },
   ink: { ramp: 'ink', tones: [0, 1, 2, 3, 4, 4] },
 };
@@ -57,13 +59,13 @@ const RONIN_Q34: BodyView = {
   face: RONIN_FACE_Q34,
   masks: {
     shoe: SHOE_Q34,
-    headAcc: { mask: TUFT, at: [-1, -1] },
-    neckAcc: { mask: THROAT_Q34, at: [-4, 2] },
+    headAcc: { mask: TUFT_Q34, at: [-1, -1] },
+    neckAcc: { mask: THROAT_Q34, at: [-4, 3] },
     hairFar: { mask: HAIR_FAR_Q34, at: [9, -1] },
     hairBack: { mask: HAIR_BACK_Q34, at: [-12, -4] },
   },
   prop: { mask: SWORD_Q34, at: [-14, -11.5] },
-  torsoMask: { mask: DO_Q34, at: [-5, 1] },
+  torsoMask: { mask: DO_Q34, at: [-5, 2] },
   tassets: { front: { mask: KUSAZURI_Q34, at: [-6, -5.5] } },
   sode: { mask: SODE, at: [-4, -1] },
   hideFarShoulder: true,
@@ -105,11 +107,11 @@ export const RONIN: Body = {
   masks: {
     shoe: SHOE,
     headAcc: { mask: TUFT, at: [-1, -1] },
-    neckAcc: { mask: THROAT, at: [-4, 2] },
+    neckAcc: { mask: THROAT, at: [-4, 3] },
   },
   // Obi: 2 vermilion rows under the dō.
   sash: { rows: 2, knot: { mask: [], at: [0, 0] }, dy: 3 },
-  torsoMask: { mask: DO, at: [-5, 1] },
+  torsoMask: { mask: DO, at: [-5, 2] },
   tassets: { front: { mask: KUSAZURI, at: [-7, -5.5] }, seated: { mask: KUSAZURI_SEATED, at: [-7, -5.5] } },
   sode: { mask: SODE, at: [-4, -1] },
   mask: {

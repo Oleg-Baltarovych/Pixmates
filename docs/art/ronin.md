@@ -24,6 +24,20 @@
 - Kote on both forearms = `kote.both` (studs on the near one); kusazuri have no hip-lag dangle yet; no sageo on the
   saya yet. The cefa873 mist cloak, collar and charm are deleted.
 
+## Art-director round 1 (MA-65, 2026-11-25) — as applied
+- Done: the menpō is a hard shell in the 4 rows the chibi head leaves under the iris (top edge lit left / base right,
+  2-px ridge between black nostrils, cheek flares, 2-px spec streak, one connected whisker per side, upturned corners,
+  3-px slot on the chin row, red-0 outline ends; q34 near cheek only); a black gap row + black throat guard with one
+  red lace row under the chin; dō top plate black with a 2-px spec streak, continuous lace lines broken every 3rd px;
+  sode with a lit top edge, one lace line and an outline column toward the dō; kusazuri lace rows in aligned
+  columns; umber tuft with one deep-red tie px; ink hilt, ochre tsuba with one highlight, lit saya line, 2-px red
+  sageo; jade one step darker.
+- **Not done — conflict:** the art-director vermilion ramp (#3a1014 … #f4a27a) fails the round-1 gates at steps 3–4
+  (fx_red Δab ≈ 0.02, garnet Δh ≈ 10° with Δb ≈ 0.03) and the same-step cloth_rose gate at every step; no hue nudge
+  within ±15° passes. `lacquer_red` stays the round-0 ramp (more orange) until the owner / art-director decide (move
+  the vampire fx_red, compare rose at matched L, or accept the overlap). The menpō is therefore still orange-red.
+- Not done: the 6-row menpō (only 4 rows fit inside the chibi head under the iris + 1 skin row), side-lock angular step.
+
 ## 0. Base
 Start from the chibi ronin character files at `cefa873` (MA-29b WIP: head mask, dome skull, hakama, sword prop),
 adapted to today's rig. Keep: `hair_umber`, `jade` eyes, chibi head, the q34 owner rules (§6).
