@@ -261,7 +261,7 @@ describe('art gate (ronin.md): adult lookalike hard rules', () => {
       }
     }
   });
-  it('haori wisps: per side 2 regular tongues tapering 3 → 2 → 1, evenly spaced, mist tones only', () => {
+  it('haori wisps: ≥ 3 regular tongues per side tapering 3 → 2 → 1, evenly spaced per side, mist tones only', () => {
     const wisps = HAORI.hem.wisps;
     if (!wisps) throw new Error('haori has no wisps');
     const j = resolveJoints(RONIN, poseFrame({}), H, 'front');
@@ -281,8 +281,13 @@ describe('art gate (ronin.md): adult lookalike hard rules', () => {
       expect(r).toHaveLength(2 * wisps.count);
       for (const [a, b] of r) expect(b - a + 1).toBe(wisps.length - s);
     });
+    expect(wisps.count).toBeGreaterThanOrEqual(3);
+    // Even spacing within each side (the gap across the centre line is the hem's own, not a wisp step).
     const starts = (rows[0] ?? []).map(([a]) => a);
-    expect((starts[1] ?? 0) - (starts[0] ?? 0)).toBe((starts[3] ?? 0) - (starts[2] ?? 0));
+    for (const side of [starts.slice(0, wisps.count), starts.slice(wisps.count)]) {
+      const steps = side.slice(1).map((x, k) => x - (side[k] ?? 0));
+      expect(new Set(steps).size, `steps ${steps.join(',')}`).toBe(1);
+    }
     for (const tone of geom.px.values()) expect(tone.lining).toBe(false);
     // Rendered: the haori hem rows (hem … tips) under the sleeves show mist or the body, never a warm accent.
     const warm = new Set([...ramp('gem_garnet'), ...ramp('cloth_ochre')]);

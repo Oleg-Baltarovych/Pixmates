@@ -60,7 +60,7 @@ const OUTFIT: Outfit = {
 
 /**
  * Haori back panel: square shoulders 3 px past the shoulder joints (past the sleeve caps), a column to the hem 7 rows
- * under the hip, the hem ending in regular tapered wisps (3 → 2 → 1, 2 per side over the outer 8 px, clear of the
+ * under the hip, the hem ending in regular tapered wisps (3 → 2 → 1, 3 per side over the outer 12 px, clear of the
  * hakama), mist 4 with a mist-5 lit edge (every haori tone h 60–95: no pinkish mist 0–3 inside).
  */
 export const HAORI: Cloak = {
@@ -70,7 +70,7 @@ export const HAORI: Cloak = {
   hemRow: 12,
   widths: { top: 12, hem: 13, shape: 'column' },
   shoulder: 'square',
-  hem: { lobes: 0, wisps: { count: 2, length: 3, span: 8, tipShade: 4 } },
+  hem: { lobes: 0, wisps: { count: 3, length: 3, span: 12, tipShade: 4 } },
   bands: [],
   maxTrail: 2,
 };
