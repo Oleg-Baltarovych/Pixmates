@@ -471,8 +471,20 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
       stamp(accMask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.6, MAT.trim);
     }
     const armsUp = p.parts.armL === 'up' && p.parts.armR === 'up';
+    // Mouth mask (MA-63): up = no mouth stamped, the mask over the lower face; down = the mouth shows and the mask
+    // hangs at the neck.
+    const mm = body.mask;
+    const maskUp = mm !== undefined && !mm.downExpressions.includes(p.face);
+    const mouths = new Set(Object.values(headParts.face.mouths));
     for (const fp of expressionParts(headParts.face, p.face, armsUp, p.irisDx === 1, layout.irisHalf)) {
+      if (maskUp && mouths.has(fp)) continue;
       stamp(fp.mask, j.face[0] + fp.at[0], j.face[1] + fp.at[1], 3.6, MAT.skin, MAT.hair);
+    }
+    if (mm) {
+      const qHead = headViewOf(anim, frame) === 'q34';
+      const placed = maskUp ? (qHead ? mm.q34 : mm.front) : qHead ? (mm.downQ34 ?? mm.down) : mm.down;
+      const [ax, ay] = maskUp ? j.face : j.neck;
+      if (placed) stamp(placed.mask, ax + placed.at[0], ay + placed.at[1], 3.7, MAT.trim, undefined, PART_ID.mask);
     }
     stampChinFists(stamp, p.parts, j, fistKindOf(body));
     const spade = v.back === 'spade_tail' ? body.masks.spade : undefined;

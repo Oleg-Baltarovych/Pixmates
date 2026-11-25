@@ -367,6 +367,19 @@ export interface SilhouetteOutline {
   readonly shade: number;
 }
 
+/**
+ * Mouth mask (D-20 MA-63, ART-BIBLE §11.10; ronin's menpō): authored over the lower face, hides the mouth.
+ * `front` / `q34` from the face anchor; `down` / `downQ34` from the neck joint, shown instead on `downExpressions`
+ * frames (the mouth shows then). Part id 16.
+ */
+export interface MouthMask {
+  readonly front: PlacedMask;
+  readonly q34?: PlacedMask;
+  readonly down: PlacedMask;
+  readonly downQ34?: PlacedMask;
+  readonly downExpressions: readonly ExpressionId[];
+}
+
 export interface Body {
   /** Pack id (`pixmates.<id>` for built-ins, `rig-dummy-*` for test bodies). */
   readonly id: string;
@@ -500,6 +513,8 @@ export interface Body {
   readonly cloak?: Cloak;
   /** Front prop on the hip joint (`Prop`); a q34 pose needs `views.q34.prop` too. */
   readonly prop?: Prop;
+  /** Mouth mask slot (MA-63); unset = no mask. */
+  readonly mask?: MouthMask;
   /**
    * Front only: a 1-px centre line `rows` high from the skirt hem in cloth `shade` (0..5, whole), e.g. a hakama split;
    * `notch` cuts a 2-px gap that many rows up from the hem between the legs (default 0).

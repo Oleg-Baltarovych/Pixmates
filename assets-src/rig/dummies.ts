@@ -13,7 +13,7 @@ import { createRigPack } from './compose.ts';
 import { irisShift, type FaceLibrary, type FacePart } from './face.ts';
 import { STERN_FACE } from './faces/stern.ts';
 import { deriveQ34Face, deriveQ34Head, deriveQ34Shoe } from './q34.ts';
-import type { Body, BodyView } from './types.ts';
+import type { Body, BodyView, MouthMask } from './types.ts';
 
 const T6 = [0, 1, 2, 3, 4, 5] as const;
 const T6UP = [1, 2, 3, 4, 5, 6] as const;
@@ -228,6 +228,32 @@ export const MAID_PREVIEW: Body = {
 /** Stern-look review body (MA-62): dummy B with the shared stern kit (front only; its q34 face stays the dummy one). */
 export const DUMMY_STERN: Body = { ...DUMMY_B, id: 'rig-dummy-stern', name: 'Rig dummy (stern)', face: STERN_FACE };
 
+/** Mouth-mask review body (MA-63): dummy B with a 3-row mask over the mouth, lowered on happy / petted / sleep. */
+const MOUTH_MASK: Mask = ['.tTTTTt.', 'tTTTTTTt', '.gggggg.'];
+export const MASK_DUMMY: MouthMask = {
+  front: { mask: MOUTH_MASK, at: [6, 10] },
+  q34: { mask: MOUTH_MASK, at: [7, 10] },
+  down: { mask: ['.tTTt.', 'tggggt'], at: [-3, 0] },
+  downExpressions: ['happy', 'petted', 'sleep'],
+};
+/** Talk reads through the eyes while the mask is up (talk_b glances, talk_c looks aside). */
+export const DUMMY_MASKED: Body = {
+  ...DUMMY_B,
+  id: 'rig-dummy-masked',
+  name: 'Rig dummy (mouth mask)',
+  face: {
+    ...DUMMY_FACE,
+    expressions: {
+      ...DUMMY_FACE.expressions,
+      talk_b: { ...DUMMY_FACE.expressions.talk_b, eyes: 'glance' },
+      talk_c: { ...DUMMY_FACE.expressions.talk_c, eyes: 'side' },
+      // The dummy's lowered worried eyes would touch the mask: keep them at the open height (brows carry it).
+      worried: { ...DUMMY_FACE.expressions.worried, eyes: 'open' },
+    },
+  },
+  mask: MASK_DUMMY,
+};
+
 /** Review packs for `pnpm sprites:sheet --review` (never written to resources/). */
 export const reviewPacks = (): PackDef[] =>
-  [DUMMY_A, DUMMY_B, DUMMY_STERN, MAID_PREVIEW].map((b) => createRigPack(b, ANIMS));
+  [DUMMY_A, DUMMY_B, DUMMY_STERN, DUMMY_MASKED, MAID_PREVIEW].map((b) => createRigPack(b, ANIMS));

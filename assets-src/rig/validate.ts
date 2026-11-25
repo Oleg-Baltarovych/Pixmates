@@ -3,15 +3,15 @@
 // `validateBody` first; it throws with every problem found.
 import type { RampName } from '../lib/buffer.ts';
 import type { Point } from '../lib/chain.ts';
-import { checkMask, maskSize, type Mask } from '../lib/mask.ts';
+import { checkMask, LEGEND, maskSize, type Mask } from '../lib/mask.ts';
 import MASTER from '../palettes/master.json' with { type: 'json' };
 import { frame as poseFrame } from './anims/kit.ts';
 import { resolveJoints } from './body.ts';
 import { layoutOf } from './layout.ts';
 import { BREATH_GLOW, dressShadeOf, HEM_LIFT_MAX, hemLiftOf, skirtRampOf } from './chains.ts';
-import { EXPRESSIONS, Q34_EXPRESSIONS, validateFace, type ExpressionId } from './face.ts';
+import { EXPRESSIONS, Q34_EXPRESSIONS, validateFace, type ExpressionId, type ViewFaceLibrary } from './face.ts';
 import { FISTS, fistKindOf } from './passes.ts';
-import type { Body, BodyView, RigAnim, View } from './types.ts';
+import type { Body, BodyView, PlacedMask, RigAnim, View } from './types.ts';
 import { headViewOf, usesView } from './views.ts';
 
 /** Highest index of a six-tone ramp / swatch (shade opt-ins are 0..MAX_SHADE). */
@@ -189,6 +189,7 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
       }
     });
   }
+  problems.push(...mouthMaskProblems(body, usesQ34, faceAtOf));
   if (problems.length > 0) throw new Error(problems.join('\n'));
   if (body.variants.back === 'spade_tail' && !body.masks.spade) throw new Error(`${body.id}: spade_tail needs a spade`);
 }
@@ -345,5 +346,99 @@ function slotProblems(body: Body, usesQ34: boolean): string[] {
   if (body.hakama && (body.variants.hem !== 'skirt' || !whole(body.hakama.drop, 0, HAKAMA_DROP_MAX)))
     problems.push(`${id}: hakama needs hem 'skirt' and a whole drop 0..${String(HAKAMA_DROP_MAX)}`);
   if (body.skirtLace === false && body.variants.hem !== 'skirt') problems.push(`${id}: skirtLace needs hem 'skirt'`);
+  return problems;
+}
+/** `Body.mask.down` / `downQ34` row cap (ART-BIBLE §11.10: under the chin, ≤ 3 rows). */
+export const MASK_DOWN_MAX_ROWS = 3;
+
+const isPx = (ch: string): boolean => ch !== '.' && ch !== ' ' && ch !== '';
+const opaque = (mask: Mask, at: Point): Set<string> => {
+  const out = new Set<string>();
+  mask.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) if (isPx(row.charAt(x))) out.add(`${String(at[0] + x)},${String(at[1] + y)}`);
+  });
+  return out;
+};
+const paintedRowCount = (mask: Mask): number => mask.filter((r) => r.split('').some(isPx)).length;
+
+/**
+ * Mouth-mask rules (MA-63, ART-BIBLE §11.10) per view whose head the poses use: the mask lies inside the head mask,
+ * covers every mouth px of each mask-up expression and starts ≥ 1 skin row under the lowest iris row of those
+ * expressions; the down masks are ≤ 3 rows; while the mask is up, `talk_a/b/c` differ pairwise in eyes or brows.
+ */
+function mouthMaskProblems(
+  body: Body,
+  usesQ34: boolean,
+  faceAtOf: (view: View, head: Body['head']) => Point,
+): string[] {
+  const m = body.mask;
+  if (!m) return [];
+  const id = body.id;
+  const problems: string[] = [];
+  const views: [View, Body['head'], ViewFaceLibrary, PlacedMask | undefined][] = [
+    ['front', body.head, body.face, m.front],
+  ];
+  const q34 = body.views?.q34;
+  if (usesQ34 && q34) views.push(['q34', q34.head, q34.face, m.q34]);
+  if (usesQ34 && !m.q34) problems.push(`${id}: mask.q34 is required when q34 poses show the head`);
+  const placedAll = {
+    front: m.front,
+    q34: m.q34,
+    down: m.down,
+    downQ34: m.downQ34,
+  };
+  for (const [name, placed] of Object.entries(placedAll)) {
+    if (placed) checkMask(placed.mask, `${id}/mask.${name}`);
+  }
+  for (const [name, placed] of Object.entries({
+    down: m.down,
+    downQ34: m.downQ34,
+  })) {
+    const rows = placed ? paintedRowCount(placed.mask) : 0;
+    if (rows > MASK_DOWN_MAX_ROWS) {
+      problems.push(`${id}: mask.${name} has ${String(rows)} rows (≤ ${String(MASK_DOWN_MAX_ROWS)} rows)`);
+    }
+  }
+  const up = (e: ExpressionId): boolean => !m.downExpressions.includes(e);
+  for (const [view, head, lib, placed] of views) {
+    if (!placed) continue;
+    const covered = opaque(placed.mask, placed.at);
+    const faceAt = faceAtOf(view, head);
+    for (const key of covered) {
+      const [x = 0, y = 0] = key.split(',').map(Number);
+      if (!isPx(head.mask[faceAt[1] + y]?.charAt(faceAt[0] + x) ?? '')) {
+        problems.push(`${id}: mask.${view} px ${key} (face anchor) is outside the head`);
+        break;
+      }
+    }
+    const top = placed.at[1] + placed.mask.findIndex((r) => r.split('').some(isPx));
+    for (const e of EXPRESSIONS) {
+      const ex = lib.expressions[e];
+      if (!ex || !up(e)) continue;
+      for (const mouthId of [ex.mouth, ex.raisedMouth]) {
+        const mouth = mouthId === undefined ? undefined : lib.mouths[mouthId];
+        if (mouth && [...opaque(mouth.mask, mouth.at)].some((k) => !covered.has(k))) {
+          problems.push(`${id}: mask.${view} leaves ${e} mouth "${mouthId ?? ''}" px uncovered`);
+        }
+      }
+      const eyes = lib.eyes[ex.eyes];
+      const irisRows = eyes
+        ? eyes.mask.flatMap((row, y) => (row.split('').some((ch) => LEGEND[ch]?.[0] === 'eye') ? [eyes.at[1] + y] : []))
+        : [];
+      if (irisRows.length > 0 && top < Math.max(...irisRows) + 2) {
+        problems.push(`${id}: mask.${view} needs ≥ 1 skin row under the iris (${e})`);
+      }
+    }
+  }
+  const talks = (['talk_a', 'talk_b', 'talk_c'] as const).filter(up);
+  const look = (e: ExpressionId): string => {
+    const ex = body.face.expressions[e];
+    return JSON.stringify([body.face.eyes[ex.eyes], ex.brows === undefined ? null : body.face.brows?.[ex.brows]]);
+  };
+  talks.forEach((a, i) => {
+    for (const b of talks.slice(i + 1)) {
+      if (look(a) === look(b)) problems.push(`${id}: mask up — ${a} and ${b} must differ in eyes or brows`);
+    }
+  });
   return problems;
 }

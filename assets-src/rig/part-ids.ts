@@ -31,6 +31,8 @@ export const PART_ID = {
   cloak: 14,
   /** Hip prop + its dangle (`Body.prop`): label none, so the arm-over-torso check ignores it. */
   prop: 15,
+  /** Mouth mask (`Body.mask`, MA-63): label none. */
+  mask: 16,
   /** Far (R) arm, as the near one. */
   armUpperR: 19,
   armForeR: 20,
