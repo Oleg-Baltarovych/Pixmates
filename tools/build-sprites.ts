@@ -13,7 +13,7 @@ const USAGE = `Usage: pnpm sprites [<id>…]
 Builds the listed outputs (default: all) into resources/characters/<id>/ and resources/fx/.
 Ids: ${OUTPUT_IDS.join(', ')}`;
 
-runCli(USAGE, () => {
+await runCli(USAGE, () => {
   const args = parseCli({ usage: USAGE, options: {}, positionals: true }, process.argv.slice(2));
   if (wantsHelp(args)) {
     console.log(USAGE);

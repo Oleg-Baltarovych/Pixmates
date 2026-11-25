@@ -43,10 +43,10 @@ export function parseCli<O extends ParseArgsOptionsConfig>(spec: CliSpec<O>, arg
 export const wantsHelp = (parsed: { readonly values: { readonly help?: unknown } }): boolean =>
   parsed.values.help === true;
 
-/** Runs a tool's main: prints the usage for `--help` or a UsageError (exit 2), any other error with its stack (exit 1). */
-export function runCli(usage: string, main: () => void): void {
+/** Runs a tool's main: a UsageError prints the message and the usage (exit 2); any other error propagates (exit 1). */
+export async function runCli(usage: string, main: () => void | Promise<void>): Promise<void> {
   try {
-    main();
+    await main();
   } catch (error) {
     if (error instanceof UsageError) {
       console.error(`error: ${error.message}\n\n${usage}`);

@@ -10,7 +10,7 @@ const USAGE = `Usage: pnpm sprites:lock
 Builds every pack and the FX atlas in memory and writes their SHA-256s to assets-src/sprites.lock.json.
 Commit the lock diff together with the asset change that caused it.`;
 
-runCli(USAGE, () => {
+await runCli(USAGE, () => {
   if (wantsHelp(parseCli({ usage: USAGE, options: {} }, process.argv.slice(2)))) {
     console.log(USAGE);
     return;
