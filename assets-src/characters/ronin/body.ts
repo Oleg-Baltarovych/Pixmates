@@ -147,6 +147,7 @@ export const RONIN: Body = {
   hairBackStretch: 0.2,
   sideLocks: false,
   despeckle: 'mist',
+  tamoto: { shade: 5, lineShade: 3 },
   views: { q34: RONIN_Q34 },
 };
 

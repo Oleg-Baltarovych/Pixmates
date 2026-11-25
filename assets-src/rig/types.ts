@@ -474,6 +474,12 @@ export interface Body {
   /** Procedural side-lock chains (default true); false = the head mask's own (short) locks only. */
   readonly sideLocks?: boolean;
   /**
+   * Opt-in (MA-46 F3, long sleeves): haori tamoto — every sleeve cloth px flat at `shade` (no lit stroke streaks), a
+   * 1-px `lineShade` seam row under each shoulder joint, 2 short diagonal folds from the elbow and a shadow row 2 rows
+   * above the hand (all in the sleeve ramp, locked).
+   */
+  readonly tamoto?: { readonly shade: number; readonly lineShade: number };
+  /**
    * Opt-in (MA-46): the last pass gives every px of this ramp that has no 4-neighbour of the same ramp the most
    * common opaque 4-neighbour colour (ties → the darker), so a pale cloth (e.g. ronin's mist haori sleeves) never
    * leaves a 1-px speck at a cuff, hand or lapel (a floating pale dot reads as a hitodama).

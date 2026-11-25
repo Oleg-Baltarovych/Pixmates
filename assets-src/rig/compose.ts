@@ -24,7 +24,7 @@ import { MAT } from '../lib/materials.ts';
 import { compose, outline, selectiveOutline, type Part } from '../lib/passes.ts';
 import { antiAlias, rimLight } from '../lib/polish.ts';
 import type { AnimDef, PackDef, RenderContext } from '../lib/types.ts';
-import { FIGURE_H, resolveJoints, withBand } from './body.ts';
+import { elbowOf, FIGURE_H, resolveJoints, withBand } from './body.ts';
 import { LAYOUT_LEGACY, layoutOf, type RigLayout } from './layout.ts';
 import {
   buildArm,
@@ -615,6 +615,39 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
         buf.ramp[i] = stud ? sRamp : kRamp;
         buf.shade[i] = stud ? k.stud.shade : k.shade;
         locked.set(i, [buf.ramp[i] ?? -1, buf.shade[i] ?? 0]);
+      }
+    }
+    // `Body.tamoto`: long haori sleeves as flat cloth (no lit stroke streaks), a 1-px seam row under the shoulder,
+    // 2 short diagonal folds from the elbow and a shadow row above the cuff (final, locked).
+    if (body.tamoto) {
+      const tm = body.tamoto;
+      const sRamp = ctx.palette.rampNames.indexOf(sleeve.ramp);
+      const W = buf.width;
+      const view = bodyViewOf(anim, frame);
+      for (const side of ['L', 'R'] as const) {
+        const ids = side === 'L' ? ARM_IDS_L : ARM_IDS_R;
+        const isSleeve = (i: number): boolean =>
+          (buf.partId[i] === ids.upper || buf.partId[i] === ids.fore) &&
+          buf.material[i] === MAT.cloth &&
+          buf.ramp[i] === sRamp;
+        const paint = (x: number, y: number, shade: number): void => {
+          const i = y * W + x;
+          if (x < 0 || y < 0 || x >= W || y >= buf.height || !isSleeve(i)) return;
+          buf.shade[i] = shade;
+          locked.set(i, [sRamp, shade]);
+        };
+        for (let i = 0; i < W * buf.height; i++) if (isSleeve(i)) paint(i % W, Math.floor(i / W), tm.shade);
+        const sh = j[side === 'L' ? 'shoulderL' : 'shoulderR'];
+        const hand = j[side === 'L' ? 'handL' : 'handR'];
+        const arm = side === 'L' ? p.parts.armL : p.parts.armR;
+        const el = elbowOf(j, side, arm, view, layout);
+        const seamY = Math.round(sh[1]) + 1;
+        for (let x = Math.round(sh[0]) - 3; x <= Math.round(sh[0]) + 3; x++) paint(x, seamY, tm.lineShade);
+        const dir = side === 'L' ? 1 : -1;
+        for (const dy of [0, 2])
+          for (let k = 0; k < 2; k++) paint(Math.round(el[0]) + dir * k, Math.round(el[1]) + dy + k, tm.lineShade);
+        const shadowY = Math.round(hand[1]) - 2;
+        for (let x = Math.round(hand[0]) - 3; x <= Math.round(hand[0]) + 3; x++) paint(x, shadowY, tm.lineShade);
       }
     }
     // 4. Outline, AA, locked tones restored, rim.
