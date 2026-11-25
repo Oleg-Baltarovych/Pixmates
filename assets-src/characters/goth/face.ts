@@ -28,25 +28,25 @@ const SOFT_OPEN: Mask = [LASH_AA, LASH, LASH_LOW, ...IRIS];
 /**
  * D-20 stern eye (art-director round 1, ART-BIBLE §11.9), stamped from face row 4: a 2-row ink lash (the darkest face
  * px) over the top 2 iris rows, so 4 × 3 of iris shows; its outer 2 px drop 1 row and end in a square 1-px tick (no
- * flick); one cream 1 × 1 highlight at the iris top-left under the lash; a 2 × 2 pupil in the darkest iris tone
+ * flick); one cream 1 × 1 highlight at the iris top-left under the lash; a 2 × 2 pupil in the darkest iris tone (`C`) inside a lighter `i` ring
  * touching the lash; the bottom-inner corner in iris dark (no pale px there — it read sleepy); a 2-px skin-shadow
  * lower lid under the outer 2 iris columns. Mirrored about cols 9 | 10, highlights top-left in both eyes.
  */
 const OPEN: Mask = [
   '..XXXXXX....XXXXXX..',
   '...XXXXX....XXXXX...',
-  '.XXPCCc......PCCcXX.',
-  '...cCCc......cCCc...',
-  '...ikkc......ckki...',
+  '.XXPCCi......PCCiXX.',
+  '...iCCi......iCCi...',
+  '...iIkc......cIki...',
   '...zz..........zz...',
 ];
 /** Glance (idle_a) / think: iris + pupil 1 px toward screen-right; lash, tick, highlight and lower lid stay. */
 const SIDE: Mask = [
   '..XXXXXX....XXXXXX..',
   '...XXXXX....XXXXX...',
-  '.XXPcCC......PcCCXX.',
-  '...ccCC......ccCC...',
-  '...ckki......icki...',
+  '.XXPiCC......PiCCXX.',
+  '...iiCC......iiCC...',
+  '...ciIk......icIk...',
   '...zz..........zz...',
 ];
 /** Startle: the lid lifts 1 row; full 4 × 5 iris with sclera on both sides. */
@@ -65,9 +65,9 @@ const WORRIED: Mask = ['......XX....XX......', '..XXXX........XXXX..', LASH_LOW,
 const WINCE: Mask = [
   '..XXXXXX............',
   '...XXXXX.....xX.....',
-  '.XXPCCc........XX...',
-  '...cCCc......xX.....',
-  '...ikkc.............',
+  '.XXPCCi........XX...',
+  '...iCCi......xX.....',
+  '...iIkc.............',
   '...zz...............',
 ];
 
@@ -148,9 +148,9 @@ export const GOTH_FACE: FaceLibrary = {
 const OPEN_Q34: Mask = [
   '..XXXXXX.....XXXXX..',
   '...XXXXX.....XXXX...',
-  '.XXPCCc......PCcXX..',
-  '...cCCc......cCc....',
-  '...ikkc......cki....',
+  '.XXPCCi......PCiXX..',
+  '...iCCi......iCi....',
+  '...iIkc......cIi....',
   '...zz.........zz....',
 ];
 
