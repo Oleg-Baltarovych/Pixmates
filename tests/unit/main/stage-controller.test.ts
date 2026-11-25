@@ -12,7 +12,7 @@ describe('StageController scale on small displays', () => {
   it.each([
     [200, 2],
     [400, 3],
-    [600, 5],
+    [600, 4],
   ])('work area %s DIP: L stays within the clamp %s and «Більше» never shrinks', (height, clamp) => {
     const stage = controllerOn(height);
     stage.setPreset('l');

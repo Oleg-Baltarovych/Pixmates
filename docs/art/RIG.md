@@ -17,11 +17,10 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 | `passes.ts` | `stampMask` and the buffer / image passes (shin wraps, far-leg gap, knee creases, far-shoulder clip, chin fists, spade notches, apron panel, arm over torso, sleeve/hair line, hand over ties, labels, squash separator, seam closer) |
 | `part-ids.ts` | `PART_ID` table, `LABEL_OF`, part sets (`SLEEVE_PARTS`, `TORSO_PARTS`, `LEG_PARTS`, …); no bare part numbers elsewhere |
 | `face.ts`, `checks.ts`, `style.ts`, `q34.ts`, `dummies.ts`, `anims/` | face library + validator, arm-over-torso check, SOFT preset, q34 masks for dummies only, review bodies, shared poses |
-| `layout.ts` | `RigLayout` (frame, rests, arm / leg shapes, torso + hem geometry, cloak bound, face rules); after MA-61 one layout `LAYOUT` (48 × 56) |
-| `dummies-adult.ts` | adult review bodies — deleted in MA-61 |
+| `layout.ts` | `RigLayout` (frame, rests, arm / leg shapes, torso + hem geometry, cloak bound, face rules); one layout `LAYOUT` (48 × 56, MA-61) |
 
 ## D-20 (ADR 012, 2026-11-25): chibi 48 × 56 is the only layout
-The adult layer below is **removed in MA-61** (kept here until then as a map of what to delete): `LAYOUT_ADULT`,
+The adult layer was **removed in MA-61** (2026-11-25; git history keeps it, last at 2ce10fa): `LAYOUT_ADULT`,
 `Body.layout` / `build`, `anims/adult.ts`, `dummies-adult.ts`, `ADULT_PROP`, two-segment limbs, adult face rules,
 `WALK_TRAVEL.adult`, `--adult` sheets. `RigLayout` stays with one layout (`LAYOUT`). D-19 opt-ins kept for chibi
 re-validation (deleted in MA-69 if unused): `Prop.over`, `Body.kote`, `Body.tamoto`, `skirtSplit.notchHalf` /
@@ -36,64 +35,6 @@ New opt-ins (D-20, unset = byte-identical):
 - **Armour** (MA-65, ronin; knight/coder reuse): `Body.puff` (shoulder plates; knight R3) with `square` shape and lace
   rows; `Body.torsoMask` (= coder R-C3 `Body.front`: authored torso overlay on the chest/hip joints, part 7, for dō
   plates + lacing); `Body.tassets` (authored hip mask over the hem per view + seated variant, dangle ±1 px on hip lag).
-
-## Layouts (D-19 MA-42…MA-44, ADR 011; tests `tests/unit/art/rig-adult.test.ts`) — REMOVED in MA-61
-- Every size the composer, chains, passes and validators used to take from module constants now comes from the
-  body's `RigLayout`. `LAYOUT_LEGACY` holds the pre-D-19 numbers verbatim, so the chibi packs (maid, kitsune, goth,
-  witch, ronin) are byte-identical until each is redrawn; `REST`, `REST_Q34`, `ARMS`, `RIG_W`, `RIG_H`, `FIGURE_H`
-  stay exported as its aliases.
-- **Adult** (`layout: 'adult'`, `build` required; a legacy body with `build` fails): frame 56 × 72 (figure box = frame,
-  no headroom offset), soles on row 70, axis x = 28, `scaleRef` 66. Rest: head joint row 13 (head mask 16 × 15 at
-  (−8, −7): rows 6…20, face anchor (−6, −3) from it), neck 21, shoulder line 23.2, chest 24, hip 40 (female 39),
-  ankles 67.6. Builds: shoulder joints ±9 / ±7, neck 5 / 3 px, feet ±6.5 / ±4.5, chest half 7.4 / 6; the female
-  bodice ends at the pinched waist (half 4.2) and the skirt flares over the hip (with shorts a 2-px pinch vertex at
-  60 % of the bodice). Measured on the dummies: crown row 5, H 66 rows = 4.40 heads (15-row head mask), legs 47 % / 49 %,
-  shoulders 26 / 22 px = 1.44× / 1.22× the rendered head (18 px with hair + outline), hands at hip + 3.6, top row
-  ≥ 2 in all 16 anims (happy apex), atlas 1008 × 504.
-- **Two-segment limbs.** Arms: upper ≈ 10, forearm + half fist ≈ 10.5; every variant bends at the elbow (≥ 0.5 px
-  off the shoulder → hand line). Legs: `kneeOf` puts the knee at half of hip-top → ankle plus a per-variant bend
-  (front: outward; q34: forward); the leg is one 3-point stroke (hip r 2.1 / 2.2 → knee 1.5 → ankle 1.15). Legacy
-  layouts have no knees (one stroke, the seated knee bump as before).
-- **Adult faces** (`RigLayout.face` → `validateFace(..., rules)`): open eyes 2–3 rows and ¼–⅕ of the 12-row face, no
-  eye mask > 3 rows, brows on every expression but blink / sleep / happy / petted, a 1–3 px skin nose shadow
-  (`FaceLibrary.nose`, stamped after the cheeks), blush only on `petted`, a jaw (chin row ≥ 6 skin px narrower than
-  the widest). Glance splits the eye mask at `irisHalf` (adult 6, legacy 10).
-- **Adult pose tables (MA-45, `anims/adult.ts`, tests `rig-adult-anims.test.ts`).** `animsFor(body)` → legacy
-  `ANIMS` (byte-identical) or `ANIMS_ADULT` / `ANIMS_ADULT_FEMALE`; same 16 names, fps, loop, anchor, frame counts.
-  Re-posed: **walk** 8 f, 16-px contact stride (feet ±8 about the axis), stance foot planted 5 f sliding 4 px/f
-  (= `WALK_TRAVEL.adult`, 40 native px/s), swing lift 2–3 px, 1-px bob, head 1 frame late, root dx 0, male head x −
-  hip x = −1, female hip sways 1 px under a fixed chest/head; q34 stance knees bend by the two-segment chord
-  (`kneeOf`, thigh = shin = ½ rest leg); far arm one ramp step darker (`RigLayout.farArmStep`). **sit_edge / sleep**:
-  root 0, knees on the seat row (±1), shins ≥ 12 px, hem lift 4; sleep = slumped seated doze (chest +2 / +1 aside,
-  head +1), no curl. **drag**: shoulders −2. Others keep the legacy offsets (1-px moves read at adult size); their
-  arms come from `ARMS_ADULT` (talk / edge / out re-bent, think fold → chin elbow, q34 `edge`, `limp`, `chin`).
-  Adult folded knees (sit, curl) get the crease pass. Female dummy head `ADULT_HEAD_FEMALE` (narrower jaw); the male
-  dummy carries a hip prop. Every adult frame keeps rows 0–1 clear.
-- **Adult rules (MA-45 art-director round 1; ADR 011 note).** q34 rest: far shoulder x = axis + round(chest half
-  far) − 1 (male +5 = rest −4, female +4 = rest −3, 1 row lower), the far shoulder cap clipped by default on adult
-  layouts (`hideFarShoulder` implied; the far arm emerges below it, still visible on the walk swing); q34 rest and
-  turn f1 feet near −3 / far +3, far 1 row higher (walk contact frames unchanged: stride x about the axis on the
-  ground row). Per-frame knee nudges `PoseFrame.knees` (two-segment only). Long back hair (`hairBack: 'long'`, no
-  `hairBackStretch`) reaches `RigLayout.longHairTipRow` (adult 41, mid-back) — `hairScale` narrows, never shortens.
-  **Hip-prop rule per view** (validated separately, `ADULT_PROP.q34` / `.front`; round 2): **q34** ≈ 34–36 px along
-  its diagonal (hilt 8, guard 2), hilt top ≥ row 36, trailing down-back ≈ 25° to row ≈ 52. **front** (projected): a
-  4–5 px hilt (`Prop.hilt`, stamped over torso / hem / legs, under the arms) poking forward at the wearing hip, top
-  row ≥ 36, ≤ 20° off horizontal toward the axis; the scabbard drops ≥ 70° from horizontal behind the thigh on the
-  same side, tip row ≤ 56, every px ≥ 2 px off the axis on the wearing side (hip sway ±1) and ≤ 3 px past the rest
-  outline. turn f0 uses the front projection; q34 keeps the hilt on the same (screen-right) side — the prop never
-  jumps sides. Never parallel to and beside a forearm (review rule; the think chin fist goes on the side without the
-  prop). Dummy sword: `adultSword()` → `{ front, q34 }` (`adultSwordFront()` 5-px hilt + 17-row drop,
-  `adultSwordQ34()` 35 px, 25°); tests render every front frame of the male dummy against a prop-less copy.
-- **Adult poses (round 1):** idle_a contrapposto (hip +1 toward the weight leg, weight foot axis +5, free −8, free
-  shoulder +1 row, head on the axis), idle_b shifts the weight over 2 frames and holds; `down` arms 1 px off torso
-  and thigh; happy = fist pump (`pump`), no jump (crouch with knees out 1, root −1 on the toes); land hip +3 / +2 / +1
-  with knees out 2 and arms `out` low; drag shoulders −3, head +1, left knee up 2, feet 1 row apart; sit_edge / sleep
-  male knees ±5 / feet ±7 (near foot 2 lower), female knees ±6 (kneeOf 22 / 34; round 2: a 2-px gap between the shins under the hem, the ankles meet only at the bottom); sleep head o(2, 3) on the collar,
-  far hand 2 px toward the edge; think chin fist left, forearm vertical (elbow row ≈ 32: two 10-px segments cannot
-  reach 36); worried `neck` + `hip` hands; petted (round 2) both arms down, shoulders −1 (shrug), head 1 px toward the near side, `petted` ^^ eyes; walk passing swing foot 2 px behind the planted ankle,
-  lifted 3, knee 2 px ahead (`PASS_KNEE`).
-- Sheets: `pnpm sprites:sheet --adult` → `reports/sprites/rig-adult-<build>/sheet-x1.png`, `sheet-x4.png` (all 16
-  anims; white + dark) + `walk`, `turn`, `walk-mirrored` `.apng.png` (×4).
 
 ## Part ids (`rig/part-ids.ts`, written per px by compose and `stampMask`)
 | id | part | id | part |

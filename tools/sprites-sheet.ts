@@ -5,9 +5,6 @@
 //   pnpm sprites:sheet --lineup   all packs side by side (idle, walk, happy frame strips) → reports/art-spike/
 //   pnpm sprites:sheet --swatch   master palette swatch → docs/art/palette.png
 //   pnpm sprites:sheet --review   the rig review bodies (dummies + maid preview, never built into resources/)
-//   pnpm sprites:sheet --adult    adult rig dummies (ADR 011): all 16 anims (front + q34) at 1× and ×4 on white
-//                                 and dark → reports/sprites/rig-adult-<build>/sheet-x1.png, sheet-x4.png, plus
-//                                 ×4 APNGs walk.apng.png, turn.apng.png, walk-mirrored.apng.png
 //   pnpm sprites:sheet --fx       FX marks sheet on light + dark, and marks composited at the rig fx anchor
 //                                 → reports/sprites/fx-sheet.png, fx-on-<id>.png
 //   pnpm sprites:sheet --real     real M size on the 4 backdrops: first frame of every animation + the walk cycle
@@ -16,7 +13,6 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FX_MARKS } from '../assets-src/fx/marks.ts';
 import { PACKS } from '../assets-src/packs.ts';
-import { adultPacks } from '../assets-src/rig/dummies-adult.ts';
 import { MAID_PREVIEW, reviewPacks } from '../assets-src/rig/dummies.ts';
 import { facingOf } from '../src/shared/pack.ts';
 import { encodeApng, encodePng, type RgbaImage } from './lib/png.ts';
@@ -104,14 +100,7 @@ const args = process.argv.slice(2);
 const ids = args.filter((a) => !a.startsWith('--'));
 const ctx = renderContext(loadMasterPalette());
 const review = args.includes('--review') || args.includes('--fx');
-const adult = args.includes('--adult');
-const sources = args.includes('--fx')
-  ? [...reviewPacks(), ...PACKS]
-  : adult
-    ? adultPacks()
-    : review
-      ? reviewPacks()
-      : PACKS;
+const sources = args.includes('--fx') ? [...reviewPacks(), ...PACKS] : review ? reviewPacks() : PACKS;
 const packs = sources
   .filter((p) => ids.length === 0 || ids.includes(p.id))
   .map((def) => ({
@@ -119,55 +108,7 @@ const packs = sources
     built: buildPack(def, ctx),
   }));
 
-if (adult) {
-  // Rows: every animation in build order; columns = frames; top half white, bottom half dark; 1× and ×4.
-  for (const { def, built } of packs) {
-    const rows = [...built.frames.keys()];
-    const { w, h } = def.frameSize;
-    const dir = join(reports, 'sprites', def.id);
-    mkdirSync(dir, { recursive: true });
-    for (const s of [1, 4]) {
-      const pad = 2 * s;
-      const cols = Math.max(...rows.map((r) => built.frames.get(r)?.length ?? 0));
-      const half = rows.length * (h * s + pad) + pad;
-      const c = new Canvas(cols * (w * s + pad) + pad, half * 2);
-      c.fill(0, 0, c.width, half, WHITE);
-      c.fill(0, half, c.width, half, DARK);
-      for (const y0 of [0, half]) {
-        rows.forEach((name, row) => {
-          (built.frames.get(name) ?? []).forEach((frame, col) => {
-            c.blit(frame, pad + col * (w * s + pad), y0 + pad + row * (h * s + pad), s);
-          });
-        });
-      }
-      const file = join(dir, `sheet-x${String(s)}.png`);
-      writeFileSync(file, encodePng(c.image()));
-      console.log(file);
-    }
-    // Motion check: walk, turn and the runtime mirror of walk (walking left), ×4 on white | dark.
-    const s = 4;
-    const motion = [
-      ['walk', false],
-      ['turn', false],
-      ['walk', true],
-    ] as const;
-    for (const [name, flip] of motion) {
-      const fps = def.animations[name]?.fps ?? 8;
-      const apng = encodeApng(
-        (built.frames.get(name) ?? []).map((frame) => {
-          const c = new Canvas(2 * (w * s + 16), h * s + 16);
-          c.fill(0, 0, w * s + 16, c.height, WHITE);
-          c.fill(w * s + 16, 0, w * s + 16, c.height, DARK);
-          for (const x0 of [8, w * s + 24]) c.blit(flip ? mirror(frame) : frame, x0, 8, s);
-          return { image: c.image(), delayMs: Math.round(1000 / fps) };
-        }),
-      );
-      const file = join(dir, `${name}${flip ? '-mirrored' : ''}.apng.png`);
-      writeFileSync(file, apng);
-      console.log(file);
-    }
-  }
-} else if (args.includes('--fx')) {
+if (args.includes('--fx')) {
   // FX sheet: every mark frame ×6 on light and dark; then marks composited on the review bodies at the fx anchor.
   const fx = buildFx(ctx);
   const s = 6;

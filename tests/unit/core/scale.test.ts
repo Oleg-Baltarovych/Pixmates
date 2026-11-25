@@ -141,27 +141,29 @@ describe('scaleRef sizing with headroom (ADR 009, plan MA-21)', () => {
   });
 });
 
-describe('adult presets (ADR 011: scaleRef 66, frame 56 × 72)', () => {
-  const content = (scaleFactor: number, refH: number, frameH: number, workAreaHeightDip = 816) => ({
+describe('chibi presets (ADR 012: scaleRef 48, frame 48 × 56)', () => {
+  // Work area = screen height in DIP minus a 48-DIP taskbar.
+  const display = (heightPx: number, scaleFactor: number) => ({
     scaleFactor,
-    frameH,
-    refH,
-    workAreaHeightDip,
+    frameH: 56,
+    refH: 48,
+    workAreaHeightDip: heightPx / scaleFactor - 48,
     maxFraction: MAX_HEIGHT_FRACTION,
     minScale: MIN_SCALE,
   });
-  it('uses the content numbers S 96 / M 136 / L 200 DIP and a 30 % work-area clamp', () => {
-    expect(SIZE_PRESETS_DIP).toEqual({ s: 96, m: 136, l: 200 });
-    expect(MAX_HEIGHT_FRACTION).toBe(0.3);
+  it('uses the content numbers S 96 / M 136 / L 176 DIP and a 25 % work-area clamp', () => {
+    expect(SIZE_PRESETS_DIP).toEqual({ s: 96, m: 136, l: 176 });
+    expect(MAX_HEIGHT_FRACTION).toBe(0.25);
   });
-  it('gives S ×2 / M ×3 / L ×4 at 1080p / 125 % with scaleRef 66', () => {
-    const input = { ...content(1.25, 66, 72), targetDip: SIZE_PRESETS_DIP.l };
-    expect(presetScales(SIZE_PRESETS_DIP, input)).toEqual({ s: 2, m: 3, l: 4 });
-    // L is not clamped: 0.30 × 816 × 1.25 / 66 = 4.6 (with 0.25 it would be 3.9 → ×3).
-    expect(maxScale(input)).toBe(4);
-    expect(maxScale({ ...input, maxFraction: 0.25 })).toBe(3);
-  });
-  it('keeps the legacy scaleRef 48 packs at S ×3 / M ×4 / L ×5 with the new numbers', () => {
-    expect(presetScales(SIZE_PRESETS_DIP, content(1.25, 48, 56))).toEqual({ s: 3, m: 4, l: 5 });
+  it.each([
+    ['1080p / 125 %', 1080, 1.25, { s: 3, m: 4, l: 5 }, 5],
+    ['1080p / 150 %', 1080, 1.5, { s: 3, m: 4, l: 5 }, 5],
+    ['1080p / 100 %', 1080, 1, { s: 2, m: 3, l: 4 }, 5],
+    ['1440p / 100 %', 1440, 1, { s: 2, m: 3, l: 4 }, 7],
+    ['4K / 150 %', 2160, 1.5, { s: 3, m: 4, l: 6 }, 10],
+  ])('%s gives the ADR 012 table', (_name, heightPx, scaleFactor, expected, max) => {
+    const input = display(heightPx, scaleFactor);
+    expect(presetScales(SIZE_PRESETS_DIP, input)).toEqual(expected);
+    expect(maxScale({ ...input, targetDip: SIZE_PRESETS_DIP.l })).toBe(max);
   });
 });

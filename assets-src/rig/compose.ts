@@ -25,7 +25,7 @@ import { compose, outline, selectiveOutline, type Part } from '../lib/passes.ts'
 import { antiAlias, rimLight } from '../lib/polish.ts';
 import type { AnimDef, PackDef, RenderContext } from '../lib/types.ts';
 import { elbowOf, FIGURE_H, resolveJoints, withBand } from './body.ts';
-import { LAYOUT_LEGACY, layoutOf, type RigLayout } from './layout.ts';
+import { LAYOUT, layoutOf, type RigLayout } from './layout.ts';
 import {
   buildArm,
   buildBackHair,
@@ -95,18 +95,18 @@ export { ARM_LABEL } from './part-ids.ts';
 export { SCARF_MAX_BELOW_CHEST, SCARF_MAX_TRAIL, q34FoxTail } from './chains.ts';
 export { closeSeams, pointToe, stampMask, type StampOptions } from './passes.ts';
 export { RIG_W } from './body.ts';
-export { LAYOUT_ADULT, LAYOUT_LEGACY, layoutOf, type RigLayout } from './layout.ts';
+export { LAYOUT, layoutOf, type RigLayout } from './layout.ts';
 export { HAIR_CUT_MAX_COUNT, HAIR_CUT_MAX_ROW, HAT_MAX, SKIRT_RAISE_MAX } from './validate.ts';
 export { animFacing, bodyViewOf, headViewOf, usesView } from './views.ts';
 
 /** Frame height: the smallest of 52/56/60 that keeps row 0 clear in every frame (measured by tests/unit/art/rig). */
-export const RIG_H = LAYOUT_LEGACY.frameH;
+export const RIG_H = LAYOUT.frameH;
 /** Standing-figure height for sizing (manifest `scaleRef`, ADR 009): S/M/L stay ×3/×4/×5 at 1080p / 125 %. */
 export const SCALE_REF = FIGURE_H;
-export const FRAME_H_CHOICES = LAYOUT_LEGACY.frameHChoices;
+export const FRAME_H_CHOICES = LAYOUT.frameHChoices;
 
 /** Smallest frame height whose headroom keeps ≥ 1 clear row above `lowestTop` (top opaque row, figure units). */
-export function chooseFrameH(lowestTop: number, layout: RigLayout = LAYOUT_LEGACY): number {
+export function chooseFrameH(lowestTop: number, layout: RigLayout = LAYOUT): number {
   for (const h of layout.frameHChoices) if (lowestTop + (h - layout.figureH) >= 1) return h;
   throw new Error(`no frame height fits a figure reaching row ${String(lowestTop)}`);
 }
@@ -169,9 +169,9 @@ interface Layers {
   readonly knees: readonly Point[];
 }
 
-export function createRigRenderer(body: Body, frameH: number = layoutOf(body).frameH): RigRenderer {
+export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH): RigRenderer {
   const v = body.variants;
-  const layout = layoutOf(body);
+  const layout = layoutOf();
   const rigW = layout.w;
   const sleeve = { ramp: body.sleeve?.ramp ?? body.ramps.cloth, shade: body.sleeve?.shade ?? DEFAULT_SLEEVE_SHADE };
   if (sleeve.ramp === body.ramps.cloth && Math.abs(sleeve.shade - dressShadeOf(body)) < 1) {
@@ -529,8 +529,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
     });
     // 2. Tone passes on the composed parts.
     if (v.back === 'spade_tail') tubeTones(buf);
-    // Adult layouts clip the far shoulder cap by default (ADR 010/011 note, MA-45): the far arm emerges below it.
-    if (q && (q34?.hideFarShoulder === true || layoutOf(body).id === 'adult')) clipFarShoulder(buf, j.shoulderR[1]);
+    if (q && q34?.hideFarShoulder === true) clipFarShoulder(buf, j.shoulderR[1]);
     const cuts = q ? q34?.hairBackCuts : undefined;
     if (cuts) {
       hairBackCuts(
@@ -757,8 +756,8 @@ const FALLBACKS = {
 } as const;
 
 /** A pack for `pnpm sprites` from a body and the shared poses; throws on any mask, face or pose problem. */
-export function createRigPack(body: Body, anims: readonly RigAnim[], frameH: number = layoutOf(body).frameH): PackDef {
-  const layout = layoutOf(body);
+export function createRigPack(body: Body, anims: readonly RigAnim[], frameH: number = layoutOf().frameH): PackDef {
+  const layout = layoutOf();
   const rigW = layout.w;
   validateBody(body, anims, frameH);
   const renderer = createRigRenderer(body, frameH);

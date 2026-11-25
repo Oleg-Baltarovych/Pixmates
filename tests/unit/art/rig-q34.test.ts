@@ -223,10 +223,10 @@ describe('q34 walk art round (MA-27c fix round A1–A6)', () => {
         if (at(i)[foot][1] === ground && at(i + 1)[foot][1] === ground) steps.push(at(i)[foot][0] - at(i + 1)[foot][0]);
       }
       expect(steps.length, foot).toBeGreaterThanOrEqual(4);
-      for (const s of steps) expect(s, foot).toBe(WALK_TRAVEL.legacy.pxPerFrame);
+      for (const s of steps) expect(s, foot).toBe(WALK_TRAVEL.pxPerFrame);
     }
-    expect(WALK_TRAVEL.legacy.fps).toBe(walk.fps);
-    expect(WALK_TRAVEL.legacy.pxPerSecond).toBe(WALK_TRAVEL.legacy.pxPerFrame * walk.fps);
+    expect(WALK_TRAVEL.fps).toBe(walk.fps);
+    expect(WALK_TRAVEL.pxPerSecond).toBe(WALK_TRAVEL.pxPerFrame * walk.fps);
     expect(Math.abs(at(0).footL[0] - at(0).footR[0])).toBe(8);
   });
   it('A1: on the passing frames the lifted foot sits 1–2 px behind the planted one, toe tipped down', () => {

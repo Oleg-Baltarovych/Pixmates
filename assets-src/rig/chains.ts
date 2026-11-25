@@ -6,7 +6,7 @@ import { simulateChain, type Point } from '../lib/chain.ts';
 import { cloth, flat, MAT } from '../lib/materials.ts';
 import type { Material, Part } from '../lib/passes.ts';
 import { curveX, ellipse, poly, rect, stroke, type Shape, type StrokePoint } from '../lib/shapes.ts';
-import { elbowOf, kneeOf } from './body.ts';
+import { elbowOf } from './body.ts';
 import { layoutOf } from './layout.ts';
 import { ARM_IDS_L, ARM_IDS_R, PART_ID } from './part-ids.ts';
 import type { ArmVariant, Body, FoxTail, JointMap, PoseFrame, RigAnim, ScarfEnds, View } from './types.ts';
@@ -104,18 +104,10 @@ export function buildBackHair(
   authoredBack = false,
 ): Part[] {
   const parts: Part[] = [];
-  const layout = layoutOf(body);
-  // Adult heads are smaller than the 30-px legacy head: the outline scales about the head joint.
+  const layout = layoutOf();
   const hs = layout.hairScale;
-  const tipRow = layout.longHairTipRow;
   const outline = tucked ? HAIR_BACK_Q34_TUCKED : HAIR_BACK;
-  // Long adult hair: the part under the head reaches `longHairTipRow` at rest (scale narrows it, never shortens it).
-  const maxY = Math.max(...outline.map(([, uy]) => uy * hs));
-  const longStretch =
-    tipRow !== undefined && body.variants.hairBack === 'long' && maxY > 7
-      ? (tipRow - layout.rest.head[1] - 7) / (maxY - 7)
-      : undefined;
-  const stretch = body.hairBackStretch ?? longStretch ?? HAIR_STRETCH[body.variants.hairBack];
+  const stretch = body.hairBackStretch ?? HAIR_STRETCH[body.variants.hairBack];
   const lag: Point = [prev.head[0] - j.head[0], p.hairLift === 1 ? -1 : prev.head[1] - j.head[1]];
   const hx = j.head[0] + (headView === 'q34' ? -2 : 0);
   const hair = outline.map(([ux, uy]): [number, number] => {
@@ -348,7 +340,7 @@ export function simulateChains(
       return [p[0] + k[0], p[1] + k[1]];
     });
   const lock = { segments: 3, length: 2.6, gravity: [0, 0.12] as Point, damping: 0.78, loop: anim.loop };
-  const hs = layoutOf(body).hairScale;
+  const hs = layoutOf().hairScale;
   const [lockX, lockY] = hs === 1 ? [10.6, 8] : [10.6 * hs, 8 * hs];
   const root = tailFront.root ?? FOX_TAIL_ROOT;
   return {
@@ -420,7 +412,7 @@ export function buildLegs(
   const far: Part[] = [];
   const back: Part[] = [];
   const knees: Point[] = [];
-  const layout = layoutOf(body);
+  const layout = layoutOf();
   const lg = layout.torso.leg;
   const legMat = flat(MAT.fur, body.ramps.legs, 3.6);
   const farLegMat = flat(MAT.fur, body.ramps.legs, farLegShade ?? 2.6);
@@ -430,31 +422,6 @@ export function buildLegs(
     [1, j.footR],
   ] as const) {
     const top: StrokePoint = [j.hip[0] + side * (q ? lg.dxQ : lg.dx), j.hip[1], lg.hipR];
-    // Two-segment legs (adult): thigh → knee → shin, the knee from `kneeOf` (the seated knee too).
-    const knee = layout.knee
-      ? kneeOf(
-          j,
-          side === -1 ? 'L' : 'R',
-          p.parts.legs,
-          q ? 'q34' : 'front',
-          layout,
-          p.knees?.[side === -1 ? 'L' : 'R'],
-        )
-      : undefined;
-    if (knee) {
-      const farLeg = q && side === 1;
-      // Folded knees (seated, curled) get the crease where the shin folds under them (near legs only in q34).
-      if ((p.parts.legs === 'sit' || p.parts.legs === 'curl') && !farLeg) knees.push([knee[0], knee[1]]);
-      (farLeg ? far : back).push(
-        part(
-          stroke([top, [knee[0], knee[1], lg.kneeR], [foot[0], foot[1], lg.footR]]),
-          farLeg ? farLegMat : legMat,
-          farLeg ? farLegId : PART_ID.legs,
-          farLeg ? 0.7 : 0.8,
-        ),
-      );
-      continue;
-    }
     if (q) {
       (side === 1 ? far : back).push(
         part(
@@ -530,7 +497,7 @@ export function buildSkirt(body: Body, p: PoseFrame, hip: Point, q: boolean): Pa
   const lift = hemLiftOf(body, p);
   // `skirtLace: false`: the plain cloth runs down over the rows the lace would take (same hem length).
   const plain = body.skirtLace === false ? (p.parts.legs === 'sit' ? 1 : 2) : 0;
-  const sk = layoutOf(body).torso.skirt;
+  const sk = layoutOf().torso.skirt;
   // `Body.hakama.drop`: the hakama reaches the ankles on every leg pose (standing, dangling, seated, curled) — the
   // legs never show bare under a knee-length hem (art round 3 N2).
   const hemY = hip[1] + sk.hemDy - lift + plain + (body.hakama?.drop ?? 0);
@@ -581,7 +548,7 @@ const SHORTS_DEFAULT_SHADE = 3;
 export function buildShorts(body: Body, p: PoseFrame, hip: Point, q: boolean): Part {
   const { flare, hemDx, farW, trailFlare } = hemShape(p, q);
   const tailored = body.shorts;
-  const sh = layoutOf(body).torso.shorts;
+  const sh = layoutOf().torso.shorts;
   const hemY = hip[1] + sh.hemDy - hemLiftOf(body, p);
   const legOut = tailored && !q ? SHORTS_LEG_FLARE : 0;
   const notch: Point[] =
@@ -647,7 +614,7 @@ export function buildTorso(body: Body, j: JointMap, q: boolean, glow: number): P
   const skin = body.outfit.skin.ramp;
   const { chest, hip } = j;
   const farW = q ? 0.78 : 1;
-  const t = layoutOf(body).torso;
+  const t = layoutOf().torso;
   const waist = v.hem === 'skirt' ? t.bodiceEnd.skirt : t.bodiceEnd.shorts;
   const half = v.hem === 'skirt' ? t.bodiceHalf.skirt : t.bodiceHalf.shorts;
   const topY = chest[1] + t.chestTop;
@@ -656,21 +623,9 @@ export function buildTorso(body: Body, j: JointMap, q: boolean, glow: number): P
   const farTop: Point = [chest[0] + (q ? t.chestHalfFar : t.chestHalf), topY];
   const farEnd: Point = [hip[0] + half * farW, endY];
   const nearEnd: Point = [hip[0] - half, endY];
-  // Waist pinch (female build): `inset` px in on both sides at `t` of the bodice height (top → bottom).
-  const pinch = (top: Point, end: Point, inward: 1 | -1, w: number): Point[] =>
-    t.waist && v.hem === 'shorts'
-      ? [[top[0] + (end[0] - top[0]) * t.waist.t + inward * t.waist.inset * w, top[1] + (end[1] - top[1]) * t.waist.t]]
-      : [];
-  const bodice = poly([
-    nearTop,
-    farTop,
-    ...pinch(farTop, farEnd, -1, farW),
-    farEnd,
-    nearEnd,
-    ...pinch(nearTop, nearEnd, 1, 1),
-  ]);
+  const bodice = poly([nearTop, farTop, farEnd, nearEnd]);
   const band = v.hem === 'skirt' ? t.band.skirt : t.band.shorts;
-  const span = v.hem === 'skirt' ? (t.band.skirtSpan ?? t.band) : t.band;
+  const span = t.band;
   return [
     part(
       rect(Math.round(j.neck[0] + t.neck.dx), Math.round(j.neck[1] + t.neck.dy), t.neck.w, t.neck.h),
@@ -717,11 +672,9 @@ export function buildArm(
    */
   const farHand = view === 'q34' && side === 'R';
   const shoulder = j[side === 'L' ? 'shoulderL' : 'shoulderR'];
-  const layout = layoutOf(body);
+  const layout = layoutOf();
   const la = layout.torso.arm;
-  // q34 far arm one ramp step darker (adult layouts; legacy far arms keep the near tones).
-  const step = farHand ? (layout.farArmStep ?? 0) : 0;
-  const sleeveShade = sleeve.shade - step;
+  const sleeveShade = sleeve.shade;
   const elbow = elbowOf(j, side, arm, view, layout);
   const hand = j[side === 'L' ? 'handL' : 'handR'];
   const longSleeve = body.variants.sleeves === 'long';
@@ -751,7 +704,7 @@ export function buildArm(
     ),
     part(
       stroke([[...elbow, la.fore], foreEnd]),
-      longSleeve ? flat(MAT.cloth, sleeve.ramp, sleeveShade) : flat(MAT.skin, skin, 4 - step),
+      longSleeve ? flat(MAT.cloth, sleeve.ramp, sleeveShade) : flat(MAT.skin, skin, 4),
       ids.fore,
       2.1,
     ),

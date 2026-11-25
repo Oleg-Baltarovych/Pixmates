@@ -76,13 +76,7 @@ export type ArmVariant =
   | 'edge'
   | 'hang'
   | 'limp'
-  | 'fold'
-  /** Adult fist pump (happy): elbow out on the shoulder row, the fist up beside the head. */
-  | 'pump'
-  /** Adult hand to the back of the neck (worried, petted), elbow out. */
-  | 'neck'
-  /** Adult hand on the hip, elbow out (worried). */
-  | 'hip';
+  | 'fold';
 
 /** `stand` = feet planted on the ground row (root motion does not move them); the rest hang from the hip. */
 export type LegVariant = 'stand' | 'dangle' | 'sit' | 'curl';
@@ -134,8 +128,6 @@ export interface PoseFrame {
    * the hem near the centre, a fox tail is hidden. Avoids the tail jumping sides between the front and q34 frames.
    */
   readonly tailTucked?: true;
-  /** Two-segment knees only (adult): extra knee offset per leg in frame px (x = screen, y = down). */
-  readonly knees?: { readonly L?: Offset; readonly R?: Offset };
 }
 
 export interface RigAnim {
@@ -293,7 +285,7 @@ export interface Prop extends PlacedMask {
    * Opt-in layering (MA-46): `'hilt'` stamps the hilt over the arms too (only the hands and cuffs stay on top);
    * `'all'` lays the main mask over the cloak, hem, legs and sleeves (a saya worn across the coat, front view; the
    * hilt stays under the arms),
-   * validated by `ADULT_PROP.frontOver` instead of the projected-hip rule.
+   * validated with the other prop bounds.
    */
   readonly over?: 'hilt' | 'all';
 }
@@ -375,20 +367,10 @@ export interface SilhouetteOutline {
   readonly shade: number;
 }
 
-/** Adult build presets (ADR 011): shoulder / hip / waist / neck / stance numbers in `layout.ts` `BUILDS`. */
-export type BodyBuild = 'male' | 'female';
-
 export interface Body {
   /** Pack id (`pixmates.<id>` for built-ins, `rig-dummy-*` for test bodies). */
   readonly id: string;
   readonly name: string;
-  /**
-   * Rig layout (`layout.ts`): `legacy` 48 × 56 (default; the pre-D-19 packs until each is redrawn) or `adult`
-   * 56 × 72 (ADR 011, needs `build`).
-   */
-  readonly layout?: 'legacy' | 'adult';
-  /** Adult build preset (required with `layout: 'adult'`, not allowed on legacy). */
-  readonly build?: BodyBuild;
   /** Mask slot → ramp + six shades (authored masks and face library). */
   readonly outfit: Outfit;
   readonly ramps: {
@@ -449,7 +431,7 @@ export interface Body {
     readonly spade?: Mask;
     /**
      * Opt-in authored front back hair (MA-46; same contract as `BodyView.masks.hairBack`): replaces the procedural
-     * back-hair mass on front-head frames, e.g. short hair that must not show as a bob beside a narrow adult face.
+     * back-hair mass on front-head frames, e.g. short hair that must not show as a bob beside a narrow face.
      */
     readonly hairBack?: PlacedMask;
   };
