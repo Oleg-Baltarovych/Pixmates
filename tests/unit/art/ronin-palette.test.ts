@@ -44,22 +44,23 @@ describe('master palette source', () => {
   });
 });
 
-describe('lacquer_red (ronin lacing, menpō: shu vermilion)', () => {
-  it.each([2, 3, 4])('step %i: vermilion, not garnet wine (Δh ≥ 12°, ΔL ≥ +0.04)', (s) => {
-    const r = lab('lacquer_red', s);
-    const g = lab('gem_garnet', s);
-    expect(hueGap(hueDeg(r), hueDeg(g))).toBeGreaterThanOrEqual(12);
-    expect(r[0] - g[0]).toBeGreaterThanOrEqual(0.04);
+/**
+ * Base step = mask tone 2 (`base`, lib/mask.ts legend) on a T6 outfit = ramp index 2 — garnet (goth) and cloth_rose
+ * (knight). lacquer_red's base is step 3 (ronin maps tone 2 → step 3).
+ */
+const BASE_STEP = 2;
+const deltaE = (x: readonly [number, number, number], y: readonly [number, number, number]): number =>
+  Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+
+describe('lacquer_red (vermilion, art-director MA-65 round 1; gates revised by the coordinator 2026-11-25)', () => {
+  it('has 7 steps, the base (step 3) at L ≤ 0.56 and h 30–36°', () => {
+    expect(ramps.lacquer_red).toHaveLength(7);
+    const base = lab('lacquer_red', 3);
+    expect(base[0]).toBeLessThanOrEqual(0.56);
+    expect(hueDeg(base)).toBeGreaterThanOrEqual(30);
+    expect(hueDeg(base)).toBeLessThanOrEqual(36);
   });
-  it.each([2, 3, 4])('step %i: apart from fx_red at the same step (Δab ≥ 0.05)', (s) => {
-    const r = lab('lacquer_red', s);
-    const f = lab('fx_red', s);
-    expect(Math.hypot(r[1] - f[1], r[2] - f[2])).toBeGreaterThanOrEqual(0.05);
-  });
-  it.each([2, 3, 4])('step %i: not the knight rose (Δh ≥ 20°, C ≥ rose + 0.05)', (s) => {
-    const r = lab('lacquer_red', s);
-    const k = lab('cloth_rose', s);
-    expect(hueGap(hueDeg(r), hueDeg(k))).toBeGreaterThanOrEqual(20);
-    expect(chroma(r) - chroma(k)).toBeGreaterThanOrEqual(0.05);
+  it.each(['gem_garnet', 'cloth_rose'])('base colour apart from %s base (OKLab ΔE ≥ 0.06)', (other) => {
+    expect(deltaE(lab('lacquer_red', 3), lab(other, BASE_STEP))).toBeGreaterThanOrEqual(0.06);
   });
 });

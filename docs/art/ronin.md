@@ -32,11 +32,12 @@
   sode with a lit top edge, one lace line and an outline column toward the dō; kusazuri lace rows in aligned
   columns; umber tuft with one deep-red tie px; ink hilt, ochre tsuba with one highlight, lit saya line, 2-px red
   sageo; jade one step darker.
-- **Not done — conflict:** the art-director vermilion ramp (#3a1014 … #f4a27a) fails the round-1 gates at steps 3–4
-  (fx_red Δab ≈ 0.02, garnet Δh ≈ 10° with Δb ≈ 0.03) and the same-step cloth_rose gate at every step; no hue nudge
-  within ±15° passes. `lacquer_red` stays the round-0 ramp (more orange) until the owner / art-director decide (move
-  the vampire fx_red, compare rose at matched L, or accept the overlap). The menpō is therefore still orange-red.
-- Not done: the 6-row menpō (only 4 rows fit inside the chibi head under the iris + 1 skin row), side-lock angular step.
+- **Ramp gates revised (coordinator, 2026-11-25):** the gates exist to keep characters apart at 1×, and same-step
+  comparisons were the wrong measure. The `fx_red` gate is dropped (a small FX accent, not a character ramp); the garnet
+  and knight-rose gates are one perceptual gate on the base colours: `lacquer_red` step 3 vs each ramp's base step
+  (mask tone 2 on a T6 outfit = index 2), OKLab ΔE ≥ 0.06. The art-director vermilion ramp passes unchanged and is
+  applied (base #b02a14, h ≈ 32, L ≈ 0.50); ronin maps horn tones to steps 0 / 2 / 3 / 4 / 5 / 6 (tie and lace #8a1f12).
+- Side locks: straight down 1 row further with a square corner (front), breaking the round bowl taper.
 
 ## 0. Base
 Start from the chibi ronin character files at `cefa873` (MA-29b WIP: head mask, dome skull, hakama, sword prop),
@@ -75,7 +76,7 @@ cuirass, a tasset skirt over a split hakama, feet apart, one hilt at the hip. No
   0.42/0.018/66 · 0.56/0.016/75 · 0.74/0.014/85. Warm and near-neutral: hue ≥ 90° from `cloth_black` (goth, plum
   h 280–325) and from `cloth_midnight` (vampire, h 228–275) at steps 1–4, C ≤ 0.02 (goth ≥ 0.03, vampire ≥ 0.04).
   Lacquer reads by its **hard 1-px warm spec streak** (shade 5–6), which goth/vampire cloth never has.
-- **New `lacquer_red`** (shu vermilion, orange-red): 0.30/0.090/24 · 0.38/0.130/29 · 0.46/0.160/33 · 0.54/0.175/37 ·
+- **`lacquer_red`** — as built: the art-director vermilion ramp (see «Art-director round 1»); the spec values below are history. (shu vermilion, orange-red): 0.30/0.090/24 · 0.38/0.130/29 · 0.46/0.160/33 · 0.54/0.175/37 ·
   0.63/0.165/42 · 0.73/0.130/50 · 0.84/0.090/62. Gates (Oklab, at steps 2–4): vs `gem_garnet` (goth, h 12–22, L ≤ 0.50)
   Δh ≥ 12° and ΔL ≥ +0.04 — vermilion, not wine; vs `fx_red` (vampire eyes) Δab ≥ 0.05; vs `cloth_rose` (knight
   raspberry-rose) Δh ≥ 20° and C ≥ +0.05. Red/black area ratio ≈ 1 : 3 (lacing, menpō, obi, sageo, cord).

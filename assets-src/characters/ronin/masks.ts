@@ -41,8 +41,9 @@ export const HEAD: Mask = [
   // Deviation (male read at 1×, owner): the 1-px locks end at the eye's top row in a point (row 15), then curl 1 px
   // inward over the cheek edge (row 16) — no flat cut; the jaw shows clear (a jaw-length lock reads as a bob).
   '....h' + 'S'.repeat(18) + 'ss' + 'h....',
-  '.....h' + 'S'.repeat(17) + 's' + 'h.....',
-  '.....' + 'S'.repeat(18) + 'ss' + '.....',
+  // Angular locks (art-director round 1): straight to row 17, then a square corner — no round bowl taper.
+  '....h' + 'S'.repeat(18) + 'ss' + 'h....',
+  '....h' + 'S'.repeat(18) + 'ss' + 'h....',
   '.....' + 'S'.repeat(18) + 'ss' + '.....',
   // Human ears (2 px, inner shadow) under the lock tips cover the back hair beside the cheek: short sides, not a bob.
   '...sS' + 'S'.repeat(18) + 'ss' + 'ss...',
@@ -168,7 +169,7 @@ export const HAIR_BACK_Q34: Mask = [
 export const HAIR_FAR_Q34: Mask = ['..H', '..H', '..H'];
 
 // ── D-20 armour (MA-65, docs/art/ronin.md §1; art-director round 1). Slots: `shoe` = lacquer_black (M 0 · m 1 · b 2 ·
-// B 3 · l 5 · L 6), `horn` = lacquer_red (N 0 outline · n 1 · o 2 base · O 3 lit · u 4 · U 6 spec), `trim` = cloth_ochre.
+// B 3 · l 5 · L 6), `horn` = lacquer_red (N 0 outline · n 2 lace / tie #8a1f12 · o 3 base · O 4 lit · u 5 · U 6 spec), `trim` = cloth_ochre.
 // The menpō is the only solid red shape; lacing is thin red lines, the black fill stays dark.
 
 /**

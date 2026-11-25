@@ -42,7 +42,7 @@ const OUTFIT: Outfit = {
   skin: { ramp: 'skin', tones: T6UP },
   hair: { ramp: 'hair_umber', tones: T6 },
   // Vermilion lacquer: menpō, odoshi lacing, throat guard, tuft cord.
-  horn: { ramp: 'lacquer_red', tones: [0, 1, 2, 3, 4, 6] },
+  horn: { ramp: 'lacquer_red', tones: [0, 2, 3, 4, 5, 6] },
   dress: { ramp: 'cloth_ash', tones: T6 },
   apron: { ramp: 'cloth_cream', tones: T6 },
   trim: { ramp: 'cloth_ochre', tones: T6 },
