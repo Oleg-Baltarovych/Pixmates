@@ -66,6 +66,13 @@ Procedures (model-invocable, used inside flows):
 - `/e2e` — Playwright `_electron`
 - `/db-migration`
 
+## Efficiency rules (owner, 2026-11-25)
+- **Fresh agent per task.** Start a new subagent with a short brief (goal, files, gates, what is ruled out) for each task. Resume an existing agent only for a short follow-up on the same task; never carry one agent across many tasks (context bloat makes every turn slow and triggers API timeouts).
+- **Scope, not call caps.** Bound a brief by task scope ("do MA-66 only"), not by an artificial tool-call limit. Agents commit and push each green step, so an interruption loses little.
+- **Owner sees early.** Art: art-director round 1 → owner. At most 2 art-director rounds per character. A style question that changes many characters gets a quick side-by-side spike before any full redraw.
+- **Art tasks skip the architect.** A character redraw works straight from `docs/art/<id>.md` + ART-BIBLE; the architect is for new systems, IPC/DB contracts and SPEC/ADR changes.
+- **Use the shared tools, don't rewrite them:** `pnpm check` (fail-fast gate), `pnpm sprites:compare <id> [--base <ref>]` (before/after lineups), the committed sprite fingerprint (other packs changing fails `pnpm test`).
+
 ## Guardrails (`.claude/settings.json`, `.claude/hooks/`)
 - `guard-paths.mjs` blocks:
   - any access to `.env*`, certificates and key files;
