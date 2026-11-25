@@ -91,7 +91,7 @@ export const HILT: Mask = ['BX...', '.pXw.', '..XpX'];
 
 /**
  * Front katana worn over the haori (`Prop.over: 'all'`, art round 2 F1): the black lacquer saya leaves the right
- * third of the obi and runs ≈ 20° down to a tip ≈ 7 px past the silhouette at hip height — ink-1 lit top edge over
+ * third of the obi and runs ≈ 20° down to a tip ≈ 7 px past the silhouette at hip height — ash-4 lit top edge over
  * an ink-0 body, ink-0 tip (the rig outline gives the dark-plum edge). From hip + (8, −5).
  */
 export function swordFront(length = 14, angleDeg = 20): Mask {
@@ -102,7 +102,8 @@ export function swordFront(length = 14, angleDeg = 20): Mask {
     const y = Math.round(k * tan);
     const top = rows[y];
     const bottom = rows[y + 1];
-    if (top) top[k] = k === length - 1 ? 'X' : 'x';
+    // Ash-4 lit top edge (reads on dark wallpapers), ink-1 near the tip.
+    if (top) top[k] = k === length - 1 ? 'X' : k >= length - 3 ? 'x' : 'w';
     if (bottom) bottom[k] = 'X';
   }
   return rows.map((r) => r.join(''));
