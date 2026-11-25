@@ -88,6 +88,32 @@ export const SHOE_Q34: Mask = ['..sp..', 'seppee', 'mbBBBL'];
 export const SWORD: Mask = ['bLb', '.Xw', ...Array.from({ length: 14 }, () => '.Xx'), '.XX', '.xX'];
 export const HILT: Mask = ['BX...', '.pXw.', '..XpX'];
 
+/**
+ * Front katana worn over the haori (`Prop.over: 'all'`, art round 2 F1): the black lacquer saya leaves the right
+ * third of the obi and runs ≈ 20° down to a tip ≈ 7 px past the silhouette at hip height — ink-1 lit top edge over
+ * an ink-0 body, ink-0 tip (the rig outline gives the dark-plum edge). From hip + (8, −5).
+ */
+export function swordFront(length = 14, angleDeg = 20): Mask {
+  const tan = Math.tan((angleDeg * Math.PI) / 180);
+  const h = Math.round((length - 1) * tan) + 2;
+  const rows = Array.from({ length: h }, () => Array.from({ length }, () => '.'));
+  for (let k = 0; k < length; k++) {
+    const y = Math.round(k * tan);
+    const top = rows[y];
+    const bottom = rows[y + 1];
+    if (top) top[k] = k === length - 1 ? 'X' : 'x';
+    if (bottom) bottom[k] = 'X';
+  }
+  return rows.map((r) => r.join(''));
+}
+export const SWORD_FRONT: Mask = swordFront();
+/**
+ * Front hilt (from hip + (3, −10)): a 3 × 3 brass tsuba straddling the top edge of the obi (lit top-left px), a
+ * 4-px grip rising ≈ 27° toward the axis — ink underside, ash-4 rim with 2 cream diamonds — and a brass kashira;
+ * stays ≥ 3 px off the axis so its outline clears the axis on a ±1 hip sway.
+ */
+export const HILT_FRONT: Mask = ['B......', 'Xpw....', '.XXpLBb', '...XbBb', '....mBm'];
+
 /** Paper charm on the sageo (front dangle): 1-px oxblood cord, a 2 × 3 cream slip with 1 ink stroke. */
 export const CHARM: Mask = ['t.', 't.', 'Pq', 'Xq', 'pq'];
 /** q34 charm (same slip, hung from the saya under the tsuba). */

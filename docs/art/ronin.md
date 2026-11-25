@@ -48,6 +48,13 @@ Yasuo, Sanjuro. These rules replace the old «no ponytail / topknot» entries fo
 Tested in `tests/unit/art/ronin.test.ts`: tuft bounds, clean-shaven jaw, wisp regularity + mist-only tips, haori hue,
 hakama hue in the umber range.
 
+## Front katana (art round 2 F1, MA-46) — per-body prop rule
+The adult hip-prop rule (`ADULT_PROP.front`: scabbard ≥ 70° behind the thigh, ≤ 3 px past the outline) left nothing
+breaking the silhouette, so the adult ronin read as a man in a dressing gown. Ronin wears the saya **over the coat**
+(`Prop.over: 'all'`), validated by `ADULT_PROP.frontOver` instead: the saya leaves the right third of the obi at
+10–30° below horizontal (≈ 20°) and may reach ≤ 9 px past the coat outline (≈ 7 px); the hilt rises 20–40° (≈ 27°)
+toward the axis, 4–7 px; the axis gap (≥ 2 px) and the tip row still hold. Hands and cuffs stay over the saya.
+
 ## Lookalikes checked
 - Kenshin: no red hair, cross scar, magenta gi, ponytail, straw kasa, reverse blade.
 - Zoro: no green hair, exactly one sword, no haramaki, earrings, bandana.

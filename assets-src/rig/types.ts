@@ -289,6 +289,13 @@ export interface Prop extends PlacedMask {
    * stamped over the torso, hem and legs (never over an arm) while the main mask stays behind them.
    */
   readonly hilt?: PlacedMask;
+  /**
+   * Opt-in layering (MA-46): `'hilt'` stamps the hilt over the arms too (only the hands and cuffs stay on top);
+   * `'all'` lays the main mask over the cloak, hem, legs and sleeves (a saya worn across the coat, front view; the
+   * hilt stays under the arms),
+   * validated by `ADULT_PROP.frontOver` instead of the projected-hip rule.
+   */
+  readonly over?: 'hilt' | 'all';
 }
 
 /** Head-accessory masks shared by the front body and every view. */

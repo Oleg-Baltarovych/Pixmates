@@ -308,6 +308,20 @@ export const ADULT_PROP = {
     axisGap: 2,
     maxOut: 3,
   },
+  /**
+   * Front saya worn over the coat (`Prop.over: 'all'`, ronin MA-46, docs/art/ronin.md «Front katana»): the scabbard
+   * leaves the obi at 10–30° below horizontal and may reach `maxOut` px past the rest outline (it is the silhouette
+   * break); the hilt (`w − 3` × `h − 3` px past its 3 × 3 tsuba) rises 20–40° toward the axis, 4–7 px long; the axis
+   * gap and the tip row still hold.
+   */
+  frontOver: {
+    topRow: 28,
+    tipRow: 46,
+    dropDeg: [10, 30],
+    hilt: { minLen: 4, maxLen: 7, minDeg: 20, maxDeg: 40 },
+    axisGap: 2,
+    maxOut: 9,
+  },
 } as const;
 
 const deg = (rad: number): number => (rad * 180) / Math.PI;
@@ -321,7 +335,47 @@ function propPx(mask: Mask, at: readonly [number, number]): [number, number][] {
   return out;
 }
 
+function adultFrontOverProblems(body: Body, prop: Prop): string[] {
+  const layout = layoutOf(body);
+  const rule = ADULT_PROP.frontOver;
+  const id = body.id;
+  const hip = layout.rest.hip;
+  const out: string[] = [];
+  const hilt = prop.hilt;
+  if (!hilt) return [`${id}: front prop needs a hilt (Prop.hilt)`];
+  const hiltAt = [prop.at[0] + hilt.at[0], prop.at[1] + hilt.at[1]] as const;
+  const hs = maskSize(hilt.mask);
+  const [gw, gh] = [hs.w - 3, hs.h - 3];
+  const hLen = Math.hypot(gw, gh);
+  const hDeg = deg(Math.atan2(gh, Math.max(1, gw)));
+  if (hLen < rule.hilt.minLen || hLen > rule.hilt.maxLen || hDeg < rule.hilt.minDeg || hDeg > rule.hilt.maxDeg)
+    out.push(`${id}: front over-coat hilt ${hLen.toFixed(1)} px at ${hDeg.toFixed(0)}°`);
+  const { w, h } = maskSize(prop.mask);
+  const drop = deg(Math.atan2(h - 2, Math.max(1, w - 1)));
+  if (drop < rule.dropDeg[0] || drop > rule.dropDeg[1])
+    out.push(
+      `${id}: front over-coat saya at ${drop.toFixed(0)}° (${String(rule.dropDeg[0])}…${String(rule.dropDeg[1])})`,
+    );
+  const top = hip[1] + Math.min(prop.at[1], hiltAt[1]);
+  if (top < rule.topRow) out.push(`${id}: front prop top row ${String(top)} above ${String(rule.topRow)}`);
+  const tip = hip[1] + prop.at[1] + h - 1;
+  if (tip > rule.tipRow) out.push(`${id}: front prop tip row ${String(tip)} below ${String(rule.tipRow)}`);
+  const px = [...propPx(prop.mask, prop.at), ...propPx(hilt.mask, hiltAt)];
+  const side = Math.sign(prop.at[0]) || 1;
+  if (px.some(([dx]) => dx * side < rule.axisGap)) out.push(`${id}: front prop crosses the axis`);
+  const t = layout.torso;
+  // Rest outline half-width at the hip: the skirt, the bodice or a coat (cloak hem half-width), + 1 outline px.
+  const coat = body.cloak?.widths.hem ?? 0;
+  const reach =
+    Math.max(...px.map(([dx]) => Math.abs(dx))) -
+    (Math.max(body.skirtSplit?.hemHalf ?? t.skirt.hemHalf, t.chestHalf, coat) + 1);
+  if (reach > rule.maxOut)
+    out.push(`${id}: front prop reaches ${String(reach)} px past the outline (≤ ${String(rule.maxOut)})`);
+  return out;
+}
+
 function adultFrontPropProblems(body: Body, prop: Prop): string[] {
+  if (prop.over === 'all') return adultFrontOverProblems(body, prop);
   const layout = layoutOf(body);
   const rule = ADULT_PROP.front;
   const id = body.id;

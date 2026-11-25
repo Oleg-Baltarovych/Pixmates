@@ -394,7 +394,11 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
     if (prop) {
       const [px, py] = [Math.round(j.hip[0] + prop.at[0]), Math.round(j.hip[1] + prop.at[1])];
       const opts = { partId: PART_ID.prop, allow: BEHIND_TORSO };
-      stampMask(buf, body, prop.mask, px, py, DEPTH_PROP, MAT.metal, locked, opts);
+      // `Prop.over`: everything but the hands / cuffs may sit under the prop.
+      const handIds = new Set<number>([ARM_IDS_L.end, ARM_IDS_R.end]);
+      const overOpts = { partId: PART_ID.prop, allow: (id: number): boolean => !handIds.has(id) };
+      if (prop.over === 'all') stampMask(buf, body, prop.mask, px, py, DEPTH_TIES, MAT.metal, locked, overOpts);
+      else stampMask(buf, body, prop.mask, px, py, DEPTH_PROP, MAT.metal, locked, opts);
       if (prop.dangle) {
         const prev = joints(anim, prevFrameOf(anim, frame));
         // Hip lag + the stride's back-hair trail (`hairDx`), clamped to ±1 px.
@@ -405,7 +409,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf(body).fr
       }
       // A projected hilt pokes forward over the torso / hem / legs, under the arms.
       if (prop.hilt) {
-        const hOpts = { partId: PART_ID.prop, allow: NOT_ARM };
+        const hOpts = prop.over === 'hilt' ? overOpts : { partId: PART_ID.prop, allow: NOT_ARM };
         stampMask(
           buf,
           body,

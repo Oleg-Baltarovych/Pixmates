@@ -23,10 +23,10 @@ import {
   HAIR_BACK_Q34,
   HEAD,
   HEAD_Q34,
-  HILT,
+  HILT_FRONT,
   SHOE,
   SHOE_Q34,
-  SWORD,
+  SWORD_FRONT,
   SWORD_Q34,
 } from './masks.ts';
 
@@ -127,11 +127,13 @@ export const RONIN: Body = {
   },
   skirtLace: false,
   cloak: HAORI,
+  // Katana worn over the haori (art round 2 F1): the saya breaks the silhouette on the wearer's left (screen-right).
   prop: {
-    mask: SWORD,
-    at: [5, -1],
-    hilt: { mask: HILT, at: [-3, -3] },
-    dangle: { mask: CHARM, at: [3, 4], overHem: true },
+    mask: SWORD_FRONT,
+    at: [8, -5],
+    hilt: { mask: HILT_FRONT, at: [-5, -5] },
+    dangle: { mask: CHARM, at: [0, 2], overHem: true },
+    over: 'all',
   },
   hairBackStretch: 0.2,
   sideLocks: false,
