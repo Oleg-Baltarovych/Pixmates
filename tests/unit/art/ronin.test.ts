@@ -301,6 +301,23 @@ describe('art gate (ronin.md): adult lookalike hard rules', () => {
   });
 });
 
+describe('art gate (round 3 N1): the front leg gap is see-through', () => {
+  it('no haori (mist) px in the 2 gap columns from the notch top to the hem on standing front frames', () => {
+    const notch = RONIN.skirtSplit?.notch ?? 0;
+    const bad: string[] = [];
+    for (const { a, f, img } of allFrames()) {
+      if (bodyViewOf(a, f) !== 'front' || (a.frames[f]?.parts.legs ?? 'stand') !== 'stand') continue;
+      const j = renderer.joints(a, f);
+      let hem = 0;
+      for (let y = 0; y < H; y++) if (opaque(img, Math.round(j.hip[0]) - 3, y)) hem = y;
+      for (let y = hem - notch; y <= hem; y++)
+        for (const x of [Math.round(j.hip[0]) - 1, Math.round(j.hip[0])])
+          if (mistShade(img, x, y) >= 0) bad.push(`${a.name}/${String(f)} (${String(x)}, ${String(y)})`);
+    }
+    expect(bad.slice(0, 5)).toEqual([]);
+  });
+});
+
 describe('art gate (round 3 N2): the hakama covers the legs on every pose', () => {
   it('no leg px above the ankles in any frame or view (legs probed in a unique ramp)', () => {
     const probe: Body = { ...RONIN, ramps: { ...RONIN.ramps, legs: 'cloth_rose' } };
