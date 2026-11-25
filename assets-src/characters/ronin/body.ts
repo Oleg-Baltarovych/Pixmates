@@ -111,7 +111,7 @@ export const RONIN: Body = {
   variants: { headAcc: 'none', hairBack: 'short', hem: 'skirt', back: 'cloak', neckAcc: 'collar', sleeves: 'long' },
   // Charcoal kosode (ash 1, the dark anchor); haori sleeves mist 4; dark ash kosode cuffs at the wrist.
   dressShade: 1,
-  sleeve: { ramp: 'mist', shade: 4 },
+  sleeve: { ramp: 'mist', shade: 5 },
   // Off-arm cuff: a light ash edge (no second dark band; art round 2 F5).
   cuff: { ramp: 'cloth_ash', shade: 4 },
   // Black-lacquer kote on the right forearm (rig side L) with 2 brass studs (never oxblood: hard rule 5).
