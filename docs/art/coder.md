@@ -106,6 +106,11 @@ sneakers set wide.
 - **New `hair_cocoa`** (cool cocoa, mauve shadows): 0.20/0.030/350 · 0.27/0.036/5 · 0.34/0.040/18 · 0.42/0.042/30 ·
   0.52/0.040/42 · 0.64/0.034/55 · 0.78/0.028/70. Gates: Δab ≥ 0.04 vs `hair_umber` (ronin) at matching steps (else push
   the mids toward h 10–15); hair mid vs mustard base ΔL ≥ 0.15; C ≤ 0.045 (never red/copper).
+- **As built (MA-66):** `cloth_mustard` 0.30/0.060/50 · 0.40/0.080/66 · 0.51/0.095/76 · 0.62/0.105/88 · 0.72/0.100/95 ·
+  0.82/0.085/100 · 0.91/0.065/100; `hair_cocoa` 0.20/0.030/345 · 0.27/0.036/0 · 0.34/0.040/10 · 0.42/0.042/15 ·
+  0.52/0.040/30 · 0.64/0.034/50 · 0.78/0.028/70. Gate changes (`tests/unit/art/coder-palette.test.ts`): mustard vs
+  ochre is compared at the nearest-L ochre step (7 vs 6 steps: equal indices sit 0.06 L apart); cocoa vs umber takes
+  the "push the mids toward h 10–15" branch — ≥ 30° hue gap + Δab ≥ 0.02 (Δab 0.04 needs ~60° at C ≤ 0.045, i.e. purple).
 - Reuse: `cloth_indigo` (denim 1–4), `cloth_cream` (sneakers, strings, sclera, highlights, mug), `hair_ash` (eyes —
   cool grey-blue "monitor glow", unused by the cast), `skin`, `cloth_rose` (blush on petted/happy only), `ink`.
 - Palette tests for both new ramps: darkest ≠ #000, L monotonic, hue drift ≥ 15°.
