@@ -29,8 +29,8 @@ const OUTFIT: Outfit = {
   trim: { ramp: 'cloth_ochre', tones: T6 },
   // Indigo: the `{ }` chest print.
   shoe: { ramp: 'cloth_indigo', tones: T6UP },
-  // Cool grey-blue "monitor glow" iris: c = ash 0, i 2, I 3, k 4.
-  eye: { ramp: 'hair_ash', tones: [0, 0, 2, 3, 4, 5] },
+  // Cool grey-blue "monitor glow" iris: C = ash 0, c 1 (the dark stern iris), i 2, I 3, k 4, K 5.
+  eye: { ramp: 'hair_ash', tones: [0, 1, 2, 3, 4, 5] },
   blush: { ramp: 'cloth_rose', tones: [3, 3, 4, 3, 3, 3] },
   ink: { ramp: 'ink', tones: [0, 1, 2, 3, 4, 4] },
 };

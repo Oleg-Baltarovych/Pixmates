@@ -2,10 +2,11 @@
 // validator in both views, the eye bags, blush only on happy / petted, and the owner's q34 head rules (monotonic
 // facing contour, no cheek bump, q34 never wider than the front).
 import { describe, expect, it } from 'vitest';
+import { CODER } from '../../../assets-src/characters/coder/body.ts';
 import { CODER_FACE, CODER_FACE_Q34 } from '../../../assets-src/characters/coder/face.ts';
 import { HEAD, HEAD_Q34 } from '../../../assets-src/characters/coder/masks.ts';
 import { LEGEND, type Mask } from '../../../assets-src/lib/mask.ts';
-import { type ExpressionId, validateFace } from '../../../assets-src/rig/face.ts';
+import { type ExpressionId, type ViewFaceLibrary, validateFace } from '../../../assets-src/rig/face.ts';
 
 describe('stern faces on the coder heads', () => {
   it('uses the stern face option in both views and passes the stern validator on its heads', () => {
@@ -59,5 +60,88 @@ describe('q34 head (owner rules, RIG.md)', () => {
           .map((c) => Math.max(...c) - Math.min(...c) + 1),
       );
     expect(width(HEAD_Q34)).toBeLessThanOrEqual(width(HEAD));
+  });
+});
+
+describe('stern eyes (art-director MA-66 round 1: dark, hooded, "unimpressed")', () => {
+  const eyeShade = (ch: string): number | undefined => {
+    const e = LEGEND[ch];
+    return e?.[0] === 'eye' ? CODER.outfit.eye.tones[e[1]] : undefined;
+  };
+  const isInk = (ch: string): boolean => LEGEND[ch]?.[0] === 'ink';
+  const eyesOf = (lib: ViewFaceLibrary, id: ExpressionId): Mask => {
+    const e = lib.expressions[id];
+    const part = e ? lib.eyes[e.eyes] : undefined;
+    if (!part) throw new Error(id);
+    return part.mask;
+  };
+  /** Per eye half (cols < 10, ≥ 10): the rows holding iris px, top to bottom. */
+  const irisRows = (m: Mask): string[][] =>
+    [
+      [0, 10],
+      [10, 20],
+    ].map(([a, b]) => m.map((r) => r.slice(a, b)).filter((r) => r.split('').some((c) => eyeShade(c) !== undefined)));
+  const lit = (row: string | undefined): boolean => (row ?? '').split('').some((c) => (eyeShade(c) ?? 0) >= 4);
+  const STERN: readonly ExpressionId[] = ['neutral', 'talk_a', 'talk_b', 'talk_c'];
+
+  it('drops the lower highlight on neutral and talk (both views), keeps it on happy and startle', () => {
+    for (const id of STERN)
+      for (const rows of irisRows(eyesOf(CODER_FACE, id))) expect(lit(rows.at(-1)), id).toBe(false);
+    for (const rows of irisRows(eyesOf(CODER_FACE_Q34, 'neutral'))) expect(lit(rows.at(-1)), 'q34').toBe(false);
+    for (const id of ['happy', 'startle'] as const) {
+      for (const rows of irisRows(eyesOf(CODER_FACE, id))) expect(lit(rows.at(-1)), id).toBe(true);
+    }
+  });
+  it('keeps the visible stern iris dark: one highlight per eye, every other iris px at hair_ash 1 or darker', () => {
+    for (const [lib, id] of [...STERN.map((s) => [CODER_FACE, s] as const), [CODER_FACE_Q34, 'neutral'] as const]) {
+      for (const rows of irisRows(eyesOf(lib, id))) {
+        const shades = rows.flatMap((r) => r.split('').flatMap((c) => eyeShade(c) ?? []));
+        expect(
+          shades.filter((s) => s >= 4),
+          id,
+        ).toHaveLength(1);
+        expect(Math.max(...shades.filter((s) => s < 4)), id).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+  it('runs both lid rows past the outer corner and drops the lid inner end 1 px (brow–lid wedge)', () => {
+    for (const m of [eyesOf(CODER_FACE, 'neutral'), eyesOf(CODER_FACE_Q34, 'neutral')]) {
+      const top = m.findIndex((r) => r.split('').some((c) => eyeShade(c) !== undefined));
+      for (const [a, b, outer] of [
+        [0, 10, -1],
+        [10, 20, 1],
+      ] as const) {
+        const cols = (y: number, f: (c: string) => boolean): number[] =>
+          (m[y] ?? '').split('').flatMap((c, x) => (x >= a && x < b && f(c) ? [x] : []));
+        const iris = m.flatMap((_, y) => cols(y, (c) => eyeShade(c) !== undefined));
+        const irisOuter = outer < 0 ? Math.min(...iris) : Math.max(...iris);
+        for (const y of [top - 2, top - 1]) {
+          const ink = cols(y, isInk);
+          const lidOuter = outer < 0 ? Math.min(...ink) : Math.max(...ink);
+          expect((lidOuter - irisOuter) * outer, `lid row ${String(y)}`).toBeGreaterThanOrEqual(1);
+        }
+        const lidInner = outer < 0 ? Math.max(...cols(top - 1, isInk)) : Math.min(...cols(top - 1, isInk));
+        expect(isInk(m[top]?.charAt(lidInner) ?? '.'), `wedge ${String(a)}`).toBe(true);
+      }
+    }
+  });
+  it('draws the set brows in hair_cocoa 0 with a clean skin row above them on the head', () => {
+    for (const [lib, faceAt, head] of [
+      [CODER_FACE, [5, 12], HEAD],
+      [CODER_FACE_Q34, [7, 12], HEAD_Q34],
+    ] as const) {
+      const brows = lib.brows?.['set'];
+      if (!brows) throw new Error('set brows');
+      brows.mask.forEach((row, y) => {
+        row.split('').forEach((c, x) => {
+          if (c === '.') return;
+          expect(LEGEND[c], c).toEqual(['hair', 0]);
+          const hx = faceAt[0] + brows.at[0] + x;
+          const hy = faceAt[1] + brows.at[1] + y;
+          const above = brows.mask[y - 1]?.charAt(x) ?? '.';
+          if (above === '.') expect(LEGEND[head[hy - 1]?.charAt(hx) ?? '.']?.[0], `above ${String(x)}`).toBe('skin');
+        });
+      });
+    }
   });
 });
