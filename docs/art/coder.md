@@ -43,6 +43,18 @@ brows and bare legs — every boy cue below targets one of these).
 | Silhouette | ears, tail, bob hair, shorts, bare shins | bell cloak, smooth dome | messy flat bedhead + one cowlick, boxy hoodie with dropped shoulders, hood bunched behind the neck, straight jeans, chunky sneakers |
 | Palette | silver / indigo / teal | dove-ivory / ash / umber | mustard / denim / cocoa / cream |
 
+### As built (MA-66 round 0, 2026-11-26) — deviations from the text above
+- Hoodie body = mustard step 4 (`dress` T6UP, `dressShade` 4), sleeves step 3, cuffs step 2: step 3 read olive-brown
+  under the cloth dither at 1×. The chest (x 18–29, frame rows 34–45) is one authored `torsoMask` — hood roll + half-zip
+  collar, `{ }` print (two 3-row braces), cord + badge, pocket, rib ticks every 3 px, tee hem — so no `neckAcc: 'hood'`
+  (R-C1) is needed; front `neckAcc: 'none'`, the q34 hood lump is in `CHEST_Q34`. R-C2 / R-C4 not needed (default long
+  cuff has no bell; untailored `hem: 'shorts'` has no leg-hem flare).
+- No drawstrings: on a 12-px chest the strings, cord, print and badge merged into noise; the lanyard cord replaces them.
+- Brows sit 1 row higher than the kit (1 skin row above the 2-row lid); think keeps the set brows (the validator needs
+  them; the raised near brow is dropped). Mouth interiors are rose, not the trim ochre.
+- Slots: `horn` = metal (zipper pull), `apron` = cream (tee, cord, badge, sneakers), `trim` = ochre (`>_`), `shoe` =
+  indigo (print). Open for round 1: the q34 jeans seat flares like kitsune's shorts on the passing frames.
+
 ## Lookalikes checked
 - L (Death Note): hair cocoa, never black; hoodie never white; shoes always drawn; no crouch-sit, no thumb-bite (think
   uses the chin fist); eye bags 2 px of skin 2, never ink or dark rings.
