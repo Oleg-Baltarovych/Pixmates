@@ -1,7 +1,10 @@
 // Sprite fingerprint: resources/characters/ and resources/fx/ are git-ignored, so the committed
 // assets-src/sprites.lock.json holds a SHA-256 per output file. Every pack is built in memory exactly as
 // `pnpm sprites` writes it; a change to any pack must arrive as a reviewable lock diff (`pnpm sprites:lock`).
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import {
   buildAllOutputs,
   LOCK_UPDATE_COMMAND,
@@ -10,10 +13,9 @@ import {
   readLock,
   type SpritesLock,
 } from '../../../tools/lib/sprite-outputs.ts';
-import { loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
+import { loadMasterPalette, renderContext, ROOT } from '../../../tools/lib/sprites.ts';
 
-const outputs = buildAllOutputs(renderContext(loadMasterPalette()));
-const actual = lockOf(outputs);
+const actual = lockOf(buildAllOutputs(renderContext(loadMasterPalette())));
 
 describe('sprites.lock.json', () => {
   it('matches every pack built from assets-src (run the printed command if the change is intended)', () => {
@@ -38,8 +40,11 @@ describe('sprites.lock.json', () => {
     expect(lockMismatch({ ...actual, 'pixmates.ghost': {} }, actual)).toContain('pixmates.ghost');
   });
 
-  it('covers every pack and the FX atlas, two files each', () => {
-    expect(outputs.map((o) => o.id)).toContain('fx');
-    for (const o of outputs) expect(o.files.map((f) => f.path)).toHaveLength(2);
+  it('prints an update command that package.json actually defines', () => {
+    const script = LOCK_UPDATE_COMMAND.replace(/^pnpm /, '');
+    const { scripts } = z
+      .object({ scripts: z.record(z.string(), z.string()) })
+      .parse(JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')));
+    expect(scripts[script]).toContain('tools/sprites-lock.ts');
   });
 });

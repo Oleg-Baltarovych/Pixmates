@@ -9,6 +9,7 @@ import { PACKS } from '../../assets-src/packs.ts';
 import type { PackDef, RenderContext } from '../../assets-src/lib/types.ts';
 import { fxManifestSchema, manifestSchema } from '../../src/shared/pack.ts';
 import { ATLAS_FILE, buildFx, buildPack, FX_FILE, ROOT, sha256 } from './sprites.ts';
+
 /** One generated file, `path` relative to its pack directory (resources/characters/<id>/ or resources/fx/). */
 export interface OutputFile {
   readonly path: string;

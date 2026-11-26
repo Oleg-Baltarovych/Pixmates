@@ -33,9 +33,10 @@ export class Canvas {
         const px = src.data.subarray(i, i + 4);
         for (let dy = 0; dy < scale; dy++) {
           for (let dx = 0; dx < scale; dx++) {
-            const X = x + sx * scale + dx;
-            const Y = y + sy * scale + dy;
-            if (X >= 0 && Y >= 0 && X < this.width && Y < this.height) this.data.set(px, (Y * this.width + X) * 4);
+            const tx = x + sx * scale + dx;
+            const ty = y + sy * scale + dy;
+            if (tx >= 0 && ty >= 0 && tx < this.width && ty < this.height)
+              this.data.set(px, (ty * this.width + tx) * 4);
           }
         }
       }

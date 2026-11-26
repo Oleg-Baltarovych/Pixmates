@@ -16,9 +16,15 @@ export interface CliSpec<O extends ParseArgsOptionsConfig> {
 
 const HELP = { help: { type: 'boolean', short: 'h' } } as const;
 
-export type ParsedCli<O extends ParseArgsOptionsConfig> = ReturnType<
-  typeof parseArgs<{ options: O & typeof HELP; allowPositionals: true; strict: true }>
->;
+/** The parseArgs config every tool runs with: its own flags plus `--help`, positionals allowed, strict. */
+interface CliConfig<O extends ParseArgsOptionsConfig> {
+  options: O & typeof HELP;
+  allowPositionals: true;
+  strict: true;
+}
+
+/** What parseCli returns: parseArgs' own typed result for that config (`values` per flag, `positionals`). */
+export type ParsedCli<O extends ParseArgsOptionsConfig> = ReturnType<typeof parseArgs<CliConfig<O>>>;
 
 /** Parses `argv` against `spec`; unknown flags, missing values and stray positionals become a UsageError. */
 export function parseCli<O extends ParseArgsOptionsConfig>(spec: CliSpec<O>, argv: readonly string[]): ParsedCli<O> {

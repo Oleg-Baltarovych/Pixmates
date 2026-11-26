@@ -17,6 +17,8 @@ await runCli(USAGE, () => {
   }
   const before = readLock();
   const lock = lockOf(buildAllOutputs(renderContext(loadMasterPalette())));
+  // Key order is deterministic (OUTPUT_IDS build order, files in emit order), so an unchanged build rewrites the
+  // lock byte for byte and any diff is a real pack change.
   writeFileSync(LOCK_FILE, lockBytes(lock));
   for (const [id, files] of Object.entries(lock)) {
     const changed = JSON.stringify(files) !== JSON.stringify(before[id]);
