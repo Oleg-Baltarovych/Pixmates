@@ -17,6 +17,25 @@ brows and bare legs — every boy cue below targets one of these).
   materials — knit cloth, denim, rubber sneaker soles, metal (2 zipper-pull px on a half-zip collar, `metal_steel` 5);
   trims at 1× — badge, aglets, rib ticks.
 
+- **Originality re-check for D-20 (MA-66, 2026-11-26): PASS**, pending art-director round 1. The stern lid, the
+  lanyard and the layered tee add new lookalike risks; each is closed by a rule kept every round:
+  - Hachiman Hikigaya (Oregairu: "dead-fish" eyes + one ahoge + dark hair): hair cocoa, never black; the cowlick is a
+    3-px hook lying sideways, never a tall single strand; no blazer, school uniform or tie; eye bags 2 px skin 2.
+  - Gintoki (silver perm, dead eyes, kimono) and Oreki: no silver/white hair, no perm, no uniform.
+  - Zenitsu (yellow haori, blond) and Ryuji (Persona 5: blond, yellow tee under an open jacket): the yellow is a
+    muted mustard hoodie (C ≤ 0.11, never lemon), hair never blond; no triangle/scale pattern, no open jacket.
+  - Sans (Undertale: blue hoodie, shorts, slippers) and the Eddsworld hoodie cast (green / blue / red / purple): none
+    use mustard; jeans and sneakers, no shorts or slippers, no fur-trimmed hood.
+  - Kenny (South Park, orange parka hood up) and Kido / Seto (Kagerou: purple / green hoodies): hood always down,
+    never orange, purple or green.
+  - Futaba Sakura / Kirito / Yuji Itadori (hoodie under a uniform, pink hair): no headphones, no black, no pink hair,
+    no uniform jacket over the hoodie.
+  - Watch Dogs 2 (Marcus cap + hoodie, Wrench LED mask) and Hiro Hamada (Big Hero 6): no cap, mask, LED glyph eyes or
+    grey hoodie with a robot.
+  - Lanyard badge: blank cream card with a 2-px amber `>_` — a generic prompt glyph, never PowerShell's blue tile or
+    the Windows Terminal tile, no company name, photo, QR or logo; cord cream, never a branded colour strip.
+  - The `{ }` print stays a generic brace pair in indigo, never a JSON / VS Code / GitHub mark.
+
 **Cast rule — the only boy in trousers, the only warm-yellow mass.**
 
 | | kitsune | ronin | coder |
