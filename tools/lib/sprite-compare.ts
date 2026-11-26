@@ -1,6 +1,7 @@
 // Logic behind `pnpm sprites:compare`: the command line, the frame columns ("shots") and the before/after sheet.
 // The sheet has four rows (old and new on white, then old and new on dark) and one column per shot, drawn with
 // nearest-neighbour scaling. The git and file wiring lives in tools/sprites-compare.ts.
+import type { Palette } from '../../assets-src/lib/palette.ts';
 import type { PackDef, RenderContext } from '../../assets-src/lib/types.ts';
 import { Canvas, DARK, WHITE, type Rgb } from './canvas.ts';
 import { parseCli, UsageError, wantsHelp } from './cli.ts';
@@ -77,8 +78,43 @@ export function parseCompareArgs(argv: readonly string[]): CompareOptions | 'hel
   return { id, base, shots: frames === undefined ? DEFAULT_SHOTS : parseShots(frames) };
 }
 
+/** The part of a pack the comparison uses: what a pack from another revision is checked for at runtime. */
+export type ShotSource = Pick<PackDef, 'id' | 'animations' | 'render'>;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+
+/** True for an array of packs exposing `id`, frame counts per animation and `render` (checked per element). */
+export function isShotSourceList(value: unknown): value is readonly ShotSource[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (p) =>
+        isRecord(p) &&
+        typeof p.id === 'string' &&
+        typeof p.render === 'function' &&
+        isRecord(p.animations) &&
+        Object.values(p.animations).every((a) => isRecord(a) && Number.isInteger(a.frames)),
+    )
+  );
+}
+
+/** True for a palette object: ramp names plus the two lookup maps `renderContext` and the frame checks read. */
+export function isPalette(value: unknown): value is Palette {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.rampNames) &&
+    value.rampNames.every((n) => typeof n === 'string') &&
+    value.ramps instanceof Map &&
+    value.colors instanceof Map
+  );
+}
+
 /** Renders each shot of `def` (frame clamped to the animation length); null where the pack lacks the animation. */
-export function renderShots(def: PackDef, shots: readonly Shot[], ctx: RenderContext): (RgbaImage | null)[] {
+export function renderShots(
+  def: Omit<ShotSource, 'id'>,
+  shots: readonly Shot[],
+  ctx: RenderContext,
+): (RgbaImage | null)[] {
   return shots.map(({ anim, frame }) => {
     const a = def.animations[anim];
     return a ? def.render(anim, Math.min(frame, a.frames - 1), ctx) : null;

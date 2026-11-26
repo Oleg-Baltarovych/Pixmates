@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { PACKS } from '../../../assets-src/packs.ts';
 import { DARK, WHITE } from '../../../tools/lib/canvas.ts';
 import { UsageError } from '../../../tools/lib/cli.ts';
 import type { RgbaImage } from '../../../tools/lib/png.ts';
 import {
   compareSheet,
   DEFAULT_SHOTS,
+  isPalette,
+  isShotSourceList,
   parseCompareArgs,
   parseShots,
   renderShots,
@@ -64,22 +65,52 @@ describe('parseCompareArgs', () => {
 
 describe('renderShots', () => {
   const ctx = renderContext(loadMasterPalette());
-  const spike = PACKS.find((p) => p.id === 'spike-maid-48soft');
-  if (!spike) throw new Error('spike-maid-48soft is not in PACKS');
+  /** A 1×1 pack whose pixel encodes the frame index in the red channel. */
+  const stub = {
+    animations: { walk: { frames: 3, fps: 8, loop: true } },
+    render: (_anim: string, frame: number): RgbaImage => solid(1, 1, [frame, 0, 0]),
+  };
 
   it('clamps the frame to the last one and leaves a gap where the pack lacks the animation', () => {
-    const walk = spike.animations.walk;
-    if (!walk) throw new Error('spike has no walk');
-    const [clamped, missing] = renderShots(
-      spike,
+    const [first, clamped, missing] = renderShots(
+      stub,
       [
+        { anim: 'walk', frame: 1 },
         { anim: 'walk', frame: 99 },
         { anim: 'talk', frame: 0 },
       ],
       ctx,
     );
-    expect(clamped?.data).toEqual(spike.render('walk', walk.frames - 1, ctx).data);
+    expect(first?.data[0]).toBe(1);
+    expect(clamped?.data[0]).toBe(2);
     expect(missing).toBeNull();
+  });
+});
+
+describe('guards for modules from another revision', () => {
+  const pack = { id: 'p', animations: { idle_a: { frames: 2 } }, render: () => null };
+
+  it('accepts a pack list exposing id, frame counts and render', () => {
+    expect(isShotSourceList([pack])).toBe(true);
+    expect(isShotSourceList([])).toBe(true);
+  });
+
+  it.each([
+    ['not an array', { 0: pack }],
+    ['no id', [{ ...pack, id: 1 }]],
+    ['no render', [{ ...pack, render: 'x' }]],
+    ['bad frame count', [{ ...pack, animations: { idle_a: { frames: 1.5 } } }]],
+    ['null entry', [null]],
+  ])('rejects a pack list with %s', (_why, value) => {
+    expect(isShotSourceList(value)).toBe(false);
+  });
+
+  it('accepts a palette with ramp names and both maps, rejects anything else', () => {
+    expect(isPalette(loadMasterPalette())).toBe(true);
+    expect(isPalette({ rampNames: [], ramps: new Map(), colors: new Map() })).toBe(true);
+    expect(isPalette({ rampNames: [], ramps: {}, colors: new Map() })).toBe(false);
+    expect(isPalette({ rampNames: [1], ramps: new Map(), colors: new Map() })).toBe(false);
+    expect(isPalette(null)).toBe(false);
   });
 });
 

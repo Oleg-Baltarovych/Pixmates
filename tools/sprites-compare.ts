@@ -6,8 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { PACKS } from '../assets-src/packs.ts';
-import type { Palette } from '../assets-src/lib/palette.ts';
-import type { PackDef, RenderContext } from '../assets-src/lib/types.ts';
+import type { RenderContext } from '../assets-src/lib/types.ts';
 import { runCli, UsageError } from './lib/cli.ts';
 import { exportTree, resolveCommit } from './lib/git-tree.ts';
 import { encodePng } from './lib/png.ts';
@@ -15,24 +14,30 @@ import {
   COMPARE_SCALES,
   COMPARE_USAGE,
   compareSheet,
+  isPalette,
+  isShotSourceList,
   parseCompareArgs,
   renderShots,
   type Shot,
+  type ShotSource,
 } from './lib/sprite-compare.ts';
 import { loadMasterPalette, renderContext, ROOT } from './lib/sprites.ts';
 
 const ASSETS = 'assets-src';
 
 interface Side {
-  readonly def: PackDef;
+  readonly def: ShotSource;
   readonly ctx: RenderContext;
 }
 
-/** Dynamic import of a module from the exported revision, with a named export checked to exist. */
-async function importExport(url: string, name: string, check: (value: unknown) => boolean): Promise<unknown> {
+/** A function of one argument whose result is checked by the caller. */
+const isLoader = (value: unknown): value is (json: unknown) => unknown => typeof value === 'function';
+
+/** Dynamic import of a module from the exported revision; the named export must pass `guard`. */
+async function importExport<T>(url: string, name: string, guard: (value: unknown) => value is T): Promise<T> {
   const mod: unknown = await import(url);
   const value: unknown = typeof mod === 'object' && mod !== null ? Reflect.get(mod, name) : undefined;
-  if (!check(value)) throw new Error(`${url}: missing export '${name}'`);
+  if (!guard(value)) throw new Error(`${url}: export '${name}' is missing or has an unexpected shape`);
   return value;
 }
 
@@ -44,15 +49,14 @@ async function sideAt(commit: string, id: string): Promise<Side> {
     // Node's type stripping needs to know the copied .ts files are ES modules.
     writeFileSync(join(dir, 'package.json'), '{ "type": "module" }\n');
     const url = (file: string): string => pathToFileURL(join(dir, ASSETS, file)).href;
-    // Both exports are that revision's own PackDef[] and loadPalette: the same contracts one revision earlier.
-    const packs = (await importExport(url('packs.ts'), 'PACKS', Array.isArray)) as readonly PackDef[];
-    const loadPalette = (await importExport(url('lib/palette.ts'), 'loadPalette', (v) => typeof v === 'function')) as (
-      json: unknown,
-    ) => Palette;
+    const packs = await importExport(url('packs.ts'), 'PACKS', isShotSourceList);
+    const loadPalette = await importExport(url('lib/palette.ts'), 'loadPalette', isLoader);
     const def = packs.find((p) => p.id === id);
     if (!def) throw new UsageError(`pack '${id}' does not exist at ${commit.slice(0, 12)}`);
     const master: unknown = JSON.parse(readFileSync(join(dir, ASSETS, 'palettes', 'master.json'), 'utf8'));
-    return { def, ctx: renderContext(loadPalette(master)) };
+    const palette = loadPalette(master);
+    if (!isPalette(palette)) throw new Error(`loadPalette at ${commit.slice(0, 12)} returned an unexpected shape`);
+    return { def, ctx: renderContext(palette) };
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
