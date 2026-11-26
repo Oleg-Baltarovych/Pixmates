@@ -85,12 +85,7 @@ await runCli(COMPARE_USAGE, async () => {
   }
   const def = PACKS.find((p) => p.id === options.id);
   if (!def) throw new UsageError(`unknown pack '${options.id}' (known: ${PACKS.map((p) => p.id).join(', ')})`);
-  let commit: string;
-  try {
-    commit = resolveCommit(options.base);
-  } catch (error) {
-    throw new UsageError(error instanceof Error ? error.message : String(error));
-  }
+  const commit = resolveCommit(options.base);
   const old = await sideAt(commit, options.id);
   console.log(`base ${options.base} (${commit.slice(0, 12)}) vs working tree`);
   writeSheets(options.id, options.shots, old, { def, ctx: renderContext(loadMasterPalette()) });

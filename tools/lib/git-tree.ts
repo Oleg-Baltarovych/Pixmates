@@ -3,7 +3,8 @@
 // `pnpm sprites:compare` to build the "before" pack from the base revision's assets-src.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, resolve, sep } from 'node:path';
+import { UsageError } from './cli.ts';
 import { ROOT } from './sprites.ts';
 
 export interface TreeEntry {
@@ -45,34 +46,64 @@ export function parseCatFileBatch(out: Buffer): Buffer[] {
   return blobs;
 }
 
-const git = (args: readonly string[], input?: string): Buffer =>
-  execFileSync('git', args, { cwd: ROOT, input, maxBuffer: 256 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] });
+/** Upper bound for one git command's output: a whole assets-src export is a few MB. */
+const GIT_MAX_OUTPUT_BYTES = 256 * 1024 * 1024;
 
-/** Resolves `ref` to a commit id; throws a readable error for an unknown ref (refs starting with `-` are refused). */
-export function resolveCommit(ref: string): string {
-  if (ref.startsWith('-')) throw new Error(`invalid git ref '${ref}'`);
+const git = (repo: string, args: readonly string[], input?: string): Buffer =>
+  execFileSync('git', args, {
+    cwd: repo,
+    input,
+    maxBuffer: GIT_MAX_OUTPUT_BYTES,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
+
+/** `git rev-parse --verify --quiet` exits 1 (and prints nothing) only when the ref does not resolve. */
+const isUnknownRef = (error: unknown): boolean =>
+  typeof error === 'object' && error !== null && 'status' in error && error.status === 1;
+
+/**
+ * Resolves `ref` to a commit id in `repo`. An unknown ref, or one starting with `-` (it would read as an option), is a
+ * UsageError; anything else (git missing, not a repository) propagates unchanged.
+ */
+export function resolveCommit(ref: string, repo = ROOT): string {
+  if (ref.startsWith('-')) throw new UsageError(`invalid git ref '${ref}'`);
   try {
-    return git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`])
+    return git(repo, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`])
       .toString('utf8')
       .trim();
-  } catch {
-    throw new Error(`unknown git ref '${ref}'`);
+  } catch (error) {
+    if (isUnknownRef(error)) throw new UsageError(`unknown git ref '${ref}'`);
+    throw error;
   }
 }
 
+/**
+ * `<root>/<path>` for a repository-relative path; throws for anything that could land outside `root`: absolute or
+ * drive-letter paths (`/x`, `C:/x`, `C:x`) and `..` escapes.
+ */
+export function containedPath(root: string, path: string): string {
+  const base = resolve(root);
+  if (isAbsolute(path) || /^([A-Za-z]:|[\\/])/.test(path)) {
+    throw new Error(`refusing absolute path: ${path}`);
+  }
+  const file = resolve(base, path);
+  if (!file.startsWith(base + sep)) throw new Error(`refusing path outside ${base}: ${path}`);
+  return file;
+}
+
 /** Writes every regular file under `dir` at `commit` to `<dest>/<dir>/…`; returns the number of files written. */
-export function exportTree(commit: string, dir: string, dest: string): number {
-  const entries = parseLsTree(git(['ls-tree', '-r', '-z', commit, '--', dir]).toString('utf8')).filter(
+export function exportTree(commit: string, dir: string, dest: string, repo = ROOT): number {
+  const entries = parseLsTree(git(repo, ['ls-tree', '-r', '-z', commit, '--', dir]).toString('utf8')).filter(
     (e) => e.type === 'blob' && e.mode !== '120000',
   );
   if (entries.length === 0) throw new Error(`'${dir}' does not exist at ${commit.slice(0, 12)}`);
-  const blobs = parseCatFileBatch(git(['cat-file', '--batch'], `${entries.map((e) => e.object).join('\n')}\n`));
-  if (blobs.length !== entries.length)
+  const blobs = parseCatFileBatch(git(repo, ['cat-file', '--batch'], `${entries.map((e) => e.object).join('\n')}\n`));
+  if (blobs.length !== entries.length) {
     throw new Error(`git cat-file returned ${String(blobs.length)} of ${String(entries.length)} blobs`);
-  const root = resolve(dest);
+  }
   entries.forEach((entry, i) => {
-    const file = resolve(root, entry.path);
-    if (relative(root, file).split(sep).includes('..')) throw new Error(`refusing path outside dest: ${entry.path}`);
+    const file = containedPath(dest, entry.path);
     mkdirSync(dirname(file), { recursive: true });
     // Same length as entries (checked above); the fallback only satisfies noUncheckedIndexedAccess.
     writeFileSync(file, blobs[i] ?? Buffer.alloc(0));
