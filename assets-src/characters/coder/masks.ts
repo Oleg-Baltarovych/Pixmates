@@ -1,7 +1,12 @@
 // coder (pixmates.coder) authored masks, MA-66 per docs/art/coder.md (D-20 chibi 48 × 56, stern look, richness;
 // originality gate PASS 2026-11-24, D-20 re-check 2026-11-26). A stylized archetype, not a portrait: a night-shift
 // coder boy — cool cocoa bedhead (flat messy top, 3 sideways tufts, one cowlick hook right of the axis, 5 uneven
-// fringe clumps with two short ones over the brows), short squared sideburns, human ears. Legend: assets-src/lib/mask.ts.
+// fringe clumps with two short ones over the brows), short squared sideburns, human ears; a mustard half-zip hoodie
+// with the hood bunched behind the neck, a steel zipper pull, an indigo `{ }` print on the lit-left chest, a cream
+// lanyard with a blank badge (amber `>_`), a kangaroo pocket, a ribbed waistband over a cream tee hem; straight
+// rolled jeans; chunky cream sneakers. Slots: `dress` = cloth_mustard, `apron` = cloth_cream (tee, cord, badge,
+// sneakers, sclera), `trim` = cloth_ochre (the amber mark), `horn` = metal (zipper pull), `shoe` = cloth_indigo
+// (print). Legend: assets-src/lib/mask.ts.
 import type { Mask } from '../../lib/mask.ts';
 
 const BLANK = '.'.repeat(30);
@@ -104,3 +109,55 @@ export const HAIR_BACK_Q34: Mask = [
 ];
 /** Far sideburn (q34, from head joint + (9, −1)): 1 px behind the far cheek to the lid rows. */
 export const HAIR_FAR_Q34: Mask = ['..H', '..H', '..H'];
+
+// ── Costume ────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Hoodie front (`Body.torsoMask`, from the chest joint + (−6, 0): x 18–29, frame rows 34–45). The knit is authored
+ * flat (body `D`, folds `d`) so the 12-px chest never turns into dither noise at 1×:
+ * - rows 0–2: the hood bunched round the neck as a thick lit-left roll + the half-zip collar, a 2-px steel pull (`u`/`o`)
+ *   on the axis;
+ * - rows 3–5: the indigo `{ }` print on the lit-left chest (two 3-row braces, a 2-px gap);
+ * - the lanyard: a 1-px cream cord from the collar to a 3 × 4 blank badge on the screen-right chest (cream, an amber
+ *   `>` and `_`, a darker bottom edge) — the signature piece;
+ * - rows 6–8: the kangaroo pocket (top edge one step darker, side openings mustard 1 diagonals);
+ * - rows 9–10: the rib waistband with a mustard-1 tick every 3 px;
+ * - row 11: the cream tee hem under the rib (the under layer).
+ */
+export const CHEST: Mask = [
+  'dwWWWWWwwwDd',
+  'vdwwWwuwwdDv',
+  'DvvddvovddvD',
+  'DDbDDbDDDpDD',
+  'DbDDDDbDpppD',
+  'DDbDDbDDtPpD',
+  'DvvvvvvvPptD',
+  'DvDDDDDDqqqD',
+  'DDvDDDDDDvDD',
+  'dvddvddvddvd',
+  'dvddvddvddvd',
+  'qaaaaaaaaaaq',
+];
+/**
+ * q34 hoodie (from the chest joint + (−8, 0)): the hood lump trails behind the nape (cols 0–2, screen-left), the
+ * collar and zip 1 px toward the facing, the print on the near chest, the badge toward the facing edge.
+ */
+export const CHEST_Q34: Mask = [
+  'vDdwWWWWwwDd',
+  'vDddwwWuwdDv',
+  '.vvDvvdovdvD',
+  '..DbDDbDDpDD',
+  '..bDDDDbpppD',
+  '..DbDDbDtPpD',
+  '...vvvvvPptD',
+  '...vDDDDqqqD',
+  '....vDDDDDvD',
+  '...vddvddvdd',
+  '...vddvddvdd',
+  '...aaaaaaaaq',
+];
+
+/** Chunky cream sneakers (front, 5 × 3): upper cream 4, a lace px, a lit toe, a 1-row sole with its shade line. */
+export const SHOE: Mask = ['.pap.', 'Pppaq', 'aqqqa'];
+/** Side sneaker (q34, toe forward = screen-right): heel tab, lace px, lit toe, sole line. */
+export const SHOE_Q34: Mask = ['qpa..', 'qpppP', 'aqqqa'];
