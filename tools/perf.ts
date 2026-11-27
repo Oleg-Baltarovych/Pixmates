@@ -1,5 +1,5 @@
 // `pnpm perf` (plan M0-08, SPEC §1 budget): builds the unpacked app, launches it with a fixed seed, samples CPU and
-// memory of the whole Electron process tree at 1 Hz and writes reports/perf/<date>.md. Exit 1 over budget.
+// memory of the whole Electron process tree at 1 Hz and writes reports/perf/<date>-<character>.md. Exit 1 over budget.
 // Windows only. No dependencies: one long-running PowerShell sampler (Win32_Process tree + Get-Process counters).
 // Not via Playwright: the EnableNodeCliInspectArguments fuse is off, so `_electron` cannot drive the build.
 import { execFileSync, spawn } from 'node:child_process';
@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { runCli } from './lib/cli.ts';
-import { checkShipped, perfCharacter } from './lib/perf-args.ts';
+import { checkShipped, parsePerfArgs, PERF_USAGE, perfReportName } from './lib/perf-args.ts';
 
 // Memory is checked on the private-bytes sum (avg) for now; working set is reported alongside. The final metric is
 // decided in ADR 007.
@@ -17,18 +17,6 @@ const BUDGET = { cpuPercent: 2, memoryMb: 280 } as const; // ADR 007: private-by
 const TIMEOUT_MS = { build: 10 * 60_000, short: 30_000 } as const;
 const root = path.resolve(import.meta.dirname, '..');
 const exe = path.join(root, 'release', 'win-unpacked', 'Pixmates.exe');
-
-function arg(name: string, fallback: number): number {
-  const raw = process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
-  const value = Number(raw);
-  return raw !== undefined && Number.isFinite(value) && value > 0 ? value : fallback;
-}
-const warmupS = arg('warmup', 30);
-const durationS = arg('duration', 120);
-const skipBuild = process.argv.includes('--skip-build');
-// `--character=<id>` (MA-31; `maid` or `pixmates.maid`) measures that built-in; default = the app's default character.
-// Built-ins ship in the unpacked build, so the id is passed through as the app's own `--character`.
-const USAGE = 'Usage: pnpm perf [-- --character=<id>] [--skip-build] [--warmup=<s>] [--duration=<s>]';
 const shippedRoot = path.join(root, 'release', 'win-unpacked', 'resources', 'characters');
 
 interface Proc {
@@ -90,8 +78,13 @@ const mb = (bytes: number): number => bytes / 1024 / 1024;
 const avg = (values: readonly number[]): number => values.reduce((a, b) => a + b, 0) / Math.max(1, values.length);
 
 async function main(): Promise<void> {
+  // Arguments first, so a usage error shows on any platform; then the Windows-only check.
+  const { help, skipBuild, warmupS, durationS, character } = parsePerfArgs(process.argv.slice(2));
+  if (help) {
+    console.log(PERF_USAGE);
+    return;
+  }
   if (process.platform !== 'win32') throw new Error('pnpm perf measures the Windows build only');
-  const character = perfCharacter(process.argv.slice(2));
   if (!skipBuild)
     execFileSync('pnpm dist:dir', { cwd: root, stdio: 'inherit', shell: 'cmd.exe', timeout: TIMEOUT_MS.build }); // fixed command, no arguments interpolated
 
@@ -199,8 +192,10 @@ async function main(): Promise<void> {
   const processCount = measured.at(-1)?.procs.length ?? 0;
 
   const cpuAvg = avg(cpu);
-  const ws = { avg: mb(avg(wsTotals)), p95: mb(percentile(wsTotals, 95)) };
-  const priv = { avg: mb(avg(privTotals)), p95: mb(percentile(privTotals, 95)) };
+  const cpuP95 = percentile(cpu, 95);
+  const cpuMax = Math.max(0, ...cpu);
+  const ws = { avg: mb(avg(wsTotals)), p95: mb(percentile(wsTotals, 95)), max: mb(Math.max(0, ...wsTotals)) };
+  const priv = { avg: mb(avg(privTotals)), p95: mb(percentile(privTotals, 95)), max: mb(Math.max(0, ...privTotals)) };
   const verdict = cpuAvg < BUDGET.cpuPercent && priv.avg <= BUDGET.memoryMb ? 'within budget' : 'OVER BUDGET';
   const date = new Date().toISOString().slice(0, 10);
   const report = [
@@ -213,12 +208,11 @@ async function main(): Promise<void> {
     `- Budget (SPEC §1): CPU < ${String(BUDGET.cpuPercent)} % (avg), memory ≤ ${String(BUDGET.memoryMb)} MB (sum of all processes)`,
     '- Memory metric: the verdict uses the **private-bytes sum (avg)** for now; working set is shown alongside (it double-counts shared pages). The final metric is decided in ADR 007.',
     '',
-    '| Metric | Value |',
-    '|---|---|',
-    `| CPU avg | ${cpuAvg.toFixed(2)} % |`,
-    `| CPU p95 | ${percentile(cpu, 95).toFixed(2)} % |`,
-    `| Private bytes, sum (avg / p95) — budget metric | ${priv.avg.toFixed(1)} / ${priv.p95.toFixed(1)} MB |`,
-    `| Working set, sum (avg / p95) | ${ws.avg.toFixed(1)} / ${ws.p95.toFixed(1)} MB |`,
+    '| Metric | avg | p95 | max |',
+    '|---|---|---|---|',
+    `| CPU, % | ${cpuAvg.toFixed(2)} | ${cpuP95.toFixed(2)} | ${cpuMax.toFixed(2)} |`,
+    `| Private bytes, sum, MB — budget metric | ${priv.avg.toFixed(1)} | ${priv.p95.toFixed(1)} | ${priv.max.toFixed(1)} |`,
+    `| Working set, sum, MB | ${ws.avg.toFixed(1)} | ${ws.p95.toFixed(1)} | ${ws.max.toFixed(1)} |`,
     '',
     '| Process type | WS avg MB | Private avg MB |',
     '|---|---|---|',
@@ -229,11 +223,11 @@ async function main(): Promise<void> {
   ].join('\n');
   const dir = path.join(root, 'reports', 'perf');
   mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${date}.md`);
+  const file = path.join(dir, perfReportName(date, character));
   writeFileSync(file, report);
   console.log(report);
   console.log(`[perf] report: ${file}`);
   if (verdict !== 'within budget') process.exitCode = 1;
 }
 
-await runCli(USAGE, main);
+await runCli(PERF_USAGE, main);
