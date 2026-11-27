@@ -615,6 +615,12 @@ describe('art gate (kitsune.md, owner 2026-11-24): rose tail ribbon', () => {
     expect(ribbon?.ramp).toBe('cloth_rose');
   });
 
+  it('AD re-gate MA-69: rose 2, a step under every blush tone, so at 1x it never reads as a second blush', () => {
+    expect(ribbon?.shade).toBe(2);
+    expect(KITSUNE.outfit.blush.ramp).toBe(ribbon?.ramp);
+    for (const t of KITSUNE.outfit.blush.tones) expect(t).toBeGreaterThan(ribbon?.shade ?? Infinity);
+  });
+
   it('every frame with a tail: one row of ≤ 3 fill px (+ its outline) next to the cream tip; tucked = none', () => {
     for (const a of ANIMS) {
       for (let f = 0; f < a.frames.length; f++) {

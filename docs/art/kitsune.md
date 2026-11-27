@@ -117,5 +117,8 @@ Ninetales, Zorua, Blaze, Ayame, Kasumi, Mai Shiranui and generic Inari. What sep
 white, no braid), violet eyes, a deep indigo short wrap with shorts, teal only on trims, an ivory side mask with teal
 marks (no red), one capped tail. Cast (D-21): knight's silver is hard-step metal in one pointed cone on green, hers is
 soft fur with two ears on indigo; maid's teal is a dress mass under lilac hair, kitsune's teal is trim on indigo. Guard:
-she stays the only cast member with upright animal ears; the rose tail ribbon (owner 2026-11-24, built MA-69: `FoxTail.ribbon`, `cloth_rose` 3, tested) stays
+she stays the only cast member with upright animal ears; the rose tail ribbon (owner 2026-11-24, built MA-69: `FoxTail.ribbon`, `cloth_rose` 2, tested) stays
 1 × 3 px, rose not red, no bow or bell, re-gate when built.
+
+## As built
+- Tail ribbon `cloth_rose` 2 (AD re-gate MA-69, was 3 = the blush tone and read as a second blush at 1×): 1 row × 3 px under the cream tip, all three px shade 2; dark row reads deep rose, not wine (no shade-3 lit px needed). Test `kitsune.test.ts` (rose 2, under every blush tone).
