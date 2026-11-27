@@ -61,3 +61,22 @@ Patches `reports/sprites/knight-spike-{A,B,C}.patch` (git apply on the D-22 grou
   lowered beaked visor with two angled slits; emerald baldric, panel and eyes.
 - **C — sallet + bevor:** low skull with a cobalt crest, brim and swept tail (q34), chin bevor, lowered visor slit
   under the brim; full cobalt tabard with a cream star.
+
+## 7. As built (variant B, owner pick 2026-11-27; awaiting art-director round 1)
+Code `assets-src/characters/knight/{body,face,masks}.ts` (spike variant scaffolding removed); ramps `metal_silver` +
+`cloth_emerald` (`cloth_cobalt` dropped). Tests `tests/unit/art/knight.test.ts`, `knight-palette.test.ts`.
+- **Layers:** mail (camail onto the shoulders, a 2-row mail hem under the faulds) → plate (bascinet, gorget,
+  breastplate with a lit keel, spaulders, vambraces, gauntlets, two fauld lames, greaves, sabatons) → emerald sash
+  (baldric near shoulder → far hip, tabard panel between the legs). Leather: belt (silver buckle), sword grip, scabbard
+  with a silver locket and chape; the hanging hand rests on the hilt in front view.
+- **Signature:** the pointed ogive bascinet + hounskull visor. Raised: the snout tips up over the brow. Lowered: a pivot
+  seam with temple rivets, a lit-left / shaded-right cone, two slits angled toward the snout, the lit ridge only
+  **below** the slits (no cross, tested), single breath holes on the shade side (no T-slit, tested), a pointed tip
+  (≤ 6 px). q34: ridge off-centre toward the facing, long near slit + short far slit, the lower edge rising to the tip.
+- **Visor rule** = §1 exactly (`VISOR_DOWN_IN`, tested per frame: lowered = no skin / ink / blush px; glints cream only,
+  on slit px; startle / worried / wince / neutral glints, none on a blink).
+- **Face:** normal chibi (no stern option), emerald eyes; blush only on happy (light) and petted (strong).
+- **q34 owner rules:** the camail wraps the near jaw and tucks under the chin, so the facing contour never steps out
+  and steps in ≤ 1 px per row with the visor up and down (head + visor composite tested); head ≤ torso + 4 px, steady.
+- **Open for the art director:** the q34 visor has no forward beak (the contour rule forbids a protrusion), so the
+  pig-face reads from the front; emerald eyes vs ronin's jade eyes; mail checker density at 1×.
