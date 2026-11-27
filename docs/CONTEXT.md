@@ -2,12 +2,13 @@
 
 > Current state only; update it in the commit that changes structure, systems, commands or decisions.
 > Finished narratives go to `docs/CONTEXT-HISTORY.md`.
-> Last updated: 2026-11-27 (MA-66 coder owner-signed; next MA-67 knight).
+> Last updated: 2026-11-27 (MA-66 coder owner-signed; MA-67 knight concept spike awaiting the owner pick).
 
 ## 1. Status
 - **M0 ✅** (spikes S1–S3 on unmerged `spike/*` branches). **M-ART 🚧** on `feat/m-art` (draft PR #4), plan `docs/plans/2026-11-23-m-art.md`. SPEC v1.15. MVP for the portfolio = M0 + M-ART + M1 + M2.
 - **Art direction (D-20, ADR 012; supersedes D-19 / ADR 011):** chibi, frame **48 × 56** with headroom, «anime soft» (ADR 009), `scaleRef` 48, clamp 0.25 + L 176 DIP (S/M/L ×3/×4/×5 at 1080p/125 %, ×2/×3/×4 at 100 %). Views `front` + `q34` (ADR 010).
 - **Roster v1 = 8 (D-18):** signed off — `maid`, `kitsune` (fox-girl ninja; originality re-check MA-28r pending), `witch`, `goth` (stern face, MA-64), `ronin` (armoured samurai, red menpō with a black dragon, MA-65), `coder` (stern, black `cloth_onyx` hoodie with the hood always up, steel glasses, mustard hood edge + drawstrings + badge `>_`, badge on a steel chain, D-21, MA-66; open polish: hood shade edge on dark needs a per-part outline opt-in → MA-69). To do — `knight`, `vampire` (normal chibi; cloak reuses ronin's `back: 'cloak'`). Costume richness (ART-BIBLE §12) for all unsigned; for the signed-off maid/kitsune/witch after M1 (Q-D20-2).
+- **MA-67 knight (in progress):** ramps `metal_steel` + `fur_cream` committed; concept spike A (knight.md dome + visor + cheek guards, rose tabard) / B (skullcap + nasal on a cat head with cheek ruff, raspberry quilted gambeson) / C (flat-top pot helm, plum surcoat) as uncommitted patches `reports/sprites/knight-spike-{A,B,C}.patch` (git apply on HEAD: knight files, pack registration, lock) — owner picks, then the full build.
 - **Next:** MA-67 knight → MA-68 vampire → MA-28r → MA-69 opt-in cleanup → MA-30…33 (stage loads `maid`, placeholder + spike removed, perf ×3). Art gates: other packs unchanged (`assets-src/sprites.lock.json`), ≤ 2 art-director rounds, owner sees round 1; every character checked against the whole lineup for look-alikes (D-21, ART-BIBLE §12 p. 5).
 - Owner decisions D-1…D-21 (`docs/SPEC-REVIEW.md`): Windows 11 only; Dev companion in v1 (M4); one active character, switchable; layer on-top / desktop-only, hotkey `Ctrl+Alt+P`, appId `io.github.oleg-baltarovych.pixmates`; default ≈ 136 DIP, integer physical scale; all art by code. Post-v1 backlog: `golem`, `corsair`, `salamander`, `robot`, `glitch`.
 - Repo: public `github.com/Oleg-Baltarovych/pixmates`; commits from the GitHub noreply address (repo-local `user.email`); LF via `.gitattributes`.
