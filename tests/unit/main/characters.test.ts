@@ -116,6 +116,12 @@ describe('character registry (MA-10)', () => {
     expect(unknown.warning).toMatch(/pixmates\.nope.*pixmates\.maid/);
     expect(unknown.error).toBeUndefined();
   });
+  it('echoes --character into the log as printable ASCII only (security review nit)', () => {
+    const { packs } = loadRegistry(root, { includeSpike: true });
+    const hostile = selectCharacters({ packs, requested: 'a\nb\u001b[31m‮é' });
+    expect(hostile.warning).toContain('--character="a?b?[31m??":');
+    expect(hostile.warning).toMatch(/^[\x20-\x7e]*$/);
+  });
   it('reports an error and puts nobody on stage when no valid pack is left (MA-30)', () => {
     const none = selectCharacters({ packs: new Map() });
     expect(none.characters).toEqual([]);

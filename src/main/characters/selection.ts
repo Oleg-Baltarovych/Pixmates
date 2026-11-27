@@ -23,7 +23,7 @@ export type LineupLabel = (typeof LINEUP_LABELS)[number];
 
 export interface Selection {
   /** On stage, in order; empty when no valid pack is left (the stage then stays empty, MA-30). */
-  readonly characters: StageCharacter[];
+  readonly characters: readonly StageCharacter[];
   /** A requested pack was not found and the default stands in. */
   readonly warning?: string;
   /** Nothing to show. Packaged builds cannot get here: tests/unit/main/builtin-packs.test.ts fails the build first. */
@@ -33,14 +33,18 @@ export interface Selection {
 /** Longest `--character` value echoed into a log line. */
 const LOG_ID_MAX = 64;
 
+/** Untrusted argv text → printable ASCII only (no newlines, escapes or bidi controls in a log line). */
+const printable = (text: string): string => text.replace(/[^ -~]/gu, '?');
+
 export function selectCharacters({ packs, requested, lineup }: SelectionInput): Selection {
+  // A dev lineup overrides `requested` (`--character` is ignored while `--art-lineup` runs).
   const characters = lineup ? lineupCharacters(packs, lineup) : soloCharacter(packs, requested);
   if (characters.length === 0) {
     const missing = lineup ? 'none of the lineup packs' : `not even the default ${DEFAULT_CHARACTER}`;
     return { characters, error: `no valid character pack (${missing}): the stage stays empty` };
   }
   if (!lineup && requested !== undefined && !packs.has(requested)) {
-    const shown = JSON.stringify(requested.slice(0, LOG_ID_MAX));
+    const shown = JSON.stringify(printable(requested.slice(0, LOG_ID_MAX)));
     return { characters, warning: `--character=${shown}: no valid pack with that id, showing ${DEFAULT_CHARACTER}` };
   }
   return { characters };

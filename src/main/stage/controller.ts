@@ -146,7 +146,8 @@ export class StageController {
   /** Sizing of the primary character (frame height + manifest `scaleRef`, ADR 009); undefined = nothing on stage. */
   #sizing(): Sizing | undefined {
     const manifest = this.#characters()[0]?.pack.manifest;
-    return manifest && { frameH: manifest.frameSize.h, refH: manifest.scaleRef };
+    if (!manifest) return undefined;
+    return { frameH: manifest.frameSize.h, refH: manifest.scaleRef };
   }
 
   #scaleInput(targetDip: number, { frameH, refH }: Sizing): ScaleInput {
