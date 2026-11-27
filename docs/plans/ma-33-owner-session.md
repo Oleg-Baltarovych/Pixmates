@@ -8,17 +8,17 @@
 # Only in a VS Code / Claude Code terminal (they set it; Electron then runs as plain Node):
 Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
 ```
-Close any other `pnpm dev` first (single-instance lock). Quit each run from the tray icon → Quit (or Ctrl+C).
+Quote comma lists: PowerShell splits `a,b` into separate args. Close any other `pnpm dev` first (single-instance lock). Quit each run from the tray icon → Quit (or Ctrl+C).
 Keep one light window (e.g. Notepad, light theme) and one dark window (Terminal) at hand to slide behind the cast.
 
 ## Runs
 1. Female lineup (A–D = maid, goth, kitsune, witch):
    ```powershell
-   pnpm dev -- --art-lineup=maid,goth,kitsune,witch
+   pnpm dev -- "--art-lineup=maid,goth,kitsune,witch"
    ```
 2. Male lineup (A–D = ronin, knight, coder, vampire):
    ```powershell
-   pnpm dev -- --art-lineup=ronin,knight,coder,vampire
+   pnpm dev -- "--art-lineup=ronin,knight,coder,vampire"
    ```
 3. Solo + tray icon (repeat with any other id you want to see in the tray):
    ```powershell

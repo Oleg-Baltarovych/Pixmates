@@ -16,7 +16,7 @@ pure behavior core in `src/core` · Zustand (renderer view state) · zod (IPC, m
 
 ## Commands
 > Keep in sync with `package.json` (`/sync-context`). Planned (not wired yet): `pnpm sprites` (M-ART), `pnpm eval` (M2), `pnpm dist` NSIS + `pnpm e2e` (M6).
-- `pnpm dev` — `pnpm sprites` then electron-vite dev (HMR for renderers, main restarts); dev-only switches `--dev-windows`, `--capture-stage`, `--art-lineup=<ids>` (≤ 4 built-ins side by side). App flag `--compat-mode` (any build) = software rendering for GPUs that show black instead of transparency
+- `pnpm dev` — `pnpm sprites` then `electron-vite dev --` (app flags after `pnpm dev --`; quote comma lists in PowerShell) (HMR for renderers, main restarts); dev-only switches `--dev-windows`, `--capture-stage`, `--art-lineup=<ids>` (≤ 4 built-ins side by side). App flag `--compat-mode` (any build) = software rendering for GPUs that show black instead of transparency
 - `pnpm check` — typecheck → test → lint → format:check, stops at the first failure; must be green before reporting a task done (typecheck = 6 TS projects: core, main, preload, renderer, tools, tests)
 - `pnpm test:coverage` — Vitest + v8 coverage (core ≥ 90%)
 - `pnpm format` — Prettier write
