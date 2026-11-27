@@ -548,6 +548,22 @@ export interface Body {
    */
   readonly greaves?: { readonly lit: number; readonly mid: number; readonly shade: number; readonly spec: number };
   /**
+   * Opt-in (MA-69 re-gate, plate sabatons; runs after rim light and `greaves`): calm shoes at 1×. Every stamped shoe
+   * px loses its rim lift and stays ≤ `max`, except one `spec` px per shoe (the first px in row order that the mask
+   * authored at `spec`; the toe-cap corner). Each shoe's top row becomes one run — `top[0]` on the lit (screen-left)
+   * half (rounded up), `top[1]` on the rest, one step darker on a shoe without a spec px (the q34 far shoe) — with a
+   * `seam` px on each end; the row above the run (± 1 px, opaque px of the shoe/legs ramps) takes `seam`. Outline px
+   * beside a shoe stay ≤ `seam`. Rim light on the legs stays only on the outer (screen-right) leg's right edge, at most
+   * `rim` px from the top. Shades are whole steps of the shoe ramp (spec may be a 7-tone ramp's top).
+   */
+  readonly sabatons?: {
+    readonly top: readonly [number, number];
+    readonly max: number;
+    readonly spec: number;
+    readonly seam: number;
+    readonly rim: number;
+  };
+  /**
    * Waist sash: band height in rows (default 1), a knot mask on the near hip (from the hip joint) and `dy` whole rows
    * lower than the default waist band (0..`SASH_DY_MAX`, default 0; the torso shows between a collar and the sash).
    */

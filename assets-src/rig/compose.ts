@@ -18,7 +18,7 @@
 import type { RgbaImage } from '../../tools/lib/png.ts';
 import { createIndexBuffer, quantize, type IndexBuffer, type RampName } from '../lib/buffer.ts';
 import type { Point } from '../lib/chain.ts';
-import { maskSize } from '../lib/mask.ts';
+import { maskSize, type Mask } from '../lib/mask.ts';
 import { toOklab } from '../lib/palette.ts';
 import { MAT } from '../lib/materials.ts';
 import { compose, outline, selectiveOutline, type Part } from '../lib/passes.ts';
@@ -71,6 +71,7 @@ import {
   napeIndent,
   pointToe,
   recolorHornOutline,
+  sabatonTones,
   shinWrap,
   silhouetteOutline,
   sleeveRim,
@@ -161,6 +162,11 @@ export interface RigRenderer {
     | undefined;
   /** Scarf end centre lines (frame px, before squash); empty without a scarf. */
   readonly scarfEnds: (anim: RigAnim, frame: number) => readonly (readonly Point[])[];
+  /**
+   * Px each shoe mask stamped (frame px; rows under the waist, so squash never moves them), in stamp order; a later
+   * shoe (the q34 near one) owns the px it covers.
+   */
+  readonly shoes: (anim: RigAnim, frame: number, ctx: RenderContext) => readonly (readonly Point[])[];
 }
 
 /** Draw layers of one frame (composite order far → back → behind → front) plus points the passes need. */
@@ -363,7 +369,12 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     frame: number,
     p: PoseFrame,
     locked: Locked,
-  ): { tieAt: Point | undefined; hairFarPx: readonly number[]; headPx: ReadonlySet<number> } => {
+  ): {
+    tieAt: Point | undefined;
+    hairFarPx: readonly number[];
+    headPx: ReadonlySet<number>;
+    feet: readonly (readonly number[])[];
+  } => {
     const j = joints(anim, frame);
     const bv = bodyViewOf(anim, frame);
     const q = bv === 'q34';
@@ -569,6 +580,10 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     // Hanging feet (seated, dragged) point their toes down 1 px.
     const shoe =
       p.parts.legs === 'sit' || p.parts.legs === 'dangle' ? pointToe(bodyParts.masks.shoe) : bodyParts.masks.shoe;
+    // Each shoe's written px (stamp order) for the `Body.sabatons` pass.
+    const feet: number[][] = [];
+    const stampShoe = (mask: Mask, foot: Point): number[] =>
+      stampMask(buf, body, mask, Math.round(foot[0] - 2), Math.round(foot[1] - 0.6), 0.9, MAT.shoe, locked);
     if (q) {
       // q34: far shoe (R) one ramp step darker, stamped first so the near shoe overlaps it; a foot lifted ≥ 2 px
       // (passing frames) tips its toe down 1 px.
@@ -578,15 +593,19 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
         [j.footL, false],
       ] as const) {
         const lifted = ground - foot[1] >= 2 ? tipToe(shoe) : shoe;
-        stamp(far ? darkerMask(lifted) : lifted, foot[0] - 2, foot[1] - 0.6, 0.9, MAT.shoe);
+        feet.push(stampShoe(far ? darkerMask(lifted) : lifted, foot));
       }
     } else {
-      for (const foot of [j.footL, j.footR]) stamp(shoe, foot[0] - 2, foot[1] - 0.6, 0.9, MAT.shoe);
+      for (const foot of [j.footL, j.footR]) feet.push(stampShoe(shoe, foot));
     }
-    return { tieAt, hairFarPx, headPx };
+    return { tieAt, hairFarPx, headPx, feet };
   };
 
-  const renderLabeled = (anim: RigAnim, frame: number, ctx: RenderContext): LabeledFrame => {
+  const renderFull = (
+    anim: RigAnim,
+    frame: number,
+    ctx: RenderContext,
+  ): LabeledFrame & { readonly feet: readonly (readonly number[])[]; readonly width: number } => {
     const p: PoseFrame | undefined = anim.frames[frame];
     if (!p) throw new Error(`${body.id}/${anim.name}: no frame ${String(frame)}`);
     const j = joints(anim, frame);
@@ -616,7 +635,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     handShadows(buf, hands);
     // 3. Authored masks, then the opt-in locked tone passes over legs.
     const locked: Locked = new Map();
-    const { tieAt, hairFarPx, headPx } = stampAuthored(buf, anim, frame, p, locked);
+    const { tieAt, hairFarPx, headPx, feet } = stampAuthored(buf, anim, frame, p, locked);
     if (body.gauntlets) {
       const g = body.gauntlets.ramp;
       const ramp = { id: ctx.palette.rampNames.indexOf(g), steps: ctx.palette.ramps.get(g)?.length ?? 1 };
@@ -719,8 +738,16 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
       buf.ramp[i] = ramp;
       buf.shade[i] = shade;
     }
+    const preRim = body.sabatons ? Float32Array.from(buf.shade) : undefined;
     rimLight(buf, map, ctx.rampSize, { strength: style.rim });
     if (body.greaves) greaveTones(buf, ctx.palette.rampNames.indexOf(body.ramps.legs), body.greaves);
+    if (body.sabatons && preRim) {
+      const ramps = {
+        shoe: ctx.palette.rampNames.indexOf(body.outfit.shoe.ramp),
+        legs: ctx.palette.rampNames.indexOf(body.ramps.legs),
+      };
+      sabatonTones(buf, feet, preRim, map.kind, ramps, body.sabatons);
+    }
     // The far lock keeps its authored hair-shadow tones: rim light would lift its outer edge into a forward tuft.
     // Only px still hair are restored (nothing drawn later over them is touched).
     for (const i of hairFarPx) {
@@ -744,9 +771,9 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     const squashed = squashRows(quantize(buf, ctx.palette), cut, p.squash);
     const deep = ctx.palette.ramps.get(sleeve.ramp)?.[0];
     const sealed = closeSeams(p.squash > 0 && deep !== undefined ? squashSeparator(squashed, labels, deep) : squashed);
-    return { image: sealed, labels };
+    return { image: sealed, labels, feet, width: buf.width };
   };
-  const render = (anim: RigAnim, frame: number, ctx: RenderContext): RgbaImage => renderLabeled(anim, frame, ctx).image;
+  const render = (anim: RigAnim, frame: number, ctx: RenderContext): RgbaImage => renderFull(anim, frame, ctx).image;
   const toneOf = (ctx: RenderContext, ramp: RampName, shade: number): number => {
     const c = ctx.palette.ramps.get(ramp)?.[shade];
     return c === undefined ? 0 : toOklab(c)[0];
@@ -769,7 +796,24 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     return fxAnchor(anim, frame)[1] < fxAnchor(anim, prev)[1];
   }
 
-  return { joints, render, renderLabeled, fxAnchor, tail, scarfEnds };
+  const renderLabeled = (anim: RigAnim, frame: number, ctx: RenderContext): LabeledFrame => {
+    const { image, labels } = renderFull(anim, frame, ctx);
+    return { image, labels };
+  };
+  const shoes = (anim: RigAnim, frame: number, ctx: RenderContext): readonly (readonly Point[])[] => {
+    const { feet, width } = renderFull(anim, frame, ctx);
+    const later = new Set<number>();
+    return [...feet]
+      .reverse()
+      .map((px) => {
+        const own = px.filter((i) => !later.has(i));
+        for (const i of own) later.add(i);
+        return own.map((i): Point => [i % width, Math.floor(i / width)]);
+      })
+      .reverse();
+  };
+
+  return { joints, render, renderLabeled, fxAnchor, tail, scarfEnds, shoes };
 }
 
 /** The row squash cuts at: the waist, under the chest. */

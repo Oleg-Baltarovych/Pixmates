@@ -120,6 +120,9 @@ export const KNIGHT: Body = {
   legRim: 5,
   // Greaves (MA-69): calm plate tones 5 · 4 · 3 across each shin, tone 6 on one lit-left corner px per leg.
   greaves: { lit: 5, mid: 4, shade: 3, spec: 6 },
+  // Sabatons (MA-69 AD re-gate): top row one 4 · 3 run, one tone-6 toe-cap px per shoe, the rest ≤ 5, no rim on the
+  // shoes, a tone-2 seam row over each; leg rim only on the outer greave edge, ≤ 2 px.
+  sabatons: { top: [4, 3], max: 5, spec: 6, seam: 2, rim: 2 },
   hairBackStretch: 0.2,
   sideLocks: false,
   visor: { ...VISOR, downIn: VISOR_DOWN_IN },

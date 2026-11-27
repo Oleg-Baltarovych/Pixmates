@@ -15,6 +15,7 @@ import { ARM_LABEL, PART_ID } from '../../../assets-src/rig/part-ids.ts';
 import {
   farLegGap,
   greaveTones,
+  sabatonTones,
   napeIndent,
   silhouetteOutline,
   SPLIT_Q34_CONTACT_DX,
@@ -1271,5 +1272,90 @@ describe('opt-in: Cloak.widths.taper (front)', () => {
     expect(span(b, a.hemY - 1)).toBe(span(a, a.hemY - 1) - 2);
     expect(span(b, a.topY + Math.floor(rows / 2))).toBe(span(a, a.topY + Math.floor(rows / 2)));
     expect([...geomOf(tapered, walk, 0, true).px.keys()]).toEqual([...geomOf(column, walk, 0, true).px.keys()]);
+  });
+});
+
+describe('opt-in: Body.sabatons (sabatonTones)', () => {
+  // Two legs (rows 0–3) over two front shoes (rows 4–6, mask '.bBb.' / 'LlBbm' / 'MmmmM' in silver tones).
+  const W = 14;
+  const SHOE_TONES = [
+    [-1, 3, 4, 3, -1],
+    [6, 5, 4, 3, 2],
+    [0, 2, 2, 2, 0],
+  ];
+  const T = { top: [4, 3], max: 5, spec: 6, seam: 2, rim: 2 } as const;
+  const setup = (): {
+    buf: ReturnType<typeof createIndexBuffer>;
+    feet: number[][];
+    preRim: Float32Array;
+    kind: Uint8Array;
+    at: (x: number, y: number) => number;
+  } => {
+    const buf = createIndexBuffer(W, 8, palette);
+    const kind = new Uint8Array(W * 8);
+    for (const x0 of [1, 8])
+      for (let y = 0; y < 4; y++)
+        for (let x = x0 + 1; x < x0 + 4; x++)
+          buf.set(x, y, { ramp: 'metal_silver', shade: 3, material: MAT.fur, partId: PART_ID.legs });
+    const feet = [1, 8].map((x0) => {
+      const px: number[] = [];
+      SHOE_TONES.forEach((row, r) => {
+        row.forEach((s, c) => {
+          if (s < 0) return;
+          buf.set(x0 + c, 4 + r, { ramp: 'metal_silver', shade: s, material: MAT.shoe });
+          px.push((4 + r) * W + x0 + c);
+        });
+      });
+      return px;
+    });
+    // Outline px left of each shoe's toe row (lit outline, lighter) and at the top-row corners.
+    for (const [x, y, s] of [
+      [0, 5, 6],
+      [1, 4, 2],
+      [5, 4, 1],
+      [7, 5, 0],
+      [8, 4, 2],
+      [12, 4, 1],
+    ] as const) {
+      buf.set(x, y, { ramp: 'metal_silver', shade: s, material: MAT.shoe });
+      kind[y * W + x] = 1;
+    }
+    const preRim = Float32Array.from(buf.shade);
+    // The rim: +2 on every right-edge px of the legs and the shoes.
+    for (let y = 0; y < 7; y++) {
+      const xs = [...Array(W).keys()].filter((x) => buf.ramp[y * W + x] !== -1 && kind[y * W + x] === 0);
+      for (const x of xs) if (!xs.includes(x + 1)) buf.shade[y * W + x] = Math.min(6, (buf.shade[y * W + x] ?? 0) + 2);
+    }
+    return { buf, feet, preRim, kind, at: (x, y) => buf.shade[y * W + x] ?? -1 };
+  };
+  const ids = { shoe: palette.rampNames.indexOf('metal_silver'), legs: palette.rampNames.indexOf('metal_silver') };
+
+  it('shoes: one 4 · 3 top run with seam ends, no rim, one spec px at the toe-cap corner, outline ≤ seam', () => {
+    const { buf, feet, preRim, kind, at } = setup();
+    sabatonTones(buf, feet, preRim, kind, ids, T);
+    for (const x0 of [1, 8]) {
+      expect([0, 1, 2, 3, 4].map((c) => at(x0 + c, 4))).toEqual([2, 4, 4, 3, 2]);
+      expect([0, 1, 2, 3, 4].map((c) => at(x0 + c, 5))).toEqual([6, 5, 4, 3, 2]);
+      expect([0, 1, 2, 3, 4].map((c) => at(x0 + c, 6))).toEqual([0, 2, 2, 2, 0]);
+      // Seam row over the run ± 1 (leg px only; empty px stay empty).
+      expect([1, 2, 3].map((c) => at(x0 + c, 3))).toEqual([2, 2, 2]);
+    }
+    expect(at(0, 5)).toBe(2);
+    expect(at(7, 5)).toBe(0);
+  });
+
+  it('a shoe without a spec px (q34 far shoe) runs one step darker', () => {
+    const { buf, feet, preRim, kind, at } = setup();
+    const far = (feet[0] ?? []).filter((i) => (preRim[i] ?? 0) !== 6);
+    sabatonTones(buf, [far, feet[1] ?? []], preRim, kind, ids, T);
+    expect([2, 3, 4].map((x) => at(x, 4))).toEqual([3, 3, 2]);
+    expect([9, 10, 11].map((x) => at(x, 4))).toEqual([4, 4, 3]);
+  });
+
+  it('legs: the rim stays only on the outer (screen-right) leg, at most `rim` px from the top', () => {
+    const { buf, feet, preRim, kind, at } = setup();
+    sabatonTones(buf, feet, preRim, kind, ids, T);
+    expect([0, 1, 2].map((y) => at(4, y))).toEqual([3, 3, 3]);
+    expect([0, 1, 2].map((y) => at(11, y))).toEqual([5, 5, 3]);
   });
 });

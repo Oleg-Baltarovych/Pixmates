@@ -208,8 +208,8 @@ export const PAULDRON: Mask = ['.......', '.bLlBb.', 'bLlBBbm', 'MmmmmmM', 'bBlB
 
 /** Sabatons (front, 5 × 3): a lit toe cap, one lame line, a dark sole. */
 export const SHOE: Mask = ['.bBb.', 'LlBbm', 'MmmmM'];
-/** Side sabaton (q34, toe forward = screen-right): lame steps down to a pointed lit toe. */
-export const SHOE_Q34: Mask = ['bBb..', 'LbBll', 'MmmmM'];
+/** Side sabaton (q34, toe forward = screen-right): calm 3 · 4 · 4 · 5 rising to one tone-6 toe-cap corner (MA-69 re-gate). */
+export const SHOE_Q34: Mask = ['bBb..', 'bBBlL', 'MmmmM'];
 
 /** Gorget (choker slot, from the neck joint): two plate lames over the neck, lit left. */
 export const GORGET: PlacedMask = { mask: ['mlLBBBbm', '.MbBBbM.'], at: [-4, 0] };

@@ -92,5 +92,6 @@ Code `assets-src/characters/knight/{body,face,masks}.ts` (spike variant scaffold
   0 · 2 · 3 · 4 · 5 · 6 slot map); greaves via `Body.greaves` 5 · 4 · 3 + one tone-6 px per leg, breastplate bottom row
   softened (MA-69); the resting hand is a shared rig pose, so the sword moved 1 px out instead of
   the hand moving down (the guard was hidden under the faulds, not the hand).
+- **Sabatons (MA-69 AD re-gate):** `Body.sabatons` {top 4 · 3, max 5, spec 6, seam 2, rim 2} — top row one 4 4 3 run with tone-2 ends, one tone-6 toe-cap px per shoe (front: lit left corner; q34 `SHOE_Q34` toe row now 3 4 4 5 6, the spec on the toe), no rim on the shoes, a tone-2 greave–sabaton seam row, leg rim only on the outer greave edge ≤ 2 px; tests `knight.test.ts` + `rig-optins.test.ts`.
 - **Open for the art director:** the q34 visor has no forward beak (the contour rule forbids a protrusion), so the
   pig-face reads from the front; emerald eyes vs ronin's jade eyes; mail checker density at 1×.

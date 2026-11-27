@@ -116,6 +116,21 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
       // Plate spec: a 7-tone metal ramp's top step is allowed.
       full: true as const,
     })),
+    ...(
+      [
+        ['top.lit', body.sabatons?.top[0]],
+        ['top.shade', body.sabatons?.top[1]],
+        ['max', body.sabatons?.max],
+        ['spec', body.sabatons?.spec],
+        ['seam', body.sabatons?.seam],
+      ] as const
+    ).map(([k, s]) => ({
+      name: `sabatons.${k}`,
+      s,
+      ramp: body.outfit.shoe.ramp,
+      int: true as const,
+      full: true as const,
+    })),
     // Fractional on purpose (a far-leg tone between two steps).
     { name: 'views.q34.farLegShade', s: q34?.farLegShade },
     // The bodice lifts by BREATH_GLOW on breath frames.
@@ -143,6 +158,10 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
     const top = ramp === undefined ? MAX_SHADE : full ? topOf(ramp) : Math.min(MAX_SHADE, topOf(ramp));
     if (!(s >= 0 && s <= top)) partProblems.push(`${body.id}: ${name} ${String(s)} is outside 0..${String(top)}`);
     else if (int && !Number.isInteger(s)) partProblems.push(`${body.id}: ${name} ${String(s)} must be a whole shade`);
+  }
+  const rimLen = body.sabatons?.rim;
+  if (rimLen !== undefined && !(Number.isInteger(rimLen) && rimLen >= 0)) {
+    partProblems.push(`${body.id}: sabatons.rim ${String(rimLen)} must be a whole px count ≥ 0`);
   }
   partProblems.push(...headAccProblems(body, frameH));
   const raise = body.skirtRaise;

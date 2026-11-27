@@ -416,6 +416,111 @@ export function greaveTones(
 }
 
 /**
+ * `Body.sabatons` (MA-69 art-director re-gate): calm plate shoes and greave rims at 1×, after rim light and
+ * `greaveTones`. `feet` = the px each shoe stamp wrote, in stamp order (a later shoe's px leave the earlier ones);
+ * `preRim` = the shades before `rimLight`; `kind` = the outline map's kinds. Order: leg rims first (only the outer
+ * — screen-right — leg keeps the lift on its right edge, `rim` px from the top), then per shoe: rim lift removed and
+ * ≤ `max` except one authored `spec` px, outline px beside it ≤ `seam`, the top row one `top` run (one step darker
+ * without a spec px) with `seam` ends, the row above the run (± 1 px, opaque shoe/legs-ramp px) `seam`.
+ */
+export function sabatonTones(
+  buf: IndexBuffer,
+  feet: readonly (readonly number[])[],
+  preRim: Float32Array,
+  kind: Uint8Array,
+  ramps: { readonly shoe: number; readonly legs: number },
+  t: NonNullable<Body['sabatons']>,
+): void {
+  const w = buf.width;
+  const isLeg = (i: number): boolean =>
+    buf.ramp[i] === ramps.legs && buf.material[i] === MAT.fur && LEG_PARTS.has(buf.partId[i] ?? 0);
+  // Leg rims: 4-connected legs; a rim px = a leg px lifted by the rim whose right neighbour is not a leg px.
+  const comp = new Int32Array(w * buf.height).fill(-1);
+  const rims: number[][] = [];
+  const maxX: number[] = [];
+  for (let s = 0; s < comp.length; s++) {
+    if (comp[s] !== -1 || !isLeg(s)) continue;
+    const id = rims.length;
+    rims.push([]);
+    maxX.push(-1);
+    const stack = [s];
+    comp[s] = id;
+    while (stack.length > 0) {
+      const i = stack.pop() ?? 0;
+      const [x, y] = [i % w, Math.floor(i / w)];
+      maxX[id] = Math.max(maxX[id] ?? -1, x);
+      const right = buf.inBounds(x + 1, y) && isLeg(i + 1);
+      if (!right && (buf.shade[i] ?? 0) > (preRim[i] ?? 0)) rims[id]?.push(i);
+      for (const [dx, dy] of N4) {
+        if (!buf.inBounds(x + dx, y + dy)) continue;
+        const n = (y + dy) * w + x + dx;
+        if (comp[n] === -1 && isLeg(n)) {
+          comp[n] = id;
+          stack.push(n);
+        }
+      }
+    }
+  }
+  const outer = maxX.indexOf(Math.max(-1, ...maxX));
+  rims.forEach((px, id) => {
+    const keep = id === outer ? t.rim : 0;
+    px.sort((a, b) => a - b).forEach((i, k) => {
+      if (k >= keep) buf.shade[i] = preRim[i] ?? 0;
+    });
+  });
+  // Shoes: a later shoe (the q34 near one) owns the px it stamped over an earlier one.
+  const taken = new Set<number>();
+  const shoes = [...feet]
+    .reverse()
+    .map((px) => {
+      const own = px.filter((i) => !taken.has(i) && buf.ramp[i] === ramps.shoe);
+      for (const i of own) taken.add(i);
+      return own.sort((a, b) => a - b);
+    })
+    .reverse();
+  const silver = (i: number): boolean => buf.ramp[i] === ramps.shoe || buf.ramp[i] === ramps.legs;
+  const free = (x: number, y: number): number => {
+    if (!buf.inBounds(x, y)) return -1;
+    const i = y * w + x;
+    return !taken.has(i) && silver(i) ? i : -1;
+  };
+  for (const own of shoes) {
+    const first = own[0];
+    if (first === undefined) continue;
+    const yTop = Math.floor(first / w);
+    let spec = -1;
+    for (const i of own) {
+      const s = preRim[i] ?? 0;
+      if (spec < 0 && s === t.spec) spec = i;
+      buf.shade[i] = i === spec ? s : Math.min(s, t.max);
+    }
+    for (const i of own) {
+      const [x, y] = [i % w, Math.floor(i / w)];
+      for (const [dx, dy] of N4) {
+        const n = y + dy < yTop ? -1 : free(x + dx, y + dy);
+        if (n >= 0 && (kind[n] ?? 0) !== 0) buf.shade[n] = Math.min(preRim[n] ?? 0, t.seam);
+      }
+    }
+    const top = own.filter((i) => Math.floor(i / w) === yTop).map((i) => i % w);
+    const dark = spec < 0 ? 1 : 0;
+    const lit = Math.ceil(top.length / 2);
+    top.forEach((x, k) => {
+      buf.shade[yTop * w + x] = Math.max(0, (k < lit ? t.top[0] : t.top[1]) - dark);
+    });
+    const x0 = top[0] ?? 0;
+    const x1 = top.at(-1) ?? 0;
+    for (const x of [x0 - 1, x1 + 1]) {
+      const n = free(x, yTop);
+      if (n >= 0) buf.shade[n] = t.seam;
+    }
+    for (let x = x0 - 1; x <= x1 + 1; x++) {
+      const n = free(x, yTop - 1);
+      if (n >= 0) buf.shade[n] = t.seam;
+    }
+  }
+}
+
+/**
  * Near-sleeve rim (`Body.sleeveRim`): near (L) sleeve cloth px whose left neighbour is neither arm nor torso (hair,
  * background, empty) take `shade`; px touching the torso keep the arm-over-torso separator.
  */
