@@ -1,0 +1,2572 @@
+<!doctype html>
+<html lang="uk" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pixmates · B Clean</title>
+<meta name="description" content="Спокійний сучасний десктопний UI; піксель-арт — головний герой, пікселі лише в іконках і заголовках.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tiny5&display=swap">
+<style>
+/* ---------- base: layout skeleton shared by all three directions (visuals live in a/b/c.css) ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  min-width: 1100px;
+  -webkit-font-smoothing: antialiased;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}
+img {
+  image-rendering: pixelated;
+}
+.sprite {
+  image-rendering: pixelated;
+  background-repeat: no-repeat;
+}
+code,
+pre,
+kbd,
+.cmdline {
+  font-family: var(--font-mono);
+}
+.ic {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  vertical-align: -0.125em;
+}
+.grow {
+  flex: 1;
+}
+.muted {
+  color: var(--ink-2);
+}
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* header */
+.app-head {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  position: relative;
+  z-index: 10;
+}
+.back {
+  color: inherit;
+  text-decoration: none;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.theme-btn {
+  display: grid;
+  place-items: center;
+}
+.theme-btn .ic + .ic {
+  display: none;
+}
+[data-theme="dark"] .theme-btn .ic {
+  display: none;
+}
+[data-theme="dark"] .theme-btn .ic + .ic {
+  display: block;
+}
+
+/* screens */
+main {
+  position: relative;
+  height: calc(100vh - 56px);
+  min-height: 700px;
+}
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.scene,
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.wall {
+  position: absolute;
+  inset: 0;
+}
+.scene-note {
+  position: absolute;
+  left: 24px;
+  bottom: 60px;
+  margin: 0;
+  font-size: 13px;
+  max-width: 420px;
+}
+
+/* desktop props */
+.fakewin {
+  position: absolute;
+  left: 48px;
+  top: 40px;
+  width: 540px;
+  height: 440px;
+  overflow: hidden;
+}
+.fakewin-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+.fakewin-bar span {
+  width: 10px;
+  height: 10px;
+}
+.fakewin-bar b {
+  margin-left: 8px;
+  font-weight: 500;
+}
+.fakewin-body {
+  padding: 20px 24px;
+  display: grid;
+  gap: 14px;
+}
+.fakewin-body i {
+  display: block;
+  height: 10px;
+}
+.taskbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tb-icons {
+  display: flex;
+  gap: 10px;
+}
+.tb-icons span {
+  width: 28px;
+  height: 28px;
+}
+.tb-tray {
+  position: absolute;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.tb-pal {
+  width: 24px;
+  height: 28px;
+  overflow: hidden;
+  display: block;
+}
+.tb-pal img {
+  width: 48px;
+  height: 56px;
+  margin-left: -12px;
+  margin-top: -2px;
+}
+
+/* actor + chat bubble */
+.actor {
+  position: absolute;
+  bottom: 48px;
+}
+.actor--chat {
+  right: 170px;
+}
+.actor--center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+.thinking {
+  position: absolute;
+  top: -6px;
+  right: -18px;
+  display: flex;
+  gap: 5px;
+}
+.thinking i {
+  width: 8px;
+  height: 8px;
+  display: block;
+  animation: dot 1s infinite steps(2);
+}
+.thinking i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.thinking i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes dot {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.bubble {
+  position: absolute;
+  right: 340px;
+  bottom: 64px;
+  width: 440px;
+  max-height: calc(100% - 88px);
+  display: flex;
+  flex-direction: column;
+}
+.bubble--tall {
+  width: 460px;
+}
+.bubble-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 8px 16px;
+}
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+}
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.msgs {
+  overflow-y: auto;
+  padding: 4px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.msg {
+  margin: 0;
+}
+.msg--user {
+  align-self: flex-end;
+  max-width: 80%;
+}
+.msg--pal.is-typing::after {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: caret 0.8s steps(2) infinite;
+}
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+.trace {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  flex-wrap: wrap;
+}
+.trace-ok,
+.trace-no,
+.trace-run {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 16px 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 12px 16px;
+}
+.composer input {
+  flex: 1;
+  min-width: 0;
+}
+.composer kbd {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* approval card */
+.approval {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ap-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.ap-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.badge,
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.ap-meta {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ap-meta div {
+  min-width: 0;
+}
+.ap-meta dt {
+  font-size: 11px;
+}
+.ap-meta dd {
+  margin: 0;
+}
+.ap-args {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow: auto;
+  white-space: pre;
+}
+.ap-actions {
+  display: flex;
+  gap: 8px;
+}
+.ap-note {
+  margin: 0;
+  font-size: 12px;
+}
+.ap-result {
+  display: none;
+  margin: 0;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.approval.is-approved .ap-result--ok,
+.approval.is-denied .ap-result--no {
+  display: flex;
+}
+.approval.is-approved .ap-actions,
+.approval.is-denied .ap-actions,
+.approval.is-approved .ap-note,
+.approval.is-denied .ap-note {
+  display: none;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* radial */
+.js-radial-target {
+  display: block;
+  position: relative;
+  z-index: 2;
+}
+.radial {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 0;
+  height: 0;
+  z-index: 3;
+}
+.radial-ring {
+  position: absolute;
+  left: -175px;
+  top: -175px;
+  width: 350px;
+  height: 350px;
+  pointer-events: none;
+}
+.radial-item {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transform: translate(-50%, -50%) rotate(var(--a)) translate(175px)
+    rotate(calc(-1 * var(--a))) scale(0.3);
+  opacity: 0;
+  transition:
+    transform 0.22s ease,
+    opacity 0.18s ease;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.radial.is-open .radial-item {
+  transform: translate(-50%, -50%) rotate(var(--a)) translate(175px)
+    rotate(calc(-1 * var(--a)));
+  opacity: 1;
+}
+.radial-ring {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.radial.is-open .radial-ring {
+  opacity: 1;
+}
+.radial-ic {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+.radial-label {
+  white-space: nowrap;
+  font-size: 13px;
+}
+.radial-sub {
+  position: absolute;
+  bottom: calc(100% + 150px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  z-index: 4;
+}
+.radial-char {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  padding: 6px 4px;
+  width: 72px;
+}
+.pill {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.pill + .pill {
+  bottom: calc(100% + 52px);
+}
+.radial.is-open ~ .pill {
+  display: none;
+}
+
+/* dialogs (first run, settings) */
+.dialog {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.win-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px 0 16px;
+  height: 48px;
+  flex: none;
+}
+.win-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.win-ctl {
+  display: flex;
+  gap: 14px;
+  font-style: normal;
+}
+.win-ctl i {
+  font-style: normal;
+  width: 16px;
+  text-align: center;
+}
+
+.fr {
+  width: 1040px;
+  height: min(660px, calc(100% - 32px));
+}
+.stepper {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+}
+.stepper button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 0;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.step-n {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+.fr-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 22px 32px 8px;
+}
+.fr-step {
+  height: 100%;
+}
+.fr-h {
+  margin: 0 0 4px;
+}
+.fr-sub {
+  margin: 0 0 18px;
+}
+.fr-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  flex: none;
+}
+.fr-hello {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 24px 36px;
+  align-items: center;
+}
+.hero-sprite {
+  display: grid;
+  place-items: end center;
+  grid-row: 1;
+  align-self: end;
+}
+.hello-bubble {
+  position: relative;
+  min-height: 150px;
+  padding: 22px 26px;
+  align-self: center;
+}
+.hello-text {
+  margin: 0;
+}
+.fr-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 14px;
+}
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.pick input,
+.preset input,
+.mini input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.pick-card {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 12px 10px;
+  text-align: center;
+  cursor: pointer;
+  height: 100%;
+  align-content: start;
+}
+.pick-name {
+  font-weight: 700;
+}
+.pick-trait {
+  font-size: 12px;
+}
+.presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.preset-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  height: 100%;
+  cursor: pointer;
+}
+.preset-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.preset-name {
+  font-weight: 700;
+}
+.preset-desc {
+  font-size: 13px;
+}
+.keyline {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 16px;
+  align-items: end;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 13px;
+  padding: 10px 12px;
+}
+.note .ic {
+  margin-top: 2px;
+}
+.fr-more {
+  font-size: 13px;
+  margin: 12px 0 0;
+}
+.privacy-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.privacy-who h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.privacy-who ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+.card {
+  padding: 14px 16px;
+}
+
+/* rows, switches, segmented */
+.rows {
+  display: flex;
+  flex-direction: column;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 0;
+}
+.row-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.row-text small {
+  font-size: 12.5px;
+}
+.row-ctl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.sw {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  cursor: pointer;
+}
+.sw input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.sw-track {
+  display: block;
+  position: relative;
+}
+.seg {
+  display: inline-flex;
+}
+.seg label {
+  position: relative;
+  display: inline-flex;
+}
+.seg input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.seg input:disabled {
+  cursor: not-allowed;
+}
+.seg span {
+  display: block;
+  white-space: nowrap;
+}
+kbd {
+  font-size: 12px;
+}
+.num {
+  width: 56px;
+  text-align: center;
+}
+.num--time {
+  width: 70px;
+}
+.out {
+  min-width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* settings */
+.settings {
+  width: 1140px;
+  height: min(700px, calc(100% - 28px));
+}
+.set-wrap {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 230px 1fr;
+}
+.set-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 10px;
+  position: relative;
+}
+.set-nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 9px 12px;
+}
+.set-nav-pal {
+  margin-top: auto;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding-top: 12px;
+}
+.set-body {
+  overflow-y: auto;
+  padding: 18px 28px 28px;
+}
+.sec {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sec-h {
+  margin: 0;
+}
+.usage {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 12px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stat-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+.stat-num {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-sub {
+  font-size: 12px;
+}
+.meter {
+  position: relative;
+  height: 10px;
+}
+.meter span {
+  display: block;
+  height: 100%;
+}
+.meter i {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+}
+.bars {
+  position: relative;
+  height: 62px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+.bars span {
+  flex: 1;
+  display: block;
+  min-height: 2px;
+}
+.bars-cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+}
+.mini-cast {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+.mini > span {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+.secret {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.server-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.server-name {
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.server-meta {
+  font-size: 12.5px;
+}
+.servers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  flex: none;
+}
+.tools {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+.tool {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+}
+.tool-text {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+.tool-text small {
+  flex-basis: 100%;
+  font-size: 12px;
+}
+.add-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+.add-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.add textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 10px;
+}
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.preview-box {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.preview-box p {
+  margin: 0;
+}
+.cmdline {
+  display: block;
+  padding: 6px 8px;
+  font-size: 12px;
+  word-break: break-all;
+}
+.add-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.cc-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.screen[data-screen='radial'] .scene-note { left: auto; right: 24px; top: 24px; bottom: auto; }
+
+/* ---------- B. Clean + pixel accents: calm desktop UI, pixel type only in headings, pixel icons ---------- */
+:root {
+  --font-body:
+    "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-head: "Tiny5", "Inter", sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+  --page: #eef0f4;
+  --surface: rgba(255, 255, 255, 0.86);
+  --solid: #ffffff;
+  --surface-2: #f5f6f8;
+  --surface-3: #e9ebf0;
+  --ink: #1c1d22;
+  --ink-2: #5b5e6b;
+  --line: rgba(20, 22, 40, 0.1);
+  --line-2: rgba(20, 22, 40, 0.18);
+  --accent: #5146d8;
+  --accent-ink: #ffffff;
+  --accent-soft: #ecebff;
+  --accent-text: #4338ca;
+  --ok: #18794e;
+  --ok-soft: #e3f5ea;
+  --danger: #c42b1c;
+  --danger-soft: #fde7e4;
+  --warn: #8a5300;
+  --warn-soft: #fff4dc;
+  --focus: #5146d8;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 12px 40px rgba(20, 22, 50, 0.16);
+  --blob-1: #c9d6ff;
+  --blob-2: #ffd9e8;
+  --blob-3: #d4f3e6;
+  --wall-base: #eef1f8;
+}
+[data-theme="dark"] {
+  --page: #17181c;
+  --surface: rgba(38, 39, 46, 0.88);
+  --solid: #26272e;
+  --surface-2: #2d2e36;
+  --surface-3: #383944;
+  --ink: #f2f2f5;
+  --ink-2: #a9abb8;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.16);
+  --accent: #9d97ff;
+  --accent-ink: #15142b;
+  --accent-soft: #2f2c55;
+  --accent-text: #b8b3ff;
+  --ok: #5fd39a;
+  --ok-soft: #173326;
+  --danger: #ff8f84;
+  --danger-soft: #3e1d1b;
+  --warn: #f5c66b;
+  --warn-soft: #3a2e16;
+  --focus: #b8b3ff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.5);
+  --blob-1: #2b2f6b;
+  --blob-2: #4a2343;
+  --blob-3: #173d3a;
+  --wall-base: #14151b;
+}
+
+body {
+  background: var(--page);
+}
+.fr-h,
+.sec-h,
+h3 {
+  font-family: var(--font-head);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+.fr-h,
+.sec-h {
+  font-size: 30px;
+  line-height: 1.15;
+}
+h3 {
+  font-size: 18px;
+}
+
+/* header */
+.app-head {
+  background: var(--solid);
+  border-bottom: 1px solid var(--line);
+}
+.back {
+  color: var(--ink-2);
+}
+.back:hover {
+  color: var(--ink);
+}
+.brand-mark {
+  font-family: var(--font-head);
+  font-size: 16px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 6px;
+}
+.brand-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+.tabs {
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: 8px;
+  gap: 2px;
+}
+.tab {
+  border: 0;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.tab-n {
+  font-family: var(--font-head);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.tab:hover {
+  color: var(--ink);
+  background: var(--surface-3);
+}
+.tab[aria-selected="true"] {
+  background: var(--solid);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+[data-theme="dark"] .tab[aria-selected="true"] {
+  background: var(--surface-3);
+}
+.tab[aria-selected="true"] .tab-n {
+  color: var(--accent-text);
+}
+.theme-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--solid);
+  font-size: 16px;
+  color: var(--ink);
+}
+.theme-btn:hover {
+  background: var(--surface-2);
+}
+
+/* wallpaper: soft blurred colour fields */
+.wall {
+  background:
+    radial-gradient(60% 70% at 18% 20%, var(--blob-1), transparent 70%),
+    radial-gradient(50% 60% at 85% 30%, var(--blob-2), transparent 70%),
+    radial-gradient(60% 50% at 60% 95%, var(--blob-3), transparent 70%),
+    var(--wall-base);
+}
+.fakewin {
+  background: var(--solid);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+}
+.fakewin-bar {
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--line);
+}
+.fakewin-bar span {
+  border-radius: 50%;
+  background: var(--surface-3);
+}
+.fakewin-body i {
+  background: var(--surface-3);
+  border-radius: 5px;
+}
+.taskbar {
+  background: var(--surface);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border-top: 1px solid var(--line);
+}
+.tb-icons span {
+  border-radius: 6px;
+  background: var(--surface-3);
+}
+.tb-icons span:nth-child(3) {
+  background: var(--accent-soft);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+.tb-tray {
+  color: var(--ink);
+}
+.tb-pal {
+  border-radius: 4px;
+}
+.scene-note {
+  color: var(--ink-2);
+  background: var(--surface);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+}
+.thinking i {
+  background: var(--accent);
+  border-radius: 0;
+}
+
+/* bubble */
+.bubble {
+  background: var(--surface);
+  backdrop-filter: blur(30px) saturate(1.5);
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  font-size: 14.5px;
+}
+.bubble::after {
+  content: "";
+  position: absolute;
+  right: -9px;
+  bottom: 120px;
+  width: 16px;
+  height: 16px;
+  background: var(--solid);
+  border-right: 1px solid var(--line-2);
+  border-top: 1px solid var(--line-2);
+  transform: rotate(45deg);
+}
+.bubble-head {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 10px 10px 16px;
+}
+.who {
+  font-weight: 600;
+  font-size: 15px;
+}
+.status {
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-radius: 99px;
+  padding: 2px 8px;
+}
+.status--think {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.status--wait {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.icon-btn {
+  color: var(--ink-2);
+  border-radius: 6px;
+  font-size: 15px;
+}
+.icon-btn:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.msgs {
+  padding-top: 12px;
+}
+.msg--user {
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 7px 12px;
+  border-radius: 12px 12px 4px 12px;
+}
+.msg--pal {
+  line-height: 1.55;
+}
+.trace {
+  color: var(--ink-2);
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  align-self: flex-start;
+  background: var(--surface-2);
+}
+.trace-tool {
+  color: var(--ink);
+}
+.trace-ok {
+  color: var(--ok);
+}
+.trace-no {
+  color: var(--danger);
+}
+.chips {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.chip {
+  border: 1px solid var(--line-2);
+  background: var(--solid);
+  border-radius: 99px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.chip:hover {
+  background: var(--surface-2);
+}
+.chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.chip .ic {
+  color: var(--accent-text);
+}
+.composer {
+  padding-top: 6px;
+}
+.composer input {
+  background: var(--solid);
+  border: 1px solid var(--line-2);
+  border-bottom-color: var(--ink-2);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.composer input:focus {
+  outline: none;
+  border-bottom: 2px solid var(--accent);
+}
+.composer kbd {
+  color: var(--ink-2);
+}
+.icon-btn--accent {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.icon-btn--accent:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+  filter: brightness(1.08);
+}
+
+/* approval */
+.approval {
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--danger);
+  border-radius: 10px;
+  background: var(--solid);
+  padding: 12px 14px;
+}
+.ap-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+.ap-title .ic {
+  color: var(--accent-text);
+}
+.badge--danger {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-radius: 99px;
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ap-meta dt {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.ap-meta dd small {
+  color: var(--ink-2);
+}
+.ap-meta code {
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 13px;
+}
+.ap-args-label {
+  font-size: 11px;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.ap-args {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.ap-note {
+  color: var(--ink-2);
+}
+.ap-result--ok {
+  color: var(--ok);
+}
+.ap-result--no {
+  color: var(--danger);
+}
+
+/* buttons */
+.btn {
+  border: 1px solid var(--line-2);
+  background: var(--solid);
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-weight: 500;
+  font-size: 14px;
+}
+.btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+.btn--danger {
+  color: var(--danger);
+}
+.btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
+}
+.btn--small {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+/* radial */
+.radial-ring {
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: radial-gradient(
+    circle,
+    transparent 60%,
+    color-mix(in srgb, var(--accent) 10%, transparent)
+  );
+}
+.radial-ic {
+  border-radius: 50%;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-size: 20px;
+}
+.radial-item:hover .radial-ic,
+.radial-item:focus-visible .radial-ic {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.radial-item[aria-pressed="true"] .radial-ic,
+.radial-item[aria-expanded="true"] .radial-ic {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+.radial-label {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-weight: 500;
+}
+.radial-sub {
+  background: var(--surface);
+  backdrop-filter: blur(30px);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.radial-char {
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  color: var(--ink);
+}
+.radial-char:hover {
+  background: var(--surface-3);
+}
+.radial-char.is-current {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.pill {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--line-2);
+  border-radius: 99px;
+  padding: 4px 12px;
+  box-shadow: var(--shadow);
+  font-weight: 500;
+}
+
+/* dialogs */
+.dialog {
+  background: var(--surface);
+  backdrop-filter: blur(40px) saturate(1.6);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 30px 80px rgba(10, 12, 40, 0.28);
+}
+.win-bar {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.win-title .ic {
+  color: var(--accent-text);
+  font-size: 15px;
+}
+.win-ctl {
+  color: var(--ink-2);
+}
+.stepper button {
+  color: var(--ink-2);
+  border-radius: 6px;
+}
+.stepper button:hover {
+  background: var(--surface-3);
+}
+.step-n {
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  font-family: var(--font-head);
+  font-size: 12px;
+}
+.stepper button[aria-current="step"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+.stepper button[aria-current="step"] .step-n {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.stepper .is-done .step-n {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-color: transparent;
+}
+.fr-body {
+  padding: 26px 40px 8px;
+}
+.fr-sub,
+.fr-more,
+.fr-hint {
+  color: var(--ink-2);
+}
+.fr-foot {
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+.hello-bubble {
+  background: var(--solid);
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  font-size: 20px;
+  line-height: 1.5;
+  box-shadow: var(--shadow);
+}
+.hello-bubble::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  background: var(--solid);
+  border-left: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  transform: rotate(45deg);
+}
+.hero-sprite {
+  position: relative;
+}
+.hero-sprite::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 170px;
+  height: 20px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.18), transparent);
+}
+.pick-card {
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--solid);
+}
+.pick-card img {
+  background: var(--surface-2);
+  border-radius: 10px;
+}
+.pick-name {
+  font-weight: 600;
+}
+.pick-trait {
+  color: var(--ink-2);
+}
+.pick-card:hover {
+  border-color: var(--ink-2);
+}
+.pick input:checked + .pick-card {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 11px 9px;
+}
+.pick input:focus-visible + .pick-card,
+.preset input:focus-visible + .preset-card,
+.mini input:focus-visible + span {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.preset-card {
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--solid);
+}
+.preset-cost {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.preset-desc {
+  color: var(--ink-2);
+}
+.preset input:checked + .preset-card {
+  border: 2px solid var(--accent);
+  padding: 13px 15px;
+  background: var(--accent-soft);
+}
+.tag {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  color: var(--ink-2);
+}
+.tag--free,
+.tag--ro {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.tag--rec {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.tag--pricey,
+.tag--warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.tag--danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.field input,
+textarea,
+.num {
+  background: var(--solid);
+  border: 1px solid var(--line-2);
+  border-bottom-color: var(--ink-2);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.note {
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.note--info .ic {
+  color: var(--accent-text);
+}
+.note--warn {
+  background: var(--warn-soft);
+}
+.note--warn .ic {
+  color: var(--warn);
+}
+.card {
+  background: var(--solid);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+/* rows & controls */
+.rows {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.row + .row {
+  border-top: 1px solid var(--line);
+}
+.row-title {
+  font-weight: 500;
+}
+.row-text small {
+  color: var(--ink-2);
+}
+.sw {
+  width: 40px;
+  height: 20px;
+}
+.sw-track {
+  width: 40px;
+  height: 20px;
+  border-radius: 99px;
+  border: 1px solid var(--ink-2);
+  background: transparent;
+}
+.sw-track::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink-2);
+  transition:
+    transform 0.15s,
+    background 0.15s;
+}
+.sw input:checked + .sw-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.sw input:checked + .sw-track::after {
+  transform: translateX(19px);
+  background: var(--accent-ink);
+}
+.sw input:focus-visible + .sw-track {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.seg {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+.seg span {
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.seg input:checked + span {
+  background: var(--solid);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+  font-weight: 600;
+}
+[data-theme="dark"] .seg input:checked + span {
+  background: var(--surface-3);
+}
+.seg input:focus-visible + span {
+  outline: 2px solid var(--focus);
+}
+.seg .is-disabled span {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+kbd {
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 2px 7px;
+  background: var(--solid);
+  color: var(--ink-2);
+}
+input[type="range"] {
+  accent-color: var(--accent);
+  width: 160px;
+}
+.out {
+  font-weight: 600;
+}
+.secret {
+  color: var(--ink-2);
+}
+
+/* settings */
+.set-nav {
+  padding: 14px 10px;
+}
+.set-nav button {
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--ink);
+  position: relative;
+}
+.set-nav button .ic {
+  color: var(--ink-2);
+  font-size: 15px;
+}
+.set-nav button:hover {
+  background: var(--surface-3);
+}
+.set-nav button[aria-current="true"] {
+  background: var(--surface-3);
+  font-weight: 600;
+}
+.set-nav button[aria-current="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.set-nav button[aria-current="true"] .ic {
+  color: var(--accent-text);
+}
+.set-nav-pal {
+  color: var(--ink-2);
+}
+.set-body {
+  background: color-mix(in srgb, var(--page) 55%, transparent);
+  border-top-left-radius: 8px;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.stat-label {
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+}
+.stat-sub {
+  color: var(--ink-2);
+}
+.meter {
+  background: var(--surface-3);
+  border-radius: 99px;
+  overflow: visible;
+}
+.meter span {
+  background: var(--accent);
+  border-radius: 99px;
+}
+.meter i {
+  background: var(--ink-2);
+  border-radius: 2px;
+}
+.bars span {
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+  opacity: 0.85;
+}
+.bars-cap {
+  border-top: 1px dashed var(--danger);
+}
+.mini > span {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--solid);
+}
+.mini input:checked + span {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 7px 3px;
+}
+.server-meta {
+  color: var(--ink-2);
+}
+.dot {
+  border-radius: 50%;
+}
+.dot--ok {
+  background: #22a06b;
+}
+.dot--idle {
+  background: var(--ink-2);
+}
+.tool + .tool {
+  border-top: 1px solid var(--line);
+}
+.tool code {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.tool-text small {
+  color: var(--ink-2);
+}
+.preview-box {
+  background: var(--surface-2);
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.cmdline {
+  background: var(--solid);
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+.set-body code {
+  font-size: 13px;
+}
+
+</style>
+</head>
+<body class="dir-b">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-swap" viewBox="0 0 10 10"><path fill="currentColor" d="M2 0h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM0 2h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM9 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM2 4h1v1h-1zM7 5h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM7 9h1v1h-1z"/></symbol><symbol id="i-moon" viewBox="0 0 10 10"><path fill="currentColor" d="M2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM3 1h1v1h-1zM0 2h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM0 3h1v1h-1zM1 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM0 5h1v1h-1zM1 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM8 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1z"/></symbol><symbol id="i-timer" viewBox="0 0 10 10"><path fill="currentColor" d="M3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM1 2h1v1h-1zM4 2h1v1h-1zM8 2h1v1h-1zM0 3h1v1h-1zM4 3h1v1h-1zM9 3h1v1h-1zM0 4h1v1h-1zM4 4h1v1h-1zM9 4h1v1h-1zM0 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM0 6h1v1h-1zM9 6h1v1h-1zM1 7h1v1h-1zM8 7h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1z"/></symbol><symbol id="i-gear" viewBox="0 0 10 10"><path fill="currentColor" d="M4 0h1v1h-1zM5 0h1v1h-1zM1 1h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM0 5h1v1h-1zM1 5h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM1 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM8 8h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1z"/></symbol><symbol id="i-hide" viewBox="0 0 10 10"><path fill="currentColor" d="M0 0h1v1h-1zM1 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM0 5h1v1h-1zM1 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM7 7h1v1h-1zM8 8h1v1h-1zM9 9h1v1h-1z"/></symbol><symbol id="i-user" viewBox="0 0 10 10"><path fill="currentColor" d="M3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM2 1h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM7 1h1v1h-1zM2 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM7 2h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM0 9h1v1h-1zM1 9h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1z"/></symbol><symbol id="i-coin" viewBox="0 0 10 10"><path fill="currentColor" d="M2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM1 1h1v1h-1zM8 1h1v1h-1zM0 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM9 2h1v1h-1zM0 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM9 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM9 4h1v1h-1zM0 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM9 5h1v1h-1zM0 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM0 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM9 7h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM8 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1z"/></symbol><symbol id="i-plug" viewBox="0 0 10 10"><path fill="currentColor" d="M2 0h1v1h-1zM7 0h1v1h-1zM2 1h1v1h-1zM7 1h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM1 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1z"/></symbol><symbol id="i-shield" viewBox="0 0 10 10"><path fill="currentColor" d="M1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM8 0h1v1h-1zM1 1h1v1h-1zM8 1h1v1h-1zM1 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM1 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM8 3h1v1h-1zM1 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM1 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM2 6h1v1h-1zM7 6h1v1h-1zM2 7h1v1h-1zM7 7h1v1h-1zM3 8h1v1h-1zM6 8h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1z"/></symbol><symbol id="i-bell" viewBox="0 0 10 10"><path fill="currentColor" d="M4 0h1v1h-1zM5 0h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM1 5h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1z"/></symbol><symbol id="i-term" viewBox="0 0 10 10"><path fill="currentColor" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM0 1h1v1h-1zM9 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM9 2h1v1h-1zM0 3h1v1h-1zM3 3h1v1h-1zM9 3h1v1h-1zM0 4h1v1h-1zM4 4h1v1h-1zM9 4h1v1h-1zM0 5h1v1h-1zM3 5h1v1h-1zM9 5h1v1h-1zM0 6h1v1h-1zM2 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM9 6h1v1h-1zM0 7h1v1h-1zM9 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1z"/></symbol><symbol id="i-check" viewBox="0 0 10 10"><path fill="currentColor" d="M9 0h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM0 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM1 5h1v1h-1zM2 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM3 7h1v1h-1z"/></symbol><symbol id="i-cross" viewBox="0 0 10 10"><path fill="currentColor" d="M0 0h1v1h-1zM1 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1z"/></symbol><symbol id="i-send" viewBox="0 0 10 10"><path fill="currentColor" d="M4 0h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM0 3h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM0 5h1v1h-1zM1 5h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM4 8h1v1h-1z"/></symbol><symbol id="i-sun" viewBox="0 0 10 10"><path fill="currentColor" d="M4 0h1v1h-1zM5 0h1v1h-1zM1 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM8 1h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM0 5h1v1h-1zM1 5h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM8 8h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1z"/></symbol><symbol id="i-spark" viewBox="0 0 10 10"><path fill="currentColor" d="M4 0h1v1h-1zM4 1h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM0 3h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM4 5h1v1h-1zM7 5h1v1h-1zM4 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM7 7h1v1h-1z"/></symbol><symbol id="i-warn" viewBox="0 0 10 10"><path fill="currentColor" d="M4 0h1v1h-1zM5 0h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM3 2h1v1h-1zM6 2h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM2 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM7 4h1v1h-1zM1 5h1v1h-1zM2 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM1 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM8 6h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM0 9h1v1h-1zM1 9h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1z"/></symbol><symbol id="i-plus" viewBox="0 0 10 10"><path fill="currentColor" d="M4 0h1v1h-1zM5 0h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM0 3h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM9 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1z"/></symbol><symbol id="i-close" viewBox="0 0 10 10"><path fill="currentColor" d="M1 1h1v1h-1zM2 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1z"/></symbol></svg>
+<header class="app-head">
+  <a class="back" href="index.html">← Напрями</a>
+  <span class="brand"><span class="brand-mark">B</span><span class="brand-name">Clean + pixel accents</span></span>
+  <nav class="tabs" role="tablist" aria-label="Екрани">
+    <button class="tab" type="button" role="tab" data-go="bubble" aria-selected="false"><span class="tab-n">1</span>Бульбашка</button><button class="tab" type="button" role="tab" data-go="mcp" aria-selected="false"><span class="tab-n">2</span>MCP-дозвіл</button><button class="tab" type="button" role="tab" data-go="radial" aria-selected="false"><span class="tab-n">3</span>Радіальне меню</button><button class="tab" type="button" role="tab" data-go="firstrun" aria-selected="false"><span class="tab-n">4</span>Перший запуск</button><button class="tab" type="button" role="tab" data-go="settings" aria-selected="false"><span class="tab-n">5</span>Налаштування</button>
+  </nav>
+  <button class="theme-btn" type="button" data-theme-toggle aria-pressed="false" aria-label="Темна тема"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg></button>
+</header>
+<main>
+
+<section class="screen" data-screen="bubble" data-timeline data-poses="think@0,talk@1700,idle@end" aria-label="Бульбашка біля персонажа" hidden>
+  <div class="scene">
+  <div class="wall" aria-hidden="true"></div>
+  <div class="fakewin" aria-hidden="true">
+    <div class="fakewin-bar"><span></span><span></span><span></span><b>нотатки.md — Редактор</b></div>
+    <div class="fakewin-body"><i style="width:58%"></i><i style="width:82%"></i><i style="width:71%"></i><i style="width:40%"></i><i style="width:88%"></i><i style="width:64%"></i><i style="width:76%"></i><i style="width:35%"></i></div>
+  </div>
+  <div class="taskbar" aria-hidden="true">
+    <div class="tb-icons"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="tb-tray"><span class="tb-pal"><img src="../../media/coder.gif" alt=""></span><span>14:52</span></div>
+  </div>
+    <div class="actor actor--chat"><div class="sprite" data-char="coder" data-scale="3" role="img" aria-label="Кодер"></div>
+      <div class="thinking" data-hide-at="1700" aria-hidden="true"><i></i><i></i><i></i></div></div>
+    <article class="bubble" aria-label="Розмова з Кодеру">
+      
+  <header class="bubble-head">
+    <span class="who">Кодер</span>
+    <span class="status status--think" data-hide-at="1700"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>думає…</span><span class="status status--talk" data-at="1700" data-hide-at="end">говорить</span>
+    <span class="grow"></span>
+    <button class="icon-btn" type="button" data-replay aria-label="Повторити анімацію" title="Повторити">↻</button>
+    <button class="icon-btn" type="button" aria-label="Нова розмова" title="Нова розмова"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>
+    <button class="icon-btn" type="button" aria-label="Закрити бульбашку" title="Закрити"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </header>
+      <div class="msgs" aria-live="polite">
+        <p class="msg msg--user" data-q>Що гальмує?</p>
+        <div class="trace" data-at="250"><span class="trace-ico"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></span><span class="trace-src">pixmates</span><span class="trace-sep">·</span><span class="trace-tool" data-tool>top_processes</span><span class="trace-sep">·</span><span class="trace-run" data-at="250" data-hide-at="1500">виконується…</span><span class="trace-ok" data-at="1500"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>0,4 с</span></div>
+        <p class="msg msg--pal" data-stream data-at="1700">Ну… головний підозрюваний — «node»: 38 % процесора, і вотчер, схоже, перезбирає проєкт по колу. Браузер тримає ще 3,1 ГБ. Я б перезапустив dev-сервер. І зварив каву.</p>
+      </div>
+      
+  <div class="chips" role="group" aria-label="Швидкі дії">
+    <button class="chip" type="button" data-chip aria-pressed="true" data-q="Що гальмує?" data-tool="top_processes" data-a="Ну… головний підозрюваний — «node»: 38 % процесора, і вотчер, схоже, перезбирає проєкт по колу. Браузер тримає ще 3,1 ГБ. Я б перезапустив dev-сервер. І зварив каву."><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>Що гальмує?</button>
+    <button class="chip" type="button" data-chip aria-pressed="false" data-q="Поясни скопійоване" data-tool="read_clipboard" data-a="TS2345. Ти передаєш «string | undefined» туди, де чекають «string». Перевір значення до виклику або дай дефолт. Класика понеділка.">Поясни скопійоване</button>
+    <button class="chip" type="button" data-chip aria-pressed="false" data-q="Почни Pomodoro" data-tool="start_pomodoro" data-a="25 хвилин фокусу пішло. Я теж удаватиму, що працюю."><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg>Почни Pomodoro</button>
+  </div>
+      
+  <form class="composer" onsubmit="return false">
+    <input type="text" placeholder="Напиши Кодеру…" aria-label="Повідомлення для Кодеру">
+    <kbd>Ctrl+Shift+Space</kbd>
+    <button class="icon-btn icon-btn--accent" type="submit" aria-label="Надіслати"><svg class="ic" aria-hidden="true"><use href="#i-send"/></svg></button>
+  </form>
+    </article>
+    <p class="scene-note">Персонаж у позі <b>think</b>, поки працює tool, потім <b>talk</b>. Чипи — швидкі дії.</p>
+  </div>
+</section>
+
+<section class="screen" data-screen="mcp" data-timeline data-poses="think@0,talk@1400,wave@end,idle@end1300" aria-label="Підтвердження MCP-дії" hidden>
+  <div class="scene">
+  <div class="wall" aria-hidden="true"></div>
+  <div class="fakewin" aria-hidden="true">
+    <div class="fakewin-bar"><span></span><span></span><span></span><b>нотатки.md — Редактор</b></div>
+    <div class="fakewin-body"><i style="width:58%"></i><i style="width:82%"></i><i style="width:71%"></i><i style="width:40%"></i><i style="width:88%"></i><i style="width:64%"></i><i style="width:76%"></i><i style="width:35%"></i></div>
+  </div>
+  <div class="taskbar" aria-hidden="true">
+    <div class="tb-icons"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="tb-tray"><span class="tb-pal"><img src="../../media/coder.gif" alt=""></span><span>14:52</span></div>
+  </div>
+    <div class="actor actor--chat"><div class="sprite" data-char="coder" data-scale="3" role="img" aria-label="Кодер"></div>
+      <div class="thinking" data-hide-at="1400" aria-hidden="true"><i></i><i></i><i></i></div></div>
+    <article class="bubble bubble--tall" aria-label="Розмова з Кодеру">
+      
+  <header class="bubble-head">
+    <span class="who">Кодер</span>
+    <span class="status status--think" data-hide-at="1400"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>думає…</span><span class="status status--wait" data-at="end"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg>чекає дозволу</span>
+    <span class="grow"></span>
+    <button class="icon-btn" type="button" data-replay aria-label="Повторити анімацію" title="Повторити">↻</button>
+    <button class="icon-btn" type="button" aria-label="Нова розмова" title="Нова розмова"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>
+    <button class="icon-btn" type="button" aria-label="Закрити бульбашку" title="Закрити"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </header>
+      <div class="msgs" aria-live="polite">
+        <p class="msg msg--user">Постав зустріч з Олею сьогодні о 15:00</p>
+        <div class="trace" data-at="250"><span class="trace-ico"><svg class="ic" aria-hidden="true"><use href="#i-plug"/></svg></span><span class="trace-src">calendar</span><span class="trace-sep">·</span><span class="trace-tool">list_events</span><span class="trace-sep">·</span><span class="trace-run" data-at="250" data-hide-at="1250">виконується…</span><span class="trace-ok" data-at="1250"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>0,6 с · авто</span></div>
+        <p class="msg msg--pal" data-stream data-at="1400">О 15:00 вільно. Підтверди виклик — і я поставлю подію.</p>
+        <div class="approval" data-at="end" role="group" aria-labelledby="ap-title-b">
+          <div class="ap-head">
+            <span class="ap-title" id="ap-title-b"><svg class="ic" aria-hidden="true"><use href="#i-plug"/></svg>Дозволити дію?</span>
+            <span class="badge badge--danger"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg>змінює дані</span>
+          </div>
+          <dl class="ap-meta">
+            <div><dt>Сервер</dt><dd><b>calendar</b> <small>stdio · локальний</small></dd></div>
+            <div><dt>Tool</dt><dd><code>create_event</code></dd></div>
+          </dl>
+          <div class="ap-args-label">Точні аргументи</div>
+          <pre class="ap-args" tabindex="0" aria-label="Аргументи виклику, JSON">{
+  "title": "Зустріч з Олею",
+  "start": "2026-11-28T15:00:00+02:00",
+  "end": "2026-11-28T15:30:00+02:00",
+  "calendar": "Робочий",
+  "reminder_min": 10
+}</pre>
+          <div class="ap-actions">
+            <button class="btn btn--primary" type="button" data-approve><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Дозволити раз</button>
+            <button class="btn" type="button" data-deny><svg class="ic" aria-hidden="true"><use href="#i-cross"/></svg>Відмовити</button>
+          </div>
+          <p class="ap-note">Без відповіді за 2 хв — відмова. «Завжди дозволяти» для дій, що змінюють дані, немає.</p>
+          <p class="ap-result ap-result--ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Дозволено один раз</p>
+          <p class="ap-result ap-result--no"><svg class="ic" aria-hidden="true"><use href="#i-cross"/></svg>Відмовлено — повторювати не буду</p>
+        </div>
+        <div data-after="approved" data-timeline data-poses="think@0,talk@900,happy@end,idle@end1600" hidden>
+          <div class="trace"><span class="trace-ico"><svg class="ic" aria-hidden="true"><use href="#i-plug"/></svg></span><span class="trace-src">calendar</span><span class="trace-sep">·</span><span class="trace-tool">create_event</span><span class="trace-sep">·</span><span class="trace-run" data-hide-at="800">виконується…</span><span class="trace-ok" data-at="800"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>0,8 с · дозволено</span></div>
+          <p class="msg msg--pal" data-stream data-at="900">Поставив: «Зустріч з Олею», 15:00–15:30. Нагадаю за 10 хвилин.</p>
+        </div>
+        <div data-after="denied" data-timeline data-poses="talk@200,idle@end" hidden>
+          <div class="trace trace--denied"><span class="trace-ico"><svg class="ic" aria-hidden="true"><use href="#i-plug"/></svg></span><span class="trace-src">calendar</span><span class="trace-sep">·</span><span class="trace-tool">create_event</span><span class="trace-sep">·</span><span class="trace-no"><svg class="ic" aria-hidden="true"><use href="#i-cross"/></svg>відмовлено</span></div>
+          <p class="msg msg--pal" data-stream data-at="200">Окей, не ставлю. Календар у безпеці.</p>
+        </div>
+      </div>
+      
+  <form class="composer" onsubmit="return false">
+    <input type="text" placeholder="Напиши Кодеру…" aria-label="Повідомлення для Кодеру">
+    <kbd>Ctrl+Shift+Space</kbd>
+    <button class="icon-btn icon-btn--accent" type="submit" aria-label="Надіслати"><svg class="ic" aria-hidden="true"><use href="#i-send"/></svg></button>
+  </form>
+    </article>
+    <p class="scene-note">Картка показує сервер, tool і повний JSON. Персонаж махає раз, поки чекає.</p>
+  </div>
+</section>
+
+<section class="screen" data-screen="radial" aria-label="Радіальне меню" hidden>
+  <div class="scene">
+  <div class="wall" aria-hidden="true"></div>
+  <div class="fakewin" aria-hidden="true">
+    <div class="fakewin-bar"><span></span><span></span><span></span><b>нотатки.md — Редактор</b></div>
+    <div class="fakewin-body"><i style="width:58%"></i><i style="width:82%"></i><i style="width:71%"></i><i style="width:40%"></i><i style="width:88%"></i><i style="width:64%"></i><i style="width:76%"></i><i style="width:35%"></i></div>
+  </div>
+  <div class="taskbar" aria-hidden="true">
+    <div class="tb-icons"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="tb-tray"><span class="tb-pal"><img src="../../media/coder.gif" alt=""></span><span>14:52</span></div>
+  </div>
+    <div class="actor actor--center">
+      <div class="js-radial-target" tabindex="0" role="button" aria-haspopup="menu" aria-expanded="true" aria-label="Кодер: правий клік або Enter — меню">
+        <div class="sprite" data-char="coder" data-scale="3"></div>
+      </div>
+      <div class="pill" data-for="quiet" hidden><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg>Тихо до 15:52</div>
+      <div class="pill" data-for="pomo" hidden><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg>25:00 · фокус</div>
+      <div class="radial is-open" role="menu" aria-label="Меню персонажа">
+        <div class="radial-ring" aria-hidden="true"></div>
+        <button class="radial-item" role="menuitem" type="button" style="--a:-180deg" data-radial-sub aria-expanded="false"><span class="radial-ic"><svg class="ic" aria-hidden="true"><use href="#i-swap"/></svg></span><span class="radial-label">Змінити персонажа</span></button><button class="radial-item" role="menuitem" type="button" style="--a:-135deg" data-pill="quiet" aria-pressed="false"><span class="radial-ic"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg></span><span class="radial-label">Тихий режим</span></button><button class="radial-item" role="menuitem" type="button" style="--a:-90deg" data-pill="pomo" aria-pressed="false"><span class="radial-ic"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span><span class="radial-label">Pomodoro</span></button><button class="radial-item" role="menuitem" type="button" style="--a:-45deg" data-go="settings"><span class="radial-ic"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></span><span class="radial-label">Налаштування</span></button><button class="radial-item" role="menuitem" type="button" style="--a:0deg" data-radial-close><span class="radial-ic"><svg class="ic" aria-hidden="true"><use href="#i-hide"/></svg></span><span class="radial-label">Сховати</span></button>
+      </div>
+      <div class="radial-sub" role="group" aria-label="Обрати персонажа" hidden>
+        <button type="button" class="radial-char" aria-pressed="false"><img src="../../media/maid.gif" alt="" width="48" height="56"><span>Покоївка</span></button><button type="button" class="radial-char" aria-pressed="false"><img src="../../media/kitsune.gif" alt="" width="48" height="56"><span>Кіцуне</span></button><button type="button" class="radial-char" aria-pressed="false"><img src="../../media/goth.gif" alt="" width="48" height="56"><span>Готка</span></button><button type="button" class="radial-char" aria-pressed="false"><img src="../../media/witch.gif" alt="" width="48" height="56"><span>Відьма</span></button><button type="button" class="radial-char" aria-pressed="false"><img src="../../media/ronin.gif" alt="" width="48" height="56"><span>Ронін</span></button><button type="button" class="radial-char is-current" aria-pressed="true"><img src="../../media/coder.gif" alt="" width="48" height="56"><span>Кодер</span></button><button type="button" class="radial-char" aria-pressed="false"><img src="../../media/knight.gif" alt="" width="48" height="56"><span>Лицар</span></button><button type="button" class="radial-char" aria-pressed="false"><img src="../../media/vampire.gif" alt="" width="48" height="56"><span>Вампір</span></button>
+      </div>
+    </div>
+    <p class="scene-note">ПКМ по персонажу — відкрити або закрити · Enter / Shift+F10 з клавіатури · Esc — закрити</p>
+  </div>
+</section>
+
+<section class="screen" data-screen="firstrun" aria-label="Перший запуск" hidden>
+  <div class="stage">
+    <div class="wall" aria-hidden="true"></div>
+    <div class="dialog fr" role="dialog" aria-labelledby="fr-title-b">
+      <header class="win-bar">
+        <span class="win-title" id="fr-title-b"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>Pixmates — знайомство</span>
+        <ol class="stepper"><li><button type="button" data-step-go="1"><span class="step-n">1</span>Привіт</button></li><li><button type="button" data-step-go="2"><span class="step-n">2</span>Компаньйон</button></li><li><button type="button" data-step-go="3"><span class="step-n">3</span>Розум (AI)</button></li><li><button type="button" data-step-go="4"><span class="step-n">4</span>Приватність</button></li></ol>
+      </header>
+
+      <div class="fr-body">
+        <div class="fr-step fr-hello" data-step="1" data-timeline data-poses="wave@0,talk@1200,happy@end,idle@end1800">
+          <div class="hero-sprite"><div class="sprite" data-char="coder" data-scale="4" role="img" aria-label="Кодер"></div></div>
+          <div class="hello-bubble">
+            <p class="hello-text" data-stream data-at="1200">О, привіт. Я Кодер. Сиджу на краю твого вікна, п’ю каву й дивлюся, як Claude Code пише за тебе тести. Можу підказати, що гальмує. Можу просто бути поруч.</p>
+          </div>
+          <p class="fr-hint">Я живу на твоїх вікнах і панелі задач. Клік по мені — розмова, правий клік — меню. Налаштуємо все за хвилину.</p>
+        </div>
+
+        <div class="fr-step" data-step="2" hidden>
+          <h2 class="fr-h">Обери компаньйона</h2>
+          <p class="fr-sub">Змінити можна будь-коли: правий клік по персонажу → «Змінити персонажа». Імена робочі.</p>
+          <div class="gallery" role="radiogroup" aria-label="Персонажі">
+            
+            <label class="pick">
+              <input type="radio" name="pick-b" >
+              <span class="pick-card">
+                <img src="../../media/maid.gif" alt="" width="96" height="112">
+                <span class="pick-name">Покоївка</span>
+                <span class="pick-trait">Строга перфекціоністка, таємно турботлива</span>
+              </span>
+            </label>
+            <label class="pick">
+              <input type="radio" name="pick-b" >
+              <span class="pick-card">
+                <img src="../../media/kitsune.gif" alt="" width="96" height="112">
+                <span class="pick-name">Кіцуне</span>
+                <span class="pick-trait">Гіперактивна лисиця-ніндзя, трохи хвалько</span>
+              </span>
+            </label>
+            <label class="pick">
+              <input type="radio" name="pick-b" >
+              <span class="pick-card">
+                <img src="../../media/goth.gif" alt="" width="96" height="112">
+                <span class="pick-name">Готка</span>
+                <span class="pick-trait">Спокійна, іронічна, тепла до своїх</span>
+              </span>
+            </label>
+            <label class="pick">
+              <input type="radio" name="pick-b" >
+              <span class="pick-card">
+                <img src="../../media/witch.gif" alt="" width="96" height="112">
+                <span class="pick-name">Відьма</span>
+                <span class="pick-trait">Учениця: невпевнена, але старанна</span>
+              </span>
+            </label>
+            <label class="pick">
+              <input type="radio" name="pick-b" >
+              <span class="pick-card">
+                <img src="../../media/ronin.gif" alt="" width="96" height="112">
+                <span class="pick-name">Ронін</span>
+                <span class="pick-trait">Спокійний, говорить афоризмами й очима</span>
+              </span>
+            </label>
+            <label class="pick">
+              <input type="radio" name="pick-b" checked>
+              <span class="pick-card">
+                <img src="../../media/coder.gif" alt="" width="96" height="112">
+                <span class="pick-name">Кодер</span>
+                <span class="pick-trait">Сонний, сухий гумор, друг Claude Code</span>
+              </span>
+            </label>
+            <label class="pick">
+              <input type="radio" name="pick-b" >
+              <span class="pick-card">
+                <img src="../../media/knight.gif" alt="" width="96" height="112">
+                <span class="pick-name">Лицар</span>
+                <span class="pick-trait">Шляхетний боягуз у срібних латах</span>
+              </span>
+            </label>
+            <label class="pick">
+              <input type="radio" name="pick-b" >
+              <span class="pick-card">
+                <img src="../../media/vampire.gif" alt="" width="96" height="112">
+                <span class="pick-name">Вампір</span>
+                <span class="pick-trait">Театральний граф, боїться ранків</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="fr-step" data-step="3" hidden>
+          <h2 class="fr-h">Чим я думатиму?</h2>
+          <p class="fr-sub">Без AI я теж працюю: репліки, Pomodoro, нагадування. AI додає розмову й допомогу.</p>
+          <div class="presets" role="radiogroup" aria-label="Провайдер AI">
+            <label class="preset"><input type="radio" name="prov-b">
+              <span class="preset-card">
+                <span class="preset-top"><span class="preset-name">Ollama</span><span class="tag tag--free">безкоштовно</span></span>
+                <span class="preset-cost">$0 · локально</span>
+                <span class="preset-desc">Модель працює на твоєму ПК, нічого не йде в мережу. Потрібен Ollama і ≈ 8 ГБ вільної пам’яті. Відповідає повільніше.</span>
+              </span></label>
+            <label class="preset"><input type="radio" name="prov-b" checked>
+              <span class="preset-card">
+                <span class="preset-top"><span class="preset-name">Claude Haiku 5.5</span><span class="tag tag--rec">рекомендовано</span></span>
+                <span class="preset-cost">≈ $1,5–5 на місяць</span>
+                <span class="preset-desc">Швидкий і дешевий. Вистачає для розмов, підказок і tools. Оцінка — для звичайного щоденного користування.</span>
+              </span></label>
+            <label class="preset"><input type="radio" name="prov-b">
+              <span class="preset-card">
+                <span class="preset-top"><span class="preset-name">Claude Opus 5.5</span><span class="tag tag--pricey">≈ ×40</span></span>
+                <span class="preset-cost">≈ у 40 разів дорожче за Haiku</span>
+                <span class="preset-desc">Найрозумніший, для складних пояснень коду. Для компаньйона зазвичай надмірний.</span>
+              </span></label>
+          </div>
+          <div class="keyline">
+            <label class="field"><span class="field-label">Ключ API Anthropic</span><input type="password" value="sk-ant-api03-xxxxxxxxxxxx" aria-describedby="bill-b"></label>
+            <p class="note note--info" id="bill-b"><svg class="ic" aria-hidden="true"><use href="#i-coin"/></svg><span><b>API оплачується окремо від підписки Claude.</b> Ключ і ліміт витрат — на platform.claude.com. Ключ зберігається зашифровано на цьому ПК.</span></p>
+          </div>
+          <p class="fr-more">Інший сервер (OpenAI-сумісний) — у налаштуваннях → «AI і витрати» → «Розширені».</p>
+        </div>
+
+        <div class="fr-step" data-step="4" hidden>
+          <h2 class="fr-h">Що мені можна бачити</h2>
+          <p class="fr-sub">Усе вимикається в налаштуваннях. Системні дані йдуть у модель лише як позначені дані, з обмеженням довжини.</p>
+          <div class="privacy-grid">
+            <div class="rows card">
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Назва активної програми</span><small>Щоб реагувати: «знову редактор о другій ночі?»</small></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Назва активної програми"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Заголовки вікон</span><small>Можуть містити назви файлів і листів. Вимкнено за замовчуванням.</small></div>
+    <label class="sw"><input type="checkbox" role="switch"   aria-label="Заголовки вікон"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Буфер обміну</span><small>Читаю лише тоді, коли ти натиснеш «Поясни скопійоване».</small></div><div class="row-ctl"><span class="tag">лише по кнопці</span></div></div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Пам’ять розмов</span><small>Історія локально в SQLite; можна переглянути й очистити.</small></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Пам’ять розмов"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+            </div>
+            <div class="card privacy-who">
+              <h3><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Куди йдуть дані</h3>
+              <ul>
+                <li><b>Ollama</b> — нікуди, усе на цьому ПК.</li>
+                <li><b>Claude</b> — твої повідомлення й увімкнені дані йдуть до Anthropic через твій ключ.</li>
+                <li><b>MCP-сервери</b> — підключаєш сам; кожна дія, що змінює дані, лише з твоїм дозволом.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="fr-foot">
+        <button class="btn btn--ghost" type="button">Пропустити</button>
+        <span class="grow"></span>
+        <button class="btn" type="button" data-step-prev>Назад</button>
+        <button class="btn btn--primary" type="button" data-step-next data-next="Далі" data-finish="Почати">Далі</button>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<section class="screen" data-screen="settings" aria-label="Налаштування" hidden>
+  <div class="stage">
+    <div class="wall" aria-hidden="true"></div>
+    <div class="dialog settings" role="dialog" aria-labelledby="set-title-b">
+      <header class="win-bar">
+        <span class="win-title" id="set-title-b"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>Налаштування Pixmates</span>
+        <span class="grow"></span>
+        <span class="win-ctl" aria-hidden="true"><i>–</i><i>□</i><i>×</i></span>
+      </header>
+      <div class="set-wrap">
+        <nav class="set-nav" aria-label="Розділи налаштувань">
+          <button type="button" data-sec-go="character" aria-current="false"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg><span>Персонаж</span></button><button type="button" data-sec-go="ai" aria-current="false"><svg class="ic" aria-hidden="true"><use href="#i-coin"/></svg><span>AI і витрати</span></button><button type="button" data-sec-go="mcp" aria-current="false"><svg class="ic" aria-hidden="true"><use href="#i-plug"/></svg><span>MCP-сервери</span></button><button type="button" data-sec-go="privacy" aria-current="false"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><span>Приватність</span></button><button type="button" data-sec-go="focus" aria-current="false"><svg class="ic" aria-hidden="true"><use href="#i-bell"/></svg><span>Фокус і нагадування</span></button><button type="button" data-sec-go="cc" aria-current="false"><svg class="ic" aria-hidden="true"><use href="#i-term"/></svg><span>Claude Code</span></button>
+          <div class="set-nav-pal"><img src="../../media/coder.gif" alt="" width="96" height="112"><span>Кодер поруч</span></div>
+        </nav>
+        <div class="set-body">
+
+          <div class="sec" data-sec="character" hidden>
+            <h2 class="sec-h">Персонаж</h2>
+            <div class="mini-cast" role="radiogroup" aria-label="Активний персонаж">
+              <label class="mini"><input type="radio" name="act-b" ><span><img src="../../media/maid.gif" alt="" width="48" height="56">Покоївка</span></label><label class="mini"><input type="radio" name="act-b" ><span><img src="../../media/kitsune.gif" alt="" width="48" height="56">Кіцуне</span></label><label class="mini"><input type="radio" name="act-b" ><span><img src="../../media/goth.gif" alt="" width="48" height="56">Готка</span></label><label class="mini"><input type="radio" name="act-b" ><span><img src="../../media/witch.gif" alt="" width="48" height="56">Відьма</span></label><label class="mini"><input type="radio" name="act-b" ><span><img src="../../media/ronin.gif" alt="" width="48" height="56">Ронін</span></label><label class="mini"><input type="radio" name="act-b" checked><span><img src="../../media/coder.gif" alt="" width="48" height="56">Кодер</span></label><label class="mini"><input type="radio" name="act-b" ><span><img src="../../media/knight.gif" alt="" width="48" height="56">Лицар</span></label><label class="mini"><input type="radio" name="act-b" ><span><img src="../../media/vampire.gif" alt="" width="48" height="56">Вампір</span></label>
+            </div>
+            <div class="rows card">
+              
+  <div class="row"><div class="row-text"><span class="row-title">Розмір</span><small>S / M / L за масштабом дисплея; точно — повзунком.</small></div><div class="row-ctl">
+  <div class="seg" role="radiogroup" aria-label="Розмір"><label class=""><input type="radio" name="size-b"  ><span>S</span></label><label class=""><input type="radio" name="size-b" checked ><span>M</span></label><label class=""><input type="radio" name="size-b"  ><span>L</span></label></div></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Шар</span><small>Де живе персонаж.</small></div><div class="row-ctl">
+  <div class="seg" role="radiogroup" aria-label="Шар"><label class=""><input type="radio" name="layer-b" checked ><span>Поверх усіх</span></label><label class=""><input type="radio" name="layer-b"  ><span>Лише на столі</span></label></div></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Показати / сховати</span><small>Глобальна гаряча клавіша.</small></div><div class="row-ctl"><kbd>Ctrl+Alt+P</kbd></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Наступний персонаж</span></div><div class="row-ctl"><button class="btn btn--small" type="button">Задати клавішу</button></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Швидкість</span><small>Як часто персонаж ходить і чимось займається.</small></div><div class="row-ctl"><input type="range" min="0" max="100" value="55" aria-label="Швидкість"></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Пакети персонажів</span><small>Імпорт .zip (без коду, перевіряється).</small></div><div class="row-ctl"><button class="btn btn--small" type="button">Імпортувати…</button></div></div>
+            </div>
+          </div>
+
+          <div class="sec" data-sec="ai" hidden>
+            <h2 class="sec-h">AI і витрати</h2>
+            <div class="usage">
+              <div class="card stat">
+                <span class="stat-label">Сьогодні</span>
+                <span class="stat-num">$0,07</span>
+                <div class="meter" role="meter" aria-valuemin="0" aria-valuemax="0.25" aria-valuenow="0.07" aria-label="Витрати сьогодні з денного бюджету"><span style="width:28%"></span></div>
+                <span class="stat-sub">28 % денного бюджету · 41 200 токенів</span>
+              </div>
+              <div class="card stat">
+                <span class="stat-label">Листопад</span>
+                <span class="stat-num">$1,84</span>
+                <div class="meter meter--month" role="meter" aria-valuemin="0" aria-valuemax="7.5" aria-valuenow="1.84" aria-label="Витрати за місяць"><span style="width:25%"></span><i style="left:39%" title="прогноз"></i></div>
+                <span class="stat-sub">прогноз до кінця місяця ≈ $2,90</span>
+              </div>
+              <div class="card stat stat--bars">
+                <span class="stat-label">14 днів</span>
+                <div class="bars" role="img" aria-label="Витрати за 14 днів, від $0 до $0,19 на день; денний бюджет $0,25">
+                  <span style="height:32%"></span><span style="height:20%"></span><span style="height:44%"></span><span style="height:8%"></span><span style="height:3%"></span><span style="height:36%"></span><span style="height:56%"></span><span style="height:24%"></span><span style="height:48%"></span><span style="height:16%"></span><span style="height:28%"></span><span style="height:76%"></span><span style="height:40%"></span><span style="height:28%"></span>
+                  <i class="bars-cap" style="bottom:100%"></i>
+                </div>
+                <span class="stat-sub">лінія — денний бюджет</span>
+              </div>
+            </div>
+            <div class="rows card">
+              
+  <div class="row"><div class="row-text"><span class="row-title">Провайдер</span><small>Пресети з оцінкою вартості.</small></div><div class="row-ctl">
+  <div class="seg" role="radiogroup" aria-label="Провайдер"><label class=""><input type="radio" name="p-b"  ><span>Ollama · $0</span></label><label class=""><input type="radio" name="p-b" checked ><span>Haiku 5.5 · ≈ $1,5–5/міс</span></label><label class=""><input type="radio" name="p-b"  ><span>Opus 5.5 · ≈ ×40</span></label></div></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Ключ API</span><small>Оплачується окремо від підписки Claude. Ліміт витрат — на platform.claude.com.</small></div><div class="row-ctl"><span class="secret">sk-ant-…<b>••••</b>3f9a</span><button class="btn btn--small" type="button">Змінити</button></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Денний бюджет</span><small>Досягну — перейду на короткі репліки без AI до завтра.</small></div><div class="row-ctl"><input type="range" min="5" max="100" value="25" data-out="bud-b" aria-label="Денний бюджет"><output id="bud-b" class="out">$0,25</output></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Мова відповідей</span></div><div class="row-ctl">
+  <div class="seg" role="radiogroup" aria-label="Мова відповідей"><label class=""><input type="radio" name="lang-b" checked ><span>Українська</span></label><label class=""><input type="radio" name="lang-b"  ><span>English</span></label></div></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Гаряча клавіша чату</span></div><div class="row-ctl"><kbd>Ctrl+Shift+Space</kbd></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Пам’ять</span><small>Що я про тебе запам’ятав(-ла).</small></div><div class="row-ctl"><button class="btn btn--small" type="button">Переглянути</button></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Розширені</span><small>OpenAI-сумісний сервер: адреса, модель, ключ.</small></div><div class="row-ctl"><button class="btn btn--small" type="button">Відкрити</button></div></div>
+            </div>
+          </div>
+
+          <div class="sec" data-sec="mcp" hidden>
+            <h2 class="sec-h">MCP-сервери</h2>
+            <p class="note note--info"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><span>Кожен сервер — чужа програма. Нові tools вимкнені; «авто» — лише для тих, що сервер позначив як read-only (це заява сервера, не гарантія).</span></p>
+            <div class="servers">
+              <div class="server card is-open">
+                <div class="server-head">
+                  <span class="dot dot--ok" aria-hidden="true"></span>
+                  <span class="server-name">calendar</span>
+                  <span class="tag">stdio</span>
+                  <span class="server-meta">працює · 4 tools · 38 МБ</span>
+                  <span class="grow"></span>
+                  <button class="btn btn--small" type="button">Журнал stderr</button>
+                  <button class="btn btn--small btn--danger" type="button">Видалити</button>
+                </div>
+                <div class="tools" role="table" aria-label="Tools сервера calendar">
+                  <div class="tool" role="row">
+                    <div class="tool-text" role="cell"><code>list_events</code><span class="tag tag--ro">read-only</span><small>«Показує події за період.» — опис так, як його бачить модель</small></div>
+                    <div role="cell">
+  <div class="seg" role="radiogroup" aria-label="Режим list_events"><label class=""><input type="radio" name="m-b-list_events"  ><span>вимк.</span></label><label class=""><input type="radio" name="m-b-list_events"  ><span>питати</span></label><label class=""><input type="radio" name="m-b-list_events" checked ><span>авто</span></label></div></div>
+                  </div><div class="tool" role="row">
+                    <div class="tool-text" role="cell"><code>find_free_time</code><span class="tag tag--ro">read-only</span><small>«Шукає вільні проміжки в календарі.» — опис так, як його бачить модель</small></div>
+                    <div role="cell">
+  <div class="seg" role="radiogroup" aria-label="Режим find_free_time"><label class=""><input type="radio" name="m-b-find_free_time"  ><span>вимк.</span></label><label class=""><input type="radio" name="m-b-find_free_time" checked ><span>питати</span></label><label class=""><input type="radio" name="m-b-find_free_time"  ><span>авто</span></label></div></div>
+                  </div><div class="tool" role="row">
+                    <div class="tool-text" role="cell"><code>create_event</code><span class="tag tag--warn"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg>змінює дані</span><small>«Створює подію.» — опис так, як його бачить модель</small></div>
+                    <div role="cell">
+  <div class="seg" role="radiogroup" aria-label="Режим create_event"><label class=""><input type="radio" name="m-b-create_event"  ><span>вимк.</span></label><label class=""><input type="radio" name="m-b-create_event" checked ><span>питати</span></label><label class="is-disabled" title="Лише для read-only tools"><input type="radio" name="m-b-create_event"  disabled><span>авто</span></label></div></div>
+                  </div><div class="tool" role="row">
+                    <div class="tool-text" role="cell"><code>delete_event</code><span class="tag tag--danger"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg>руйнівний</span><small>«Видаляє подію.» — опис так, як його бачить модель</small></div>
+                    <div role="cell">
+  <div class="seg" role="radiogroup" aria-label="Режим delete_event"><label class=""><input type="radio" name="m-b-delete_event" checked ><span>вимк.</span></label><label class=""><input type="radio" name="m-b-delete_event"  ><span>питати</span></label><label class="is-disabled" title="Лише для read-only tools"><input type="radio" name="m-b-delete_event"  disabled><span>авто</span></label></div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="server card">
+                <div class="server-head">
+                  <span class="dot dot--idle" aria-hidden="true"></span>
+                  <span class="server-name">github</span>
+                  <span class="tag">HTTP</span>
+                  <span class="server-meta">https://api.example.dev/mcp · зупинено після простою · 12 tools</span>
+                  <span class="grow"></span>
+                  <button class="btn btn--small" type="button">Відкрити</button>
+                </div>
+              </div>
+            </div>
+            <div class="add card">
+              <h3 class="add-h"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Додати сервер</h3>
+              <div class="add-grid">
+                <label class="field"><span class="field-label">Встав JSON у форматі mcpServers</span>
+                  <textarea spellcheck="false" rows="9">{
+  "mcpServers": {
+    "notes": {
+      "command": "npx",
+      "args": ["-y", "notes-mcp", "--vault", "D:/Нотатки"],
+      "env": { "NOTES_TOKEN": "nt_8f2c…" }
+    }
+  }
+}</textarea></label>
+                <div class="preview">
+                  <span class="field-label">Попередній перегляд</span>
+                  <div class="preview-box">
+                    <p><b>notes</b> · stdio</p>
+                    <code class="cmdline">npx -y notes-mcp --vault D:/Нотатки</code>
+                    <p class="preview-env">env: <code>NOTES_TOKEN</code> = <span class="secret">••••••</span> <small>(зберігається зашифровано)</small></p>
+                    <p class="note note--warn"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg><span>Ця програма запускатиметься з твоїми правами. Додавай лише ті, яким довіряєш.</span></p>
+                  </div>
+                  <div class="add-actions"><button class="btn" type="button">Перевірити з’єднання</button><button class="btn btn--primary" type="button">Додати</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec" data-sec="privacy" hidden>
+            <h2 class="sec-h">Приватність</h2>
+            <div class="rows card">
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Назва активної програми</span><small>Для реакцій на те, що ти робиш.</small></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Назва активної програми"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Заголовки вікон</span><small>Можуть містити назви файлів, листів, вкладок.</small></div>
+    <label class="sw"><input type="checkbox" role="switch"   aria-label="Заголовки вікон"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Буфер обміну</span><small>Лише після твого натискання «Поясни скопійоване».</small></div><div class="row-ctl"><span class="tag">лише по кнопці</span></div></div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Історія розмов</span><small>Зберігається локально. Термін — 30 днів.</small></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Історія розмов"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Журнал викликів tools</span><small>Аргументи з маскованими секретами, 30 днів.</small></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Журнал викликів tools"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Дані</span></div><div class="row-ctl"><button class="btn btn--small" type="button">Експорт</button><button class="btn btn--small btn--danger" type="button">Очистити все</button></div></div>
+            </div>
+            <p class="note note--info"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><span>З хмарним провайдером твої повідомлення, увімкнені системні дані, описи й аргументи MCP-tools ідуть до провайдера. З Ollama і локальними серверами — нічого не виходить з ПК.</span></p>
+          </div>
+
+          <div class="sec" data-sec="focus" hidden>
+            <h2 class="sec-h">Фокус і нагадування</h2>
+            <div class="rows card">
+              
+  <div class="row"><div class="row-text"><span class="row-title">Pomodoro</span><small>Фокус / перерва, хвилин.</small></div><div class="row-ctl"><input class="num" type="number" value="25" aria-label="Фокус, хвилин"><span class="muted">/</span><input class="num" type="number" value="5" aria-label="Перерва, хвилин"></div></div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Правило 20-20-20 для очей</span><small>Кожні 20 хв — подивись удалину 20 секунд.</small></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Правило 20-20-20 для очей"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Вода</span><small>Кожні 60 хв.</small></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Вода"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Постава</span><small>Кожні 45 хв.</small></div>
+    <label class="sw"><input type="checkbox" role="switch"   aria-label="Постава"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Поважати «Не турбувати» і повний екран</span></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Поважати «Не турбувати» і повний екран"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Тихий режим під час демонстрації екрана</span><small>Повний екран + програма для дзвінків.</small></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Тихий режим під час демонстрації екрана"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Тихі години</span></div><div class="row-ctl"><input class="num num--time" type="text" value="22:00" aria-label="Початок"><span class="muted">–</span><input class="num num--time" type="text" value="08:00" aria-label="Кінець"></div></div>
+            </div>
+          </div>
+
+          <div class="sec" data-sec="cc" hidden>
+            <h2 class="sec-h">Claude Code</h2>
+            <div class="card cc-status"><span class="dot dot--ok" aria-hidden="true"></span><span><b>Hooks під’єднано</b> · остання подія 2 хв тому: тести пройшли</span></div>
+            <div class="rows card">
+              
+  <div class="row"><div class="row-text"><span class="row-title">Hooks</span><small>Згенерую фрагмент для .claude/settings.json з твоїм токеном.</small></div><div class="row-ctl"><button class="btn btn--small btn--primary" type="button">Згенерувати конфіг</button></div></div>
+              
+  <div class="row"><div class="row-text"><span class="row-title">Адреса</span><small>Лише локально.</small></div><div class="row-ctl"><code>127.0.0.1:47321</code><span class="secret">токен ••••••</span></div></div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">MCP-сервер Pixmates</span><small>Claude Code може попросити персонажа відреагувати.</small></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="MCP-сервер Pixmates"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Червоні тести → реакція</span></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Червоні тести → реакція"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Деплой → тримає кулачки</span></div>
+    <label class="sw"><input type="checkbox" role="switch" checked  aria-label="Деплой → тримає кулачки"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+              
+  <div class="row">
+    <div class="row-text"><span class="row-title">Git / CI</span><small>Статус гілки й збірки.</small></div>
+    <label class="sw"><input type="checkbox" role="switch"   aria-label="Git / CI"><span class="sw-track" aria-hidden="true"></span></label>
+  </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<script src="spike.js"></script>
+</body>
+</html>
