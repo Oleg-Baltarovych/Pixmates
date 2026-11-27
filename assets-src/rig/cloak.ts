@@ -72,7 +72,8 @@ export function cloakGeometry(
   for (let r = 0; r <= rows; r++) {
     const t = r / rows;
     const k = cloak.widths.shape === 'column' ? Math.min(1, 3 * t) : t;
-    const half = Math.round(cloak.widths.top + (hemHalf - cloak.widths.top) * k);
+    const taper = !q && r < rows && 3 * r > 2 * rows ? (cloak.widths.taper ?? 0) : 0;
+    const half = Math.round(cloak.widths.top + (hemHalf - cloak.widths.top) * k) - taper;
     const dx = Math.round(sway * t);
     if (q) {
       const lead = Math.round(j.chest[0]) + Q34_LEAD;
@@ -168,7 +169,9 @@ export function cloakGeometry(
     for (let r = 0; r < lh; r++) {
       const n = cw - Math.floor((r * cw) / lh);
       const y = hemY - inset - r;
-      for (let c = inset; c < n + inset; c++) {
+      // A tapered row (`widths.taper`) is narrower: the lining keeps its inset from that row's edge.
+      const t = !q && y < hemY && 3 * (y - topY) > 2 * rows ? (cloak.widths.taper ?? 0) : 0;
+      for (let c = inset + t; c < n + inset + t; c++) {
         if (!q && inside(h1 - c, y)) put(h1 - c, y, tone);
         if (inside(h0 + c, y)) put(h0 + c, y, tone);
       }

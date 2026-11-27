@@ -80,7 +80,8 @@ export const VAMPIRE: Body = {
     litShade: 3,
     top: 0,
     hemRow: 4,
-    widths: { top: 11, hem: 11, shape: 'column' },
+    // AD round 1 note 7 (MA-69): the front edge tapers 1 px in over the bottom third, the hem keeps its width.
+    widths: { top: 11, hem: 11, shape: 'column', taper: 1 },
     shoulder: 'square',
     hem: { lobes: 0, cornerDrop: 1 },
     bands: [],

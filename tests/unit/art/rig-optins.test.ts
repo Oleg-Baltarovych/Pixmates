@@ -1255,3 +1255,21 @@ describe('opt-in: Body.greaves (greaveTones)', () => {
     for (let y = 1; y < 4; y++) expect(row(y, 0)).toEqual([2, 5, 4, 3, 2]);
   });
 });
+
+describe('opt-in: Cloak.widths.taper (front)', () => {
+  const column: Cloak = { ...CLOAK_A, hem: { lobes: 0 }, bands: [], widths: { top: 10, hem: 10, shape: 'column' } };
+  const tapered: Cloak = { ...column, widths: { ...column.widths, taper: 1 } };
+  const span = (g: ReturnType<typeof geomOf>, y: number): number => {
+    const xs = rowXs(g, y);
+    return Math.max(...xs) - Math.min(...xs) + 1;
+  };
+  it('narrows the rows of the bottom third by 1 px a side and keeps the hem row width; q34 unchanged', () => {
+    const a = geomOf(column, idle, 0);
+    const b = geomOf(tapered, idle, 0);
+    const rows = a.hemY - a.topY;
+    expect(span(b, a.hemY)).toBe(span(a, a.hemY));
+    expect(span(b, a.hemY - 1)).toBe(span(a, a.hemY - 1) - 2);
+    expect(span(b, a.topY + Math.floor(rows / 2))).toBe(span(a, a.topY + Math.floor(rows / 2)));
+    expect([...geomOf(tapered, walk, 0, true).px.keys()]).toEqual([...geomOf(column, walk, 0, true).px.keys()]);
+  });
+});

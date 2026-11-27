@@ -242,7 +242,16 @@ export interface Cloak {
   /** Hem row offset from the hip joint (standing). */
   readonly hemRow: number;
   /** Half-widths at the top and the hem; `column` reaches the hem width within the first third, `bell` flares evenly. */
-  readonly widths: { readonly top: number; readonly hem: number; readonly shape: 'bell' | 'column' };
+  readonly widths: {
+    readonly top: number;
+    readonly hem: number;
+    readonly shape: 'bell' | 'column';
+    /**
+     * Opt-in (MA-69, front view): rows in the bottom third above the hem row sit this many px in on each side; the
+     * hem row keeps the full hem width (the outer edge tapers in, then the hem steps back out).
+     */
+    readonly taper?: number;
+  };
   /** `square`: full width on the top row; `round`: the top row 1 px in each side. */
   readonly shoulder: 'square' | 'round';
   readonly hem: {
