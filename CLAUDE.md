@@ -25,6 +25,7 @@ pure behavior core in `src/core` · Zustand (renderer view state) · zod (IPC, m
 - `pnpm perf [-- --character=<id>]` — builds `dist:dir`, launches the packaged app with a temp profile, samples all processes 30 s warm-up + 120 s → `reports/perf/<date>-<character>.md` (unknown or space-separated flags exit 2); verdict: CPU < 2 % and private-bytes sum avg ≤ 280 MB (ADR 007, SPEC §1). Run plugged in, with no `pnpm dev` instance open
 - `pnpm sprites:lock` — rewrite the committed sprite fingerprint `assets-src/sprites.lock.json` after an intended pack change (`pnpm test` fails when a pack drifts from it)
 - `pnpm sprites:compare <id> [--base <git-ref>] [--frames anim[:frame],…]` — before/after review sheets of one pack (base default HEAD, built from a temp git export; working tree untouched) → `reports/sprites/<id>-compare-x1|x4|x10.png`, rows old/new on white then dark
+- `pnpm showcase` — `pnpm sprites`, then the README media from the packs (atlases must match the lock) → `docs/media/` (`cast.png`, `cast-dark.png` ×4, `cast.gif` ×2, `<id>.gif` ×4: idle → walk → happy; own GIF encoder `tools/lib/gif.ts`, deterministic). Rerun and commit after an intended pack change
 - `pnpm security` — `pnpm audit --prod --audit-level high`
 
 ## Non-negotiable rules

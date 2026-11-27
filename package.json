@@ -29,7 +29,8 @@
     "sprites:lock": "node tools/sprites-lock.ts",
     "sprites:compare": "node tools/sprites-compare.ts",
     "sprites:sheet": "node tools/sprites-sheet.ts",
-    "sprites:preview": "node tools/sprites-sheet.ts --preview"
+    "sprites:preview": "node tools/sprites-sheet.ts --preview",
+    "showcase": "pnpm sprites && node tools/showcase.ts"
   },
   "dependencies": {
     "i18next": "27.2.2",
