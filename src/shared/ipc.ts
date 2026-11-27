@@ -43,7 +43,7 @@ const stageAnimation = z
 const stageCharacter = z
   .object({
     key: z.string().regex(/^[A-Za-z0-9._-]{1,64}$/),
-    /** Blind lineup label (dev only). */
+    /** Dev art lineup position label, in `--art-lineup` order (dev only). */
     label: z.enum(['A', 'B', 'C', 'D']).optional(),
     frameSize: z
       .object({

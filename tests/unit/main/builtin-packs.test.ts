@@ -1,6 +1,6 @@
 // MA-30: what a packaged build ships. Every built-in pack `pnpm sprites` produces is written to a temp folder exactly
-// as `pnpm build` writes resources/characters/, then read back by the packaged-mode registry (`pixmates.*` only, no
-// spike packs). A packaged app with no valid default character must fail here, not show an empty stage.
+// as `pnpm build` writes resources/characters/, then read back by the registry (`pixmates.*` only).
+// A packaged app with no valid default character must fail here, not show an empty stage.
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -19,7 +19,7 @@ const root = mkdtempSync(join(tmpdir(), 'pixmates-packaged-'));
 const ctx = renderContext(loadMasterPalette());
 for (const id of OUTPUT_IDS) {
   const output = buildOutput(id, ctx);
-  // Same layout as resources/characters/<id>/; spike packs are written too, the packaged registry must skip them.
+  // Same layout as resources/characters/<id>/.
   if (!output.dir.startsWith(join('resources', 'characters'))) continue;
   for (const file of output.files) {
     const target = join(root, id, file.path);
@@ -29,7 +29,7 @@ for (const id of OUTPUT_IDS) {
 }
 
 describe('packaged built-in packs (MA-30)', () => {
-  const registry = loadRegistry(root, { includeSpike: false, builtinOnly: true });
+  const registry = loadRegistry(root);
 
   it('every built-in pack is valid and the packaged registry lists exactly the roster', () => {
     expect(registry.errors).toEqual([]);

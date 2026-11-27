@@ -1,5 +1,5 @@
-// Dev-only blind lineup labels (plan M-ART phase 1): pixel letters A–D, light fill with a dark coloured outline so
-// they read on any wallpaper. Not user UI (no i18n).
+// Dev-only art lineup labels (MA-31: the position in `--art-lineup`): pixel letters A–D, light fill with a dark
+// coloured outline so they read on any wallpaper. Not user UI (no i18n).
 
 const GLYPHS: Readonly<Record<string, readonly string[]>> = {
   A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],

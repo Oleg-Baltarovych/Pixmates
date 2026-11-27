@@ -8,9 +8,8 @@ import { CHANNEL } from '../shared/ipc.ts';
 import { WINDOW_ROLES } from '../shared/windows.ts';
 import { isDebugLaunch } from './app/launch-guard.ts';
 import { registerLifecycle } from './app/lifecycle.ts';
-import { isSpikePack, loadRegistry } from './characters/registry.ts';
-import { selectCharacters } from './characters/selection.ts';
-import { lineupOrder } from './dev/lineup.ts';
+import { loadRegistry } from './characters/registry.ts';
+import { parseArtLineup, selectCharacters } from './characters/selection.ts';
 import { createTranslator } from './i18n.ts';
 import { IpcRouter } from './ipc/handle.ts';
 import { HotkeyService } from './services/hotkeys.ts';
@@ -72,17 +71,12 @@ function main(): void {
   const charactersRoot = app.isPackaged
     ? join(process.resourcesPath, 'characters')
     : join(import.meta.dirname, '..', '..', 'resources', 'characters');
-  const registry = loadRegistry(charactersRoot, {
-    includeSpike: !app.isPackaged || process.argv.includes('--perf-spike'),
-    builtinOnly: app.isPackaged,
-  });
+  const registry = loadRegistry(charactersRoot);
   for (const error of registry.errors) console.warn(`[characters] ${error}`);
-  // Dev-only art lineup (M-ART phase 1): every spike pack, blind-labelled A–D (key in reports/art-spike/key.txt).
-  const spikeIds = [...registry.packs.keys()].filter(isSpikePack);
-  const lineup =
-    !app.isPackaged && process.argv.includes('--art-lineup') && spikeIds.length > 0
-      ? lineupOrder(join(process.cwd(), 'reports', 'art-spike', 'key.txt'), spikeIds, (max) => randomInt(0, max))
-      : undefined;
+  // Dev-only art lineup (MA-31): `--art-lineup=<ids>`, up to 4 built-ins side by side; rejected when packaged.
+  const artLineup = parseArtLineup(process.argv, registry.packs, app.isPackaged);
+  if (artLineup.kind === 'error') console.error(`[characters] ${artLineup.error}`);
+  const lineup = artLineup.kind === 'lineup' ? artLineup.ids : undefined;
   const selection = selectCharacters({ packs: registry.packs, requested: argValue('character'), lineup });
   if (selection.warning !== undefined) console.warn(`[characters] ${selection.warning}`);
   if (selection.error !== undefined) console.error(`[characters] ${selection.error}`);

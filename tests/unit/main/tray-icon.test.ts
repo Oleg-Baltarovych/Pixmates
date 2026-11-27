@@ -107,7 +107,7 @@ describe('tray icon guards (security review: privileged decode of pack bytes in 
   });
 
   it('refuses a pack that is not a built-in (no imports yet)', () => {
-    expect(trayIconProblem({ ...pack, id: 'spike-maid-48soft' }, { width: 256, height: 128 })).toMatch(/built-in/);
+    expect(trayIconProblem({ ...pack, id: 'imported-maid' }, { width: 256, height: 128 })).toMatch(/built-in/);
   });
 
   it('refuses a decode whose size differs from the validated header (swapped or odd file)', () => {
