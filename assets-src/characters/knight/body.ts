@@ -113,7 +113,7 @@ export const KNIGHT: Body = {
   torsoMask: { mask: CHEST, at: [-6, 0] },
   tassets: { front: { mask: FAULDS, at: [-6, -2] }, seated: { mask: FAULDS_SEATED, at: [-6, -2] } },
   sode: { mask: PAULDRON, at: [-5, -2] },
-  sash: { rows: 2, knot: { mask: SWORD, at: [5, -4] } },
+  sash: { rows: 2, knot: { mask: SWORD, at: [6, -4] } },
   shorts: { shade: 3, raise: 0 },
   legRim: 5,
   hairBackStretch: 0.2,

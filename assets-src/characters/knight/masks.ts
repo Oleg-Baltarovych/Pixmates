@@ -1,8 +1,9 @@
 // knight masks (MA-67 D-22, variant B picked by the owner 2026-11-27; docs/art/knight.md). Great bascinet: a pointed
 // ogive skull, an arched face opening framed by a mail camail that drapes onto the shoulders; a hounskull ("pig-face")
-// visor — raised, its snout tips up over the brow; lowered, a cone (lit left plane, shaded right plane) with two eye
-// slits angled toward the snout, a lit ridge that starts only below the slits (never a cross) and breaths on the shade
-// side. Under the plate: mail (camail, a mail hem under the faulds); over it: the emerald sash (baldric + tabard panel).
+// visor — raised, a solid lit snout tipped up over the brow; lowered, a cone (lit left plane, shaded right plane) with
+// two eye slits in a shallow V, a ridge (lit-left / shade-right value split) that starts ≥ 2 rows below the slits (no T,
+// no cross) and breaths on the shade side. Camail shaded by rows (lighter top / lit left, darker to the hem and right),
+// scalloped hem. Under the plate: mail (camail, a mail hem under the faulds); over it: the emerald sash (baldric + tabard panel).
 // Slots: hair = metal_silver (J 0 · j 2 · h 3 · H 4 · y 5 · Y 6), shoe = metal_silver (M 0 · m 2 · b 3 · B 4 · l 5 ·
 // L 6), dress = cloth_emerald (V 0 · v 1 · d 2 · D 3 · w 4 · W 5), horn / trim = hair_umber leather (N 1 · n 2 · o 3 ·
 // O 4 · u 5 · U 6), apron = cloth_cream (slit glints, P 5 · p 4). Mail = a j/h (m/b) checker. Legend:
@@ -30,7 +31,8 @@ export const HEAD: Mask = [
   '...jyHHHHHHHHHHHHHHHHHHhhhJ...',
   '...jyHHHHHHHHHHHHHHHHHHhhhJ...',
   '..jyHHHHHHHHHHHHHHHHHHHHhhhJ..',
-  '..jhHHHhSSSSSSSSSSSSSshhhhhJ..',
+  '..jhHHhjjSSSSSSSSSSSSjjhhhhJ..',
+  '..jyHhjSSSSSSSSSSSSSSSsjhhjJ..',
   '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
   '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
   '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
@@ -38,14 +40,13 @@ export const HEAD: Mask = [
   '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
   '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
   '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
-  '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
-  '..JhjhSSSSSSSSSSSSSSSSSsjhjJ..',
-  '..hjhjSSSSSSSSSSSSSSSSSshjhj..',
-  'JhjhjhSSSSSSSSSSSSSSSSSsjhjhjJ',
-  'JjhjhjhHSSSSSSSSSSSSSshjhjhjhJ',
-  'jhjhjhjhjhssssssssssjhjhjhjhjh',
-  'JjhjhjhjhjhjhjhjhjhjhjhjhjhjhJ',
-  '.JJhjhjhjhjhjhjhjhjhjhjhjhjJJ.',
+  '..JHhHSSSSSSSSSSSSSSSSSsjhjJ..',
+  '..HhHhSSSSSSSSSSSSSSSSSshjhj..',
+  'JhHhHhHSSSSSSSSSSSSSSSshjhjhjJ',
+  'JHhHhHhHHSSSSSSSSSSSshhjhjhjhJ',
+  'jhjhjhjhjhHsssssssshjhjhjhjhjh',
+  'JjhjhjhjhjhjhjhjhjhjjJjJjJjJjJ',
+  '.JjjJjjJjjJjjJjjJjjJjjJjjJjJJ.',
 ];
 /**
  * q34 (facing right): the camail wraps the near jaw (the face opening narrows from the near side toward the chin) and
@@ -86,69 +87,69 @@ export const HEAD_Q34: Mask = [
   '..JhjhjhjhjhjhjhjhjhjJJ.......',
 ];
 
-/** Raised (head-mask rows 10–15): the snout tipped up over the brow, its ridge lit, its lip resting on the brow. */
+/** Raised (head-mask rows 10–15): a solid lit triangle (tone 5, tone-6 left edge), a tone-2 underside over the brow, one temple rivet per side. */
 const UP: Mask = [
-  '.............jYhJ.............',
-  '............jyYhhJ............',
-  '...........jyHYhhhJ...........',
-  '..........jyHjYhjhhJ..........',
-  '.........jyHHHYhHhhhJ.........',
-  '...jYHHHHjyHjHYhjhhhJHHhhYJ...',
+  '..............Yyh.............',
+  '.............Yyyyh............',
+  '............Yyyyyyh...........',
+  '...........Yyyyyyyyh..........',
+  '..........Yyyyyyyyyyh.........',
+  '.....Y...jjjjjjjjjjjjj...Y....',
 ];
 const UP_Q34: Mask = [
-  '..............jYhJ............',
-  '.............jyYhhJ...........',
-  '............jyHYhhhJ..........',
-  '...........jyHjYhjhhJ.........',
-  '..........jyHHHYhHhhhJ........',
-  '...jYHHHHHjyHjHYhjhhhJHhhYJ...',
+  '...............Yyh............',
+  '..............Yyyyh...........',
+  '.............Yyyyyyh..........',
+  '............Yyyyyyyyh.........',
+  '...........Yyyyyyyyyyh........',
+  '......Y...jjjjjjjjjjjjj...Y...',
 ];
 /**
- * Lowered (head-mask rows 16–30): a pivot seam and a lit lip with temple rivets, two slits angled down toward the
- * snout (rows 3–4), the ridge from row 6 to the tip, breaths on the shaded right plane, the cone tapering to a point.
+ * Lowered (head-mask rows 16–30): a pivot seam and a lit lip, two slits in a shallow V (rows 3–4, inner ends 1 px lower,
+ * a 6-px gap at the centre), the ridge as a value split from row 7 to the tip, breaths on the shaded right plane.
  */
 const DOWN: Mask = [
   '..jyHjjjjjjjjjjjjjjjjjjjhhhJ..',
   '..jyYyyyyyyyHHHHhhhhhhhhhHhJ..',
   '..jyHHHHHHHHHHHhhhhhhhhhhhhJ..',
-  '..jyHHJJJJHHHHHhhhhhJJJJhhhJ..',
-  '..jyHHHHHHJJJJHhJJJJhhhhhhhJ..',
+  '..jyHHJJJHHHHHHhhhhhhJJJhhhJ..',
+  '..jyHHHHHJJJHHHhhhJJJhhhhhhJ..',
   '..jyHHHHHHHHHHHhhhhhhhhhhhhJ..',
-  '..jyHHHHHHHHHHYhhhhhhhhhhhhJ..',
-  '..jyHHHHHHHHHHYhhhJhJhhhhhhJ..',
-  '...jyHHHHHHHHHYhhhhhhhhhhhJ...',
-  '....jyHHHHHHHHYhhhhJhJhhhJ....',
-  '.....jyHHHHHHHYhhhhhhhhhJ.....',
-  '......jyHHHHHHYhhhJhJhhJ......',
-  '.......jyHHHHHYhhhhhhhJ.......',
-  '.........jyHHHYhhhhhJ.........',
-  '............jyYhhJ............',
+  '..jyHHHHHHHHHHHhhhhhhhhhhhhJ..',
+  '..jyHHHHHHHHHHyhhhJhJhhhhhhJ..',
+  '...jyHHHHHHHHHyhhhhhhhhhhhJ...',
+  '....jyHHHHHHHHyhhhhJhJhhhJ....',
+  '.....jyHHHHHHHyhhhhhhhhhJ.....',
+  '......jyHHHHHHyhhhJhJhhJ......',
+  '.......jyHHHHHyhhhhhhhJ.......',
+  '.........jyHHHyhhhhhJ.........',
+  '............jyyhhJ............',
 ];
-/** q34: the ridge off-centre toward the facing (col 20), a long near slit and a short far one, the lower edge rising. */
+/** q34: the ridge off-centre (col 20) from row 7, a long near slit and a short far one, a spec at the snout tip with a tone-2 underplane below. */
 const DOWN_Q34: Mask = [
   '........jjjjjjjjjjjjjjjjjhhJ..',
   '.......jYyyyyHHHHHHHhhhhhhhJ..',
   '......hyHHHHHHHHHHHHhhhhhhhJ..',
-  '......hyHJJJJHHHHHHHhhhJJJhJ..',
-  '......hyHHHHHJJJJHHHhJJhhhhJ..',
+  '......hyHJJJJHHHHHHHhhhhJJhJ..',
+  '......hyHHHHHJJJHHHHhhJJhhhJ..',
   '......hyHHHHHHHHHHHHhhhhhhhJ..',
-  '......hyHHHHHHHHHHHHYhhhhhhJ..',
-  '......hyHHHHHHHHHHHHYhhJhJhJ..',
-  '......hyHHHHHHHHHHHHYhhhhhhJ..',
-  '........jyHHHHHHHHHHYhJhJhJ...',
-  '..........jyHHHHHHHHYhhhhJ....',
-  '............jyHHHHHHYhhJhJ....',
+  '......hyHHHHHHHHHHHHhhhhhhhJ..',
+  '......hyHHHHHHHHHHHHyhhJhJhJ..',
+  '......hyHHHHHHHHHHHHyhhhhhhJ..',
+  '........jyHHHHHHHHHHyhJhJhJ...',
+  '..........jyHHHHHHHHyhhhhJ....',
+  '............jyHHHHHHyhhJhJ....',
   '..............jyHHHHYhhhJ.....',
-  '................jyHHYhhJ......',
-  '..................jyYhJ.......',
+  '................jyHHjjjhJ.....',
+  '..................jyjjJ.......',
 ];
 
 /** Slit glints (front from head-mask col 6, rows 19–20; q34 row 20): the eyes behind the slits carry the emotion. */
 const SLIT = {
-  neutral: ['..................', '.....Pp....pP.....'],
-  startle: ['...P..........P...', '....P........P....'],
-  worried: ['..Pp..........pP..', '..................'],
-  wince: ['..................', '....PPp...........'],
+  neutral: ['..................', '....Pp......pP....'],
+  startle: ['..P............P..', '...P..........P...'],
+  worried: ['.Pp............pP.', '..................'],
+  wince: ['..................', '...PPp............'],
 } as const;
 
 /** The visor without its per-animation rule (`VISOR_DOWN_IN`, body.ts). */
@@ -163,7 +164,7 @@ export const VISOR: Omit<Visor, 'downIn'> = {
     worried: placed(SLIT.worried, 6, 19),
     wince: placed(SLIT.wince, 6, 19),
   },
-  slitQ34: { neutral: placed(['.......Pp......pP.'], 6, 20) },
+  slitQ34: { neutral: placed(['.......Pp.......pP'], 6, 20) },
 };
 
 /**
@@ -198,26 +199,26 @@ export const CHEST_Q34: Mask = [
   '.bBBBlLBBbbm',
   '.mmmmmmmmmmM',
 ];
-/** Faulds (from hip − (6, 2)): two plate lames (lit top row, body row) over a 2-row mail hem; the emerald panel. */
-export const FAULDS: Mask = ['mLLlvddvlBBm', 'MBBbvdDvbbbM', 'mLLlvdDvlBBm', 'mbmbvddvmbmb', '.mbmvdwvbmb.'];
-export const FAULDS_SEATED: Mask = ['mLLlvddvlBBm', 'MBBbvdDvbbbM', '.mbmvdwvbmb.'];
-export const FAULDS_Q34: Mask = ['mLlvddvlBBm', 'MBbvdDvbbbM', 'mLlvdDvlBBm', 'mbmvddvbmbm', '.mbvdwvmbm.'];
+/** Faulds (from hip − (6, 2)): two plate lames one tone apart (tones 2–5, tone 6 only at each lit-left corner) over a 2-row mail hem; the emerald panel. */
+export const FAULDS: Mask = ['Lllbvddvlbbm', 'bBBbvdDvBbbm', 'LBbbvdDvbbbm', 'mbmbvddvmbmb', '.mbmvdwvbmb.'];
+export const FAULDS_SEATED: Mask = ['Lllbvddvlbbm', 'bBBbvdDvBbbm', '.mbmvdwvbmb.'];
+export const FAULDS_Q34: Mask = ['Llbvddvlbbm', 'bBbvdDvBbbm', 'LBbvdDvbbbm', 'mbmvddvbmbm', '.mbvdwvmbm.'];
 /** Small rounded spaulder (the camail covers the shoulder top). */
 export const PAULDRON: Mask = ['.......', '.bLlBb.', 'bLlBBbm', 'MmmmmmM', 'bBlBBbm', '.MmmmM.'];
 
 /** Sabatons (front, 5 × 3): a lit toe cap, one lame line, a dark sole. */
-export const SHOE: Mask = ['.bBb.', 'bLlBm', 'MmmmM'];
+export const SHOE: Mask = ['.bBb.', 'LlBbm', 'MmmmM'];
 /** Side sabaton (q34, toe forward = screen-right): lame steps down to a pointed lit toe. */
-export const SHOE_Q34: Mask = ['bBb..', 'mbBlL', 'MmmmM'];
+export const SHOE_Q34: Mask = ['bBb..', 'LbBll', 'MmmmM'];
 
 /** Gorget (choker slot, from the neck joint): two plate lames over the neck, lit left. */
 export const GORGET: PlacedMask = { mask: ['mlLBBBbm', '.MbBBbM.'], at: [-4, 0] };
 export const GORGET_Q34: PlacedMask = { mask: ['mlLBBbm', '.MbBbM.'], at: [-3, 0] };
 
 /**
- * Sword in its scabbard (sash knot on the screen-right hip, 4 × 11 from the hip joint): a silver pommel, a leather
- * grip with a lit wrap, a silver cross-guard, a silver locket over the dark leather scabbard (lit edge), a silver chape.
+ * Sword in its scabbard (sash knot on the screen-right hip, 4 × 11 from the hip joint): a 1-px silver pommel, a leather
+ * grip with a lit wrap, a 3-px silver crossguard (spec on its left px), the dark leather scabbard, a silver chape.
  */
-export const SWORD: Mask = ['.L..', '.u..', '.n..', 'lLBm', '.Ln.', '.On.', '.On.', '.On.', '.On.', '.bm.', '..m.'];
+export const SWORD: Mask = ['.l..', '.u..', 'LBb.', '.nN.', '.oN.', '.oN.', '.oN.', '.oN.', '.oN.', '.lB.', '..b.'];
 /** q34: pommel, grip and guard (3 × 3) just ahead of the far hip; the scabbard hides behind the near leg. */
 export const SWORD_Q34: Mask = ['.L.', '.u.', 'lBm'];

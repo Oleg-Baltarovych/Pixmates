@@ -196,25 +196,34 @@ describe('visor shape (knight.md §5: no cross, no T-slit, not an onion)', () =>
       const dark = new Set(interiorDark([row]).map(([x]) => x));
       return [...dark].some((x) => dark.has(x + 1) && dark.has(x + 2)) ? [y] : [];
     });
-  /** The ridge: spec (`Y`) px stacked vertically (a lone `Y` is a rivet). */
+  /** A ridge px: tone 5 (`y`) lit-left against tone 3 (`h`) on its right — a value split, not a line. */
+  const isRidge = (m: Mask, x: number, y: number): boolean => {
+    const row = m[y] ?? '';
+    return row.charAt(x) === 'y' && row.charAt(x + 1) === 'h';
+  };
+  /** The ridge: value-split px stacked vertically (a lone one is an edge highlight). */
   const ridge = (m: Mask): [number, number][] =>
     m.flatMap((row, y) =>
       row
         .split('')
-        .flatMap((c, x): [number, number][] =>
-          c === 'Y' && (m[y - 1]?.charAt(x) === 'Y' || m[y + 1]?.charAt(x) === 'Y') ? [[x, y]] : [],
+        .flatMap((_, x): [number, number][] =>
+          isRidge(m, x, y) && (isRidge(m, x, y - 1) || isRidge(m, x, y + 1)) ? [[x, y]] : [],
         ),
     );
 
   it.each([
     ['front', VISOR.down.mask],
     ['q34', VISOR.downQ34?.mask ?? []],
-  ])('%s: two slits, the lit ridge only below them (never through a slit row: no cross)', (_, m) => {
+  ])('%s: two slits, the lit ridge ≥ 2 rows below them (never near a slit row: no T, no cross)', (_, m) => {
     const rows = slitRows(m);
     expect(rows.length).toBeGreaterThanOrEqual(1);
     const r = ridge(m);
     expect(r.length).toBeGreaterThanOrEqual(4);
-    expect(Math.min(...r.map(([, y]) => y)), 'ridge starts below the slits').toBeGreaterThan(Math.max(...rows) + 1);
+    for (const [x, y] of r) {
+      for (const sy of rows)
+        expect(Math.abs(y - sy), `ridge ${String(x)},${String(y)} near slit row ${String(sy)}`).toBeGreaterThan(2);
+    }
+    expect(Math.min(...r.map(([, y]) => y)), 'ridge starts below the slits').toBeGreaterThan(Math.max(...rows));
     // Two slits: the dark slit px of the slit rows fall in two clusters split by the ridge column.
     const ridgeX = r[0]?.[0] ?? -1;
     const dark = interiorDark(m).filter(([, y]) => rows.includes(y));

@@ -2,8 +2,8 @@
 // option). Parts sit on the face anchor (head mask col 5, row 12); masks are 20 px wide, eyes mirrored about the face
 // centre (cols 9|10) except the highlights (top-left in both eyes).
 // Eyes (cloth_emerald, dark top row): a 4 × 5 iris under a lash that droops at the outer corner (brave but
-// scared), a 2 × 3 pupil, a cream highlight top-left + a 1-px lower highlight. Neutral: flat determined brows with the
-// inner px 1 row lower over the wide eyes, a small pressed mouth, a 1-px nose shadow. Signatures: happy ^^ + open
+// scared), a 2 × 3 pupil, a near-white cream highlight top-left (no emerald px beside it) + a 1-px lower highlight.
+// Neutral: flat, level brows over the wide eyes (worried and startle keep their angle), a small pressed mouth, a 1-px nose shadow. Signatures: happy ^^ + open
 // grin + light blush; petted ^^ + soft smile + strong blush (blush on these two only); worried inner-up brows + a teary highlight + a wavy mouth; startle
 // pinpoint pupils + small o. Visor down (walk, startle, …) hides all of it: the slit glints carry the emotion.
 import type { FaceLibrary, FacePart, ViewFaceLibrary } from '../../rig/face.ts';
@@ -16,23 +16,23 @@ const part = (mask: Mask, x: number, y: number, irisRows?: readonly number[]): F
 const OPEN: Mask = [
   '....XXXX....XXXX....',
   '..XXCCCC....CCCCXX..',
-  '.X.PkXXc....PkXXc.X.',
-  '...PkXXi....PkXXi...',
+  '.X.PpXXc....PpXXc.X.',
+  '...PiXXi....PiXXi...',
   '...iiXXi....iiXXi...',
   '...ikiii....ikiii...',
 ];
 const WORRIED: Mask = [
   '....XXXX....XXXX....',
   '..XXCCCC....CCCCXX..',
-  '.X.PkXXc....PkXXc.X.',
-  '...PkXXi....PkXXi...',
+  '.X.PpXXc....PpXXc.X.',
+  '...PiXXi....PiXXi...',
   '...iiXXk....iiXXk...',
   '...ikiip....ikiip...',
 ];
 const STARTLE: Mask = [
   '...XXXXX....XXXXX...',
   '..XPCCCC....CCCCPX..',
-  '...PkiCc....PkiCc...',
+  '...PpiCc....PpiCc...',
   '...PiXii....PiXii...',
   '...iiiii....iiiii...',
   '....kii......kii....',
@@ -48,8 +48,8 @@ const THINK: Mask = [
 const WINCE: Mask = [
   '....XXXX............',
   '..XXCCCC....Xx......',
-  '.X.PkXXc......XX....',
-  '...PkXXi....Xx......',
+  '.X.PpXXc......XX....',
+  '...PiXXi....Xx......',
   '...iiXXi............',
   '...ikiii............',
 ];
@@ -62,14 +62,14 @@ export const knightFace: FaceLibrary = {
     low: part(WORRIED, 0, 3),
     think: part(THINK, 0, 3),
     closed: part(['...x........x.......', '....XXXX....XXXX....', '........x......x....'], 0, 6),
-    half: part(['..XXXXXX....XXXXXX..', '...PkXXi....PkXXi...', '...ikiii....ikiii...'], 0, 6),
+    half: part(['..XXXXXX....XXXXXX..', '...PpXXi....PpXXi...', '...ikiii....ikiii...'], 0, 6),
     happy: part(['....XXX......XXX....', '...X...X....X...X...', '..X.....X..X.....X..'], 0, 5),
     startle: part(STARTLE, 0, 2),
     wince: part(WINCE, 0, 3),
     side: part(irisShift(OPEN, 10), 0, 3),
   },
   brows: {
-    brave: part(['..ZZ............ZZ..', '....Z..........Z....'], 0, 1),
+    brave: part(['..ZZZ..........ZZZ..'], 0, 1),
     worried: part(['....Z..........Z....', '..ZZ............ZZ..'], 0, 1),
     up: part(['..ZZZ..........ZZZ..'], 0, 1),
   },
@@ -88,7 +88,7 @@ export const knightFace: FaceLibrary = {
   cheeks: {
     none: part([], 0, 10),
     light: part(['.fFf............fFf.'], 0, 10),
-    strong: part(['.FFF............FFF.', '.fFf............fFf.'], 0, 10),
+    strong: part(['.FFF............FFF.', '..fF............Ff..'], 0, 10),
   },
   expressions: {
     neutral: { eyes: 'open', brows: 'brave', mouth: 'pressed', cheeks: 'none' },
@@ -112,8 +112,8 @@ export const knightFace: FaceLibrary = {
 const OPEN_Q34: Mask = [
   '....XXXX.....XXX....',
   '..XXCCCC.....CCCX...',
-  '.X.PkXXc.....kXXc...',
-  '...PkXXi.....kXXi...',
+  '.X.PpXXc.....pXXc...',
+  '...PiXXi.....iXXi...',
   '...iiXXi.....iXXi...',
   '...ikiii.....kiii...',
 ];
@@ -124,7 +124,7 @@ export const knightFaceQ34: ViewFaceLibrary = {
     closed: part(['...x.........x......', '....XXXX.....XXX....', '........x......x....'], 0, 6),
   },
   brows: {
-    brave: part(['..ZZ.............Z..', '....Z.........Z.....'], 0, 1),
+    brave: part(['..ZZZ.........ZZZ...'], 0, 1),
   },
   mouths: {
     pressed: part(['...........z........', '....................', '..........xXx.......'], 0, 9),
