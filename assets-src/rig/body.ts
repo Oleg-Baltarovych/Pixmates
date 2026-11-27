@@ -1,5 +1,5 @@
 // Rest skeleton + joint resolution (plan M-ART MA-23, docs/art/RIG.md). REST is the spike `maid` 48 geometry
-// (assets-src/spike/maid.ts) as joints in figure units; `resolveJoints` turns a pose frame into absolute frame px:
+// (MA-07, deleted in MA-31) as joints in figure units; `resolveJoints` turns a pose frame into absolute frame px:
 // every joint moves with its parent chain (root → hip → chest → neck → head → face …) plus its own offset, arm
 // variants place the hands, and the legs variant decides whether the feet stay planted or hang from the hip.
 import type { Point } from '../lib/chain.ts';

@@ -15,7 +15,7 @@ import { encodePng, type RgbaImage } from './png.ts';
 
 export const ATLAS_FILE = 'sprites/atlas.png';
 export const FX_FILE = 'sprites/fx.png';
-/** rules/render.md: one atlas per character ≤ 2048² (row layout, spike packs). */
+/** rules/render.md: one atlas per character ≤ 2048² (row layout). */
 export const MAX_ATLAS_SIDE = 2048;
 /** Plan M-ART phase 2: built-in (shelf) atlases ≤ 1024², FX ≤ 512². */
 export const MAX_SHELF_SIDE = 1024;

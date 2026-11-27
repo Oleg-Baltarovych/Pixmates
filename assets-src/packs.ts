@@ -1,5 +1,4 @@
-// Every pack `pnpm sprites` builds, in build order. M-ART phase 2: the two anime-soft `maid` spike packs (ADR 009
-// picked 48 soft; the cel packs were deleted in MA-22) stay dev-only until MA-31; the rigged built-ins join from MA-27
+// Every pack `pnpm sprites` builds, in build order: the 8 rigged built-ins (art-spike packs deleted in MA-31)
 // (`pixmates.maid` first, `pixmates.kitsune` MA-28, `pixmates.goth` MA-29, `pixmates.witch` MA-29a, `pixmates.ronin` MA-29b, `pixmates.coder` MA-66, `pixmates.knight` MA-67, `pixmates.vampire` MA-68).
 import { createCoderPack } from './characters/coder/body.ts';
 import { createGothPack } from './characters/goth/body.ts';
@@ -9,9 +8,6 @@ import { createMaidPack } from './characters/maid/body.ts';
 import { createRoninPack } from './characters/ronin/body.ts';
 import { createVampirePack } from './characters/vampire/body.ts';
 import { createWitchPack } from './characters/witch/body.ts';
-import { RIG_48 } from './spike/maid-48/rig.ts';
-import { RIG_64 } from './spike/maid-64/rig.ts';
-import { createMaidPack as createSpikePack } from './spike/maid.ts';
 import type { PackDef } from './lib/types.ts';
 
 export const PACKS: readonly PackDef[] = [
@@ -23,6 +19,4 @@ export const PACKS: readonly PackDef[] = [
   createCoderPack(),
   createKnightPack(),
   createVampirePack(),
-  createSpikePack(RIG_48),
-  createSpikePack(RIG_64),
 ];

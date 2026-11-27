@@ -1,21 +1,25 @@
-// maid spike, 48-px rig — pixel-anime remake (D-13; ART-BIBLE §11). The head is authored as layered pixel masks:
-// a chibi head 24 px wide (skull rows 3–25, ≈ 2 heads to the feet), imp hook horns (3-px base → 1-px tip curling
-// inward, light upper-left edge, plum base with a lighter rim px), a crown with a broken «angel ring» shine band (rows 8–9, brighter on the lit left), four pointed fringe
-// clumps with an off-centre parting, and pointed side locks framing a 20-px face (right 2 columns shaded). Face
-// layers: the largest anime eye that reads at 48 — arched lash (4-px top, corner and inner end 1 row lower) with a
-// 1-px flick going up-out, 4×5 iris c → i → I (cel: 2 tones), round 2×2 pupil, big upper highlight (1×2) and a small
-// lower one (both top-left: not mirrored); soft blush (`cheeks`); calm symmetric 4-px smile (round-2 lesson).
-// The forehead band comes from `withBand` (rows ≤ `band`). A face px never covers hair. Body
-// geometry lives in ../maid.ts (48-px units). Legend: assets-src/lib/mask.ts.
-import type { MaidRig } from '../maid.ts';
+// Review masks for the rig test bodies (assets-src/rig/dummies.ts): the 48-px head, face layers, bow, spade and shoe
+// of the M-ART art-spike maid (MA-07, ADR 009 «48 soft»), copied here verbatim when MA-31 deleted the spike so the
+// dummies keep rendering byte-identical frames. Characters never use these: each ships its own authored masks.
+// Legend: assets-src/lib/mask.ts.
+import type { Mask } from '../lib/mask.ts';
+
+export interface PreviewMasks {
+  /** Head (skin, fringe clumps, crown highlight, horns), 30 wide; face anchor at col 5, row 12. */
+  readonly head: { readonly mask: Mask };
+  /** Last head-mask row the forehead hair-shadow band may take (keeps it off the lash line). */
+  readonly band: number;
+  readonly face: { readonly neutral: Mask; readonly blink: Mask; readonly happy: Mask; readonly cheeks: Mask };
+  readonly bow: { readonly mask: Mask };
+  /** Pointed spade (tip down), hung from the tail end by its top-centre px. */
+  readonly spade: Mask;
+  readonly shoe: { readonly mask: Mask };
+}
 
 const FACE_FULL = '...Hj' + 'SSSS' + 'SSSSS' + 'S' + 'SSSSS' + 'SSSss' + 'jh...';
 
-export const RIG_48: MaidRig = {
-  size: 48,
-  k: 1,
+export const PREVIEW_MASKS: PreviewMasks = {
   head: {
-    at: [9, 0],
     mask: [
       '...U......................U...',
       '.UO........................Uo.',
@@ -47,7 +51,6 @@ export const RIG_48: MaidRig = {
   },
   band: 14,
   face: {
-    at: [14, 12],
     neutral: [
       '',
       '',
@@ -95,9 +98,7 @@ export const RIG_48: MaidRig = {
     ],
     cheeks: ['', '', '', '', '', '', '', '', '', '..fFFf........fFFf..', '...f.f........f.f...'],
   },
-  bow: { at: [21, 26], mask: ['Rr..rg', 'tRTTtG', 'r.gg.G'] },
+  bow: { mask: ['Rr..rg', 'tRTTtG', 'r.gg.G'] },
   spade: ['l.b.m', 'lbbbm', '.lbm.', '..m..'],
-  shoe: { mask: ['.LM.', 'mmlm', 'mMMm'], left: [19, 44], right: [25, 44] },
-  ribbon: [0.5, 0.5],
-  eyelets: false,
+  shoe: { mask: ['.LM.', 'mmlm', 'mMMm'] },
 };

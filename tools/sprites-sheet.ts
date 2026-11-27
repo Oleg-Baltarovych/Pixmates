@@ -2,7 +2,7 @@
 //   pnpm sprites:sheet [<id>…]    contact sheet ×4 per pack on light + dark → reports/sprites/<id>-sheet.png
 //   pnpm sprites:preview [<id>…]  APNG per animation at the real M scale over 4 backdrops (light, dark, white
 //                                 "browser", dark "IDE") → reports/sprites/<id>-<anim>.apng.png
-//   pnpm sprites:sheet --lineup   all packs side by side (idle, walk, happy frame strips) → reports/art-spike/
+//   pnpm sprites:sheet --lineup   all packs side by side (idle, walk, happy frame strips) → reports/sprites/lineup-real-size.png
 //   pnpm sprites:sheet --swatch   master palette swatch → docs/art/palette.png
 //   pnpm sprites:sheet --review   the rig review bodies (dummies + maid preview, never built into resources/)
 //   pnpm sprites:sheet --fx       FX marks sheet on light + dark, and marks composited at the rig fx anchor
@@ -196,8 +196,8 @@ if (args.includes('--fx')) {
         );
     });
   });
-  mkdirSync(join(reports, 'art-spike'), { recursive: true });
-  const file = join(reports, 'art-spike', 'lineup-real-size.png');
+  mkdirSync(join(reports, 'sprites'), { recursive: true });
+  const file = join(reports, 'sprites', 'lineup-real-size.png');
   writeFileSync(file, encodePng(c.image()));
   console.log(`${file}  (columns in build order: ${packs.map((p) => p.def.id).join(', ')})`);
 } else {

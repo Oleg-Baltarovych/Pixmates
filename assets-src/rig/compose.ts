@@ -1,4 +1,4 @@
-// Rig composer (plan M-ART MA-23, docs/art/RIG.md), generalized from the 48-soft spike (assets-src/spike/maid.ts).
+// Rig composer (plan M-ART MA-23, docs/art/RIG.md), generalized from the 48-soft spike (MA-07, deleted in MA-31).
 // One renderer per body, per shared pose frame (passes in passes.ts, builders in chains.ts / cloak.ts, body checks in
 // validate.ts), in this order:
 //  1. joints (body.ts) → procedural parts far → back → behind → front: the cloak (`back: 'cloak'`, behind

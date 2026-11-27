@@ -1,4 +1,4 @@
-// M-ART MA-02/03/05/06/07/08: palette, masks, passes, chain, spike packs and build determinism.
+// M-ART MA-02/03/05/06/31: palette, masks, passes, chain and the built pack list.
 import { describe, expect, it } from 'vitest';
 import { PACKS } from '../../../assets-src/packs.ts';
 import { createIndexBuffer } from '../../../assets-src/lib/buffer.ts';
@@ -9,7 +9,7 @@ import { dither, outline } from '../../../assets-src/lib/passes.ts';
 import { antiAlias, rimLight } from '../../../assets-src/lib/polish.ts';
 import { stroke } from '../../../assets-src/lib/shapes.ts';
 import { withBand } from '../../../assets-src/rig/body.ts';
-import { buildPack, loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
+import { loadMasterPalette, renderContext } from '../../../tools/lib/sprites.ts';
 
 const palette = loadMasterPalette();
 const ctx = renderContext(palette);
@@ -120,9 +120,8 @@ describe('verlet chain (MA-06)', () => {
   });
 });
 
-describe('spike packs (MA-07/08)', () => {
-  const SPIKES = PACKS.filter((p) => p.id.startsWith('spike-'));
-  it('builds the two anime-soft maid variants with the planned animations, sizes and frame counts', () => {
+describe('pack list (MA-31)', () => {
+  it('builds exactly the 8 built-ins, in roster order, and no dev-only packs', () => {
     expect(PACKS.map((p) => p.id)).toEqual([
       'pixmates.maid',
       'pixmates.kitsune',
@@ -132,26 +131,7 @@ describe('spike packs (MA-07/08)', () => {
       'pixmates.coder',
       'pixmates.knight',
       'pixmates.vampire',
-      'spike-maid-48soft',
-      'spike-maid-64soft',
     ]);
-    for (const def of SPIKES) {
-      const built = buildPack(def, ctx); // throws on off-palette colours, soft alpha, wrong size or empty frames
-      expect(built.frames.get('idle_a')).toHaveLength(8);
-      expect(built.frames.get('walk')).toHaveLength(8);
-      expect(built.frames.get('happy')).toHaveLength(6);
-      expect(def.frameSize.w).toBe(def.id.includes('48') ? 48 : 64);
-      const anims = built.manifest['animations'] as Record<string, { origin: { y: number } }>;
-      expect(anims['walk']?.origin.y).toBe(def.frameSize.h);
-    }
-  });
-  it('is deterministic: two builds give identical atlas hashes', () => {
-    for (const def of SPIKES) expect(buildPack(def, ctx).sha256).toBe(buildPack(def, ctx).sha256);
-  });
-  it('idle breathes and blinks: frames differ within the loop', () => {
-    const idle = buildPack(SPIKES[0] as (typeof PACKS)[number], ctx).frames.get('idle_a') ?? [];
-    const keys = new Set(idle.map((f) => Buffer.from(f.data).toString('base64')));
-    expect(keys.size).toBeGreaterThanOrEqual(4);
   });
 });
 

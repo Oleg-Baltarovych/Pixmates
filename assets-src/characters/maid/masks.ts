@@ -1,4 +1,4 @@
-// maid (pixmates.maid) authored masks, MA-27 final from the 48-soft spike (assets-src/spike/maid-48/rig.ts) with the
+// maid (pixmates.maid) authored masks, MA-27 final from the 48-soft spike (MA-07, deleted in MA-31) with the
 // art-director LATER items: rounder skull (crown widths 8 → 12 → 16 → 18 → 20 → 22, 2-px steps at the top corners),
 // side locks tapering 1 px inward over their bottom third with a 2-px outward kick at the tips, imp hook horns (ivory,
 // plum base; never dragon horns or blue/swept-back) tapering to a 1-px point that curls outward, mid-tone AA px on the

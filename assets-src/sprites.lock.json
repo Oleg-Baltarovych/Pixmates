@@ -31,14 +31,6 @@
     "sprites/atlas.png": "e0e61d924dc13dbdfd0901dcc01083cb5a86f20b1277888241c65b7e747984c6",
     "manifest.json": "3983efcecca64c769a8e6c2a0f67b69c0d2ad7ef9d61c02db2b008c7f5ff3322"
   },
-  "spike-maid-48soft": {
-    "sprites/atlas.png": "12b531036607c8afea82a0bb4967f3eefc8239be87a2cb766cc425d5ca2dc410",
-    "manifest.json": "ab390ff8a0f97d955d2e334a23b57bda8dd0811a0f2fce6e7d6cbc6d24bd4f28"
-  },
-  "spike-maid-64soft": {
-    "sprites/atlas.png": "ad50c7f4714a4b955282dddb8c5157ce11ad2130f04b79a586981800fb8b1e4f",
-    "manifest.json": "c761bd160b417f4399dfbeb39938fb7454db72883cca6a0be48f0e1dadf2ec3f"
-  },
   "fx": {
     "sprites/fx.png": "08a6f189a75dd7b9236ef967526398a8259ba319b28229c553075636c9bd0ea5",
     "manifest.json": "5110ee9cd82630958d4220e3e015f126f6afe8e552bcb7ff084a091d15c209ae"
