@@ -217,3 +217,4 @@ Files: `assets-src/characters/vampire/{body,face,masks}.ts`; tests `tests/unit/a
   — collar px touching head skin are cleared before the outline, so the jaw always carries its own outline and the
   collar shows only below it. Walk cheeks now differ only by the head's whole-px offset, except 1 chin-bottom AA px
   on the 2 head-dip pairs (1 skin step; tested in `vampire.test.ts`).
+- **Walk cheek rim (owner MA-33, 2026-11-27):** rim light (+2) turned the q34 facing cheek edge into a skin-6 column from the temple to the eye bottom (a white stripe on walk / turn). `HEAD_Q34` col 25 is authored `s` there, so the rim lands on skin 5; skin 6 stays only on the 2 cheekbone rows (the bottom 2 iris rows). Front view has no skin-6 cheek edge. Tested in `vampire.test.ts`.

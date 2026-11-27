@@ -53,19 +53,21 @@ export const HEAD: Mask = [
  * q34: the crown 1 px toward the back; the back contour tapers in 1 px per row from the ear row (2 j strands sweep
  * back and down through it) to a 1-px nape flick at jaw − 1; the V sits on the q34 face
  * axis (cols 16–17); the facing contour holds col 25 from the temple to the mouth, then steps in 1 px per row to a
- * 1-px chin ahead of the face centre (owner q34 rules: monotonic, no cheek bump).
+ * 1-px chin ahead of the face centre (owner q34 rules: monotonic, no cheek bump). Facing cheek edge (col 25): `s` from
+ * the temple to the iris middle, so the rig's +2 rim light lands on skin 5; `S` (rim skin 6) only on the 2 cheekbone
+ * rows at the eye bottom (owner MA-33: the full skin-6 column read as a white stripe on walk).
  */
 export const HEAD_Q34: Mask = [
   ...CROWN.map((r) => r.slice(1) + '.'),
   '..jHjHh' + 'sSSSS' + 'jHHjHhjhHj' + 'SSs' + 'hj' + '...',
   '..HjHj' + 'SSSSSSSS' + 'jHjhhj' + 'SSSSS' + 'hj' + '...',
   '..jHHj' + 'SSSSSSSSSS' + 'jj' + 'SSSSSSSS' + '....',
-  '..HHjj' + 'SSSSSSSSSSSSSSSSSSSS' + '....',
-  '..HjH' + 'SSSSSSSSSSSSSSSSSSSSS' + '....',
-  '..jHh' + 'SSSSSSSSSSSSSSSSSSSSS' + '....',
-  '...Hh' + 'SSSSSSSSSSSSSSSSSSSSS' + '....',
-  '....h' + 'SSSSSSSSSSSSSSSSSSSSS' + '....',
-  '....h' + 'SSSSSSSSSSSSSSSSSSSSS' + '....',
+  '..HHjj' + 'SSSSSSSSSSSSSSSSSSSs' + '....',
+  '..HjH' + 'SSSSSSSSSSSSSSSSSSSSs' + '....',
+  '..jHh' + 'SSSSSSSSSSSSSSSSSSSSs' + '....',
+  '...Hh' + 'SSSSSSSSSSSSSSSSSSSSs' + '....',
+  '....h' + 'SSSSSSSSSSSSSSSSSSSSs' + '....',
+  '....h' + 'SSSSSSSSSSSSSSSSSSSSs' + '....',
   '....h' + 'SSSSSSSSSSSSSSSSSSSSS' + '....',
   '...jh' + 'SSSSSSSSSSSSSSSSSSSSS' + '....',
   '.....' + 'sSSSSSSSSSSSSSSSSSSs' + '.....',

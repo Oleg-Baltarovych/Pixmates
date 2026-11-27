@@ -473,4 +473,53 @@ describe('q34 owner rules (RIG.md: monotonic contour, no cheek bump, head never 
       expect(cheekDiffs(createRigRenderer(off)).collar).toBeGreaterThan(0);
     });
   });
+
+  // Owner MA-33 (2026-11-27): «a white stripe on the edge of his face when he walks». Rim light lifts the facing-side
+  // cheek edge (the px inside the jaw outline) by 2 steps, so skin 4 became a skin-6 column from the temple to the eye
+  // bottom. Art-director fallback (owner approved): the column takes skin 5, skin 6 stays only on the 2 cheekbone px
+  // (the bottom 2 iris rows).
+  it('keeps skin 6 on the facing cheek edge to ≤ 2 px at cheekbone height (the bottom 2 eye rows), on every frame', () => {
+    const skin = ramp('skin');
+    const s6 = skin[6];
+    const red = ramp('fx_red');
+    const bad: string[] = [];
+    for (const [name, f] of allFrames()) {
+      const { image, labels } = renderer.renderLabeled(anim(name), f, ctx);
+      const j = renderer.joints(anim(name), f);
+      const w = image.width;
+      const hx = Math.round(j.head[0]);
+      const neck = Math.round(j.neck[1]);
+      const head = (x: number, y: number): number | undefined => {
+        const i = y * w + x;
+        return image.data[i * 4 + 3] && !labels.data[i * 4 + 3] ? rgbAt(image.data, i) : undefined;
+      };
+      const eyeRows: number[] = [];
+      for (let y = 0; y < neck; y++)
+        for (let x = 0; x < w; x++) {
+          const c = head(x, y);
+          if (c !== undefined && red.includes(c)) {
+            eyeRows.push(y);
+            break;
+          }
+        }
+      const cheekbone = eyeRows.slice(-2);
+      let count = 0;
+      for (let y = 0; y < neck; y++) {
+        let edge = -1;
+        for (let x = w - 1; x > hx; x--) {
+          const c = head(x, y);
+          if (c !== undefined && skin.includes(c)) {
+            edge = x;
+            break;
+          }
+        }
+        // The rightmost head skin px is the jaw / cheek outline; the cheek edge is the px inside it.
+        if (edge < 0 || head(edge - 1, y) !== s6) continue;
+        count++;
+        if (!cheekbone.includes(y)) bad.push(`${name}/${String(f)} row ${String(y)}`);
+      }
+      if (count > 2) bad.push(`${name}/${String(f)}: ${String(count)} skin-6 cheek-edge px`);
+    }
+    expect(bad).toEqual([]);
+  });
 });
