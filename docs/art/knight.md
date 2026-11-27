@@ -1,5 +1,7 @@
 # knight — design brief (MA-67, D-22)
 
+Status: **owner signed off 2026-11-27** after art-director round 1 (variant B).
+
 > History: MA-29c / early MA-67 specified a cat knight (cream fur, ears, tail, paw tabard, wooden sword). The owner
 > rejected it on 2026-11-27 (D-22); every cat-knight rule is superseded by this brief.
 
