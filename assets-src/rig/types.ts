@@ -260,8 +260,17 @@ export interface Cloak {
   readonly bands: readonly { readonly row: number; readonly shade: number }[];
   /** Ordered 2-tone dither on these rows above the hem, only on interior px (all 8 neighbours cloak). */
   readonly dither?: { readonly rows: readonly number[]; readonly shades: readonly [number, number] };
-  /** Turned-back corner lining: a stepped triangle `corner` [w, h] px at each outer hem corner. */
-  readonly lining?: { readonly ramp: RampName; readonly shade: number; readonly corner: readonly [number, number] };
+  /**
+   * Turned-back corner lining: a stepped triangle `corner` [w, h] px at each outer hem corner; `inset` (0..2, default
+   * 0) moves it that many px inside the outer edge and above the hem row, so the cloak tone, not the lining, is the
+   * silhouette edge.
+   */
+  readonly lining?: {
+    readonly ramp: RampName;
+    readonly shade: number;
+    readonly corner: readonly [number, number];
+    readonly inset?: number;
+  };
   /** Extra lining rows shown on flare frames (hairLift, squash > 0); default 0. */
   readonly flareRows?: number;
   /** Max px the hem trails sideways (front: hip lag + hairDx; q34: behind the hip). Default `CLOAK_MAX_TRAIL` 2. */

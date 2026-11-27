@@ -188,11 +188,13 @@ export function cloakGeometry(
     const [cw, ch] = cloak.lining.corner;
     const lh = ch + (flareFrame ? (cloak.flareRows ?? 0) : 0);
     const tone: CloakTone = { lining: true, shade: cloak.lining.shade };
+    const inset = cloak.lining.inset ?? 0;
     for (let r = 0; r < lh; r++) {
       const n = cw - Math.floor((r * cw) / lh);
-      for (let c = 0; c < n; c++) {
-        if (!q && inside(h1 - c, hemY - r)) put(h1 - c, hemY - r, tone);
-        if (inside(h0 + c, hemY - r)) put(h0 + c, hemY - r, tone);
+      const y = hemY - inset - r;
+      for (let c = inset; c < n + inset; c++) {
+        if (!q && inside(h1 - c, y)) put(h1 - c, y, tone);
+        if (inside(h0 + c, y)) put(h0 + c, y, tone);
       }
     }
   }

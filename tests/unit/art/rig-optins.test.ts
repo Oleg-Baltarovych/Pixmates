@@ -10,7 +10,7 @@ import { buildLegs, buildShorts, buildTorso, HEM_LIFT_MAX, leanLock } from '../.
 import { createRigPack, createRigRenderer } from '../../../assets-src/rig/compose.ts';
 import { DUMMY_A, DUMMY_B, DUMMY_FACE, MAID_PREVIEW } from '../../../assets-src/rig/dummies.ts';
 import { validateFace } from '../../../assets-src/rig/face.ts';
-import { HAT_MAX } from '../../../assets-src/rig/validate.ts';
+import { COLLAR_MAX, HAT_MAX } from '../../../assets-src/rig/validate.ts';
 import { ARM_LABEL, PART_ID } from '../../../assets-src/rig/part-ids.ts';
 import {
   farLegGap,
@@ -714,6 +714,39 @@ describe("rig slot: back 'cloak' (R1)", () => {
     expect([...lined.px.values()].filter((t) => t.lining).length).toBeGreaterThan(0);
     expect([...geomOf(CLOAK_A, idle, 0).px.values()].some((t) => t.lining)).toBe(false);
   });
+  it('lining inset: the whole corner triangle (2 + 2 + 1 px per side) sits `inset` px inside the side and hem edges', () => {
+    const base = { ...CLOAK_A, hem: { lobes: 0 } };
+    const liningXs = (inset: number | undefined): number[] => {
+      const g = geomOf(
+        { ...base, lining: { ramp: 'cloth_ochre', shade: 3, corner: [2, 3], ...(inset ? { inset } : {}) } },
+        idle,
+        0,
+      );
+      return [...g.px.entries()].filter(([, t]) => t.lining).map(([i]) => i % 48);
+    };
+    const liningRows = (inset: number): number[] => {
+      const g = geomOf({ ...base, lining: { ramp: 'cloth_ochre', shade: 3, corner: [2, 3], inset } }, idle, 0);
+      return [...g.px.entries()].filter(([, t]) => t.lining).map(([i]) => Math.floor(i / 48) - g.hemY);
+    };
+    expect(Math.max(...liningRows(0))).toBe(0);
+    expect(Math.max(...liningRows(1))).toBe(-1);
+    const edge = rowXs(geomOf(base, idle, 0), geomOf(base, idle, 0).hemY);
+    const [lo, hi] = [Math.min(...edge), Math.max(...edge)];
+    expect(liningXs(undefined)).toContain(lo);
+    const inset = liningXs(1);
+    expect(inset).toHaveLength(10);
+    expect(inset).not.toContain(lo);
+    expect(inset).not.toContain(hi);
+    expect(Math.min(...inset)).toBe(lo + 1);
+    expect(Math.max(...inset)).toBe(hi - 1);
+  });
+  it('lining inset must be a whole 0..2', () => {
+    const bad: Body = {
+      ...CLOAKED,
+      cloak: { ...CLOAK_A, lining: { ramp: 'cloth_ochre', shade: 3, corner: [2, 3], inset: 3 } },
+    };
+    expect(() => createRigPack(bad, [idle])).toThrow(/cloak.lining.inset/);
+  });
   it('q34: trails behind the hip (more px left of the axis than right)', () => {
     const xs = [...geomOf(CLOAK_A, walk, 0, true).px.keys()].map((i) => i % 48);
     expect(xs.filter((x) => x < 24).length).toBeGreaterThan(xs.filter((x) => x >= 24).length);
@@ -785,6 +818,34 @@ describe("rig slot: neckAcc 'collar' (R3)", () => {
     expect(() => createRigPack({ ...COLLARED, masks: { shoe: DUMMY_A.masks.shoe } }, [idle])).toThrow(
       /collar' needs masks.neckAcc/,
     );
+  });
+  describe('R-V2 collar bounds (vampire.md §7: tips clear of raised hands, never at eye level)', () => {
+    const withCollar = (mask: string[], at: readonly [number, number]): Body => ({
+      ...COLLARED,
+      masks: { ...COLLARED.masks, neckAcc: { mask, at } },
+    });
+    it('builds a collar inside x 11–37, ≤ 27 × 9 px, its top under the eyes on every frame', () => {
+      expect(() => createRigPack(COLLARED, [idle, anim('wave'), anim('happy')])).not.toThrow();
+      expect(COLLAR_MAX).toEqual({ w: 27, h: 9, x0: 11, x1: 37, eyeGap: 1 });
+    });
+    it('fails when a tip reaches the raised-hand zone (x ≤ 10 or ≥ 38) on any frame', () => {
+      expect(() => createRigPack(withCollar(['O'.repeat(26)], [-11, 3]), [idle])).toThrow(
+        /collar cols 13\.\.38 leave x 11\.\.37/,
+      );
+      expect(() => createRigPack(withCollar(['O'.repeat(27)], [-14, 3]), [idle])).toThrow(
+        /collar cols 10\.\.36 leave x 11\.\.37/,
+      );
+    });
+    it('fails over 27 × 9 px', () => {
+      expect(() => createRigPack(withCollar(Array<string>(10).fill('O'.repeat(20)), [-10, 0]), [idle])).toThrow(
+        /collar 20 × 10 exceeds 27 × 9/,
+      );
+    });
+    it('fails when the collar top rises to the eye rows', () => {
+      expect(() => createRigPack(withCollar(['O'.repeat(20), 'O'.repeat(20)], [-10, -12]), [idle])).toThrow(
+        /collar top row \d+ is not under the eyes/,
+      );
+    });
   });
 });
 

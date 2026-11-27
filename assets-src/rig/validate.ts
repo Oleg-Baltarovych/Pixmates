@@ -12,7 +12,7 @@ import { BREATH_GLOW, dressShadeOf, HEM_LIFT_MAX, hemLiftOf, skirtRampOf } from 
 import { EXPRESSIONS, Q34_EXPRESSIONS, validateFace, type ExpressionId, type ViewFaceLibrary } from './face.ts';
 import { FISTS, fistKindOf } from './passes.ts';
 import type { Body, BodyView, PlacedMask, RigAnim, View, Visor } from './types.ts';
-import { headViewOf, usesView } from './views.ts';
+import { bodyViewOf, headViewOf, usesView } from './views.ts';
 
 /** Highest index of a six-tone ramp / swatch (shade opt-ins are 0..MAX_SHADE). */
 const MAX_SHADE = 5;
@@ -203,6 +203,7 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
       }
     });
   }
+  problems.push(...collarProblems(body, anims, frameH));
   problems.push(...mouthMaskProblems(body, usesQ34, faceAtOf));
   problems.push(...visorProblems(body, anims, usesQ34, faceAtOf));
   if (problems.length > 0) throw new Error(problems.join('\n'));
@@ -219,6 +220,56 @@ export const SKIRT_RAISE_MAX = 3;
 /** `BodyView.hairBackCuts` bounds: offsets from the head / neck joint and the number of cut rows. */
 export const HAIR_CUT_MAX_ROW = 24;
 export const HAIR_CUT_MAX_COUNT = 4;
+
+/**
+ * `neckAcc: 'collar'` bounds (R-V2, docs/art/vampire.md §7): at most `w` × `h` px; on every frame the placed collar
+ * stays inside cols `x0`..`x1` (raised hands live at x ≤ 10 / ≥ 38, and arms draw over a collar) and its top row
+ * sits ≥ `eyeGap` rows under the bottom row of the open eyes (a collar tip at eye level reads as ear-muffs).
+ */
+export const COLLAR_MAX = { w: 27, h: 9, x0: 11, x1: 37, eyeGap: 1 } as const;
+
+function collarProblems(body: Body, anims: readonly RigAnim[], frameH: number): string[] {
+  if (body.variants.neckAcc !== 'collar') return [];
+  const problems: string[] = [];
+  const maskOf = (view: View): PlacedMask | undefined =>
+    view === 'front' ? body.masks.neckAcc : body.views?.[view]?.masks.neckAcc;
+  for (const view of ['front', 'q34'] as const) {
+    const acc = maskOf(view);
+    if (!acc) continue;
+    const { w, h } = maskSize(acc.mask);
+    if (w > COLLAR_MAX.w || h > COLLAR_MAX.h) {
+      problems.push(
+        `${body.id}/${view}: collar ${String(w)} × ${String(h)} exceeds ${String(COLLAR_MAX.w)} × ${String(COLLAR_MAX.h)}`,
+      );
+    }
+  }
+  const seen = new Set<string>();
+  for (const a of anims) {
+    a.frames.forEach((f, i) => {
+      const view = bodyViewOf(a, i);
+      const acc = maskOf(view);
+      const lib = headViewOf(a, i) === 'q34' ? body.views?.q34?.face : body.face;
+      const eyes = lib?.eyes.open;
+      if (!acc || !eyes) return;
+      const j = resolveJoints(body, f, frameH);
+      const x = Math.round(j.neck[0] + acc.at[0]);
+      const top = Math.round(j.neck[1] + acc.at[1]);
+      const x1 = x + maskSize(acc.mask).w - 1;
+      const eyeBottom = Math.round(j.face[1]) + eyes.at[1] + eyes.mask.length - 1;
+      const name = `${body.id}/${a.name}/${String(i).padStart(2, '0')}`;
+      const out = `cols ${String(x)}..${String(x1)}`;
+      if ((x < COLLAR_MAX.x0 || x1 > COLLAR_MAX.x1) && !seen.has(`x${out}`)) {
+        seen.add(`x${out}`);
+        problems.push(`${name}: collar ${out} leave x ${String(COLLAR_MAX.x0)}..${String(COLLAR_MAX.x1)}`);
+      }
+      if (top < eyeBottom + COLLAR_MAX.eyeGap && !seen.has(`t${String(top)}`)) {
+        seen.add(`t${String(top)}`);
+        problems.push(`${name}: collar top row ${String(top)} is not under the eyes (bottom row ${String(eyeBottom)})`);
+      }
+    });
+  }
+  return problems;
+}
 
 /** Head-accessory checks: a rising alternate matches its mask; a hat stays inside `HAT_MAX` in every view. */
 function headAccProblems(body: Body, frameH: number): string[] {
@@ -324,6 +375,7 @@ function slotProblems(body: Body, usesQ34: boolean): string[] {
       );
     if (!whole(c.hem.curl, 0, 3) || !whole(c.hem.cornerDrop, 0, 3))
       problems.push(`${id}: cloak corner curl / drop must be whole 0..3`);
+    if (c.lining && !whole(c.lining.inset, 0, 2)) problems.push(`${id}: cloak.lining.inset must be a whole 0..2`);
     const maxHalf = layoutOf().w / 2 - 2;
     if (!(c.widths.top > 0 && c.widths.hem >= c.widths.top && c.widths.hem <= maxHalf)) {
       problems.push(`${id}: cloak widths need 0 < top ≤ hem ≤ ${String(maxHalf)}`);
