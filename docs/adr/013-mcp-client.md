@@ -1,6 +1,6 @@
 # 013. MCP client: user-connected tools for the in-character agent
 
-- Status: Proposed
+- Status: Accepted (owner, 2026-11-28)
 - Date: 2026-11-28
 - Owner decision: D-24 (`docs/SPEC-REVIEW.md`)
 - SPEC: §1, §2, §6.4, §6.8 (new), §9, §10, §11, §12 (milestone M-MCP), §13, §14
