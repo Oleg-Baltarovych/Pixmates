@@ -43,6 +43,15 @@
   on every mask-up expression, front and q34. **ronin signed off.**
 - Side locks: straight down 1 row further with a square corner (front), breaking the round bowl taper.
 
+## As built — owner menpō fix (2026-11-27, after the MA-33 overlay session)
+- Owner: «the mask only covers part of the face from below; walking, the face sticks out past it». Cause: `MENPO` /
+  `MENPO_Q34` were 2–3 px narrower than the head on each of their rows, so the jaw skin and its skin outline showed on
+  both sides (front) and on the facing side plus a 1-px chin tip under the shell (q34: `turn`, `walk`).
+- Fix (ronin files only, no rig change): every menpō row fills the head contour cheek to cheek, so the rig outline
+  beside it takes `lacquer_red` 0 and the shell wraps the jaw; q34 gets a 5th row (the chin tip). Motif, top edge (1 lit
+  skin row under the iris), spec streak and stern eyes unchanged. Test: `ronin.test.ts` «wraps the lower face» — no
+  face skin in the 5 rows from 2 under the lowest iris row on any mask-up frame (hands excluded).
+
 ## 0. Base
 Start from the chibi ronin character files at `cefa873` (MA-29b WIP: head mask, dome skull, hakama, sword prop),
 adapted to today's rig. Keep: `hair_umber`, `jade` eyes, chibi head, the q34 owner rules (§6).

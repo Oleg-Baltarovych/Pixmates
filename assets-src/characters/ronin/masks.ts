@@ -197,20 +197,25 @@ export const HAIR_FAR_Q34: Mask = ['..H', '..H', '..H'];
  * r0 top edge (lit left half, base right) with the 2-px nose ridge on the axis flanked by black nostrils; r1 cheek
  * flares 1 px past the lower rows, a 2-px step-6 spec streak on the left cheek, one connected black whisker per side
  * (3 px out from the nostril, then 1 down on r2); r2 upturned mouth-slot corners; r3 the chin with the 3-px black
- * slot, red-0 outline ends. 15 black motif px, no teeth or fangs.
+ * slot, red-0 outline ends. 15 black motif px, no teeth or fangs. Owner fix (2026-11-27): each row fills the head
+ * contour cheek to cheek (jaw included), so the rig outline beside it is red, not skin, and no face px peeks past it.
  */
 export const MENPO: Mask = [
-  '..NOUOOOMuoMoooooN..',
-  '..NOUMMMOOooMMMooN..',
-  '...NMooMoooMoooMN...',
-  '.....NnoMMMonN......',
+  'NOOOUOOOMuoMoooooooN',
+  '.NOOUMMMOOooMMMoooN.',
+  '..NoMooMoooMoooMoN..',
+  '.....NnoMMMoonN.....',
 ];
-/** q34: the strokes on the near cheek only, the ridge 1 px toward the facing. */
+/**
+ * q34: the strokes on the near cheek only, the ridge 1 px toward the facing. Like the front, the shell fills the head
+ * contour on its rows (cheek to cheek, jaw and the 1-px chin tip included) so no skin shows beside or under it.
+ */
 export const MENPO_Q34: Mask = [
-  '..NOUOOOOMuoMoooN...',
-  '..NOUOMMMOOooooN....',
-  '..NooMooMoooMoN.....',
-  '......NnoMMMonN.....',
+  'NOOOUOOOOMuoMoooooN.',
+  '.NOOUOMMMOOooooooN..',
+  '.NoooMooMoooMoooN...',
+  '......NnoMMMonnN....',
+  '..............N.....',
 ];
 /** Down (happy / petted / sleep): the menpō hangs under the chin as a 6 × 3 red plate. */
 export const MENPO_DOWN: Mask = ['NOOooN', 'nUoooN', '.NnnN.'];

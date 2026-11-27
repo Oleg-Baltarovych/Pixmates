@@ -16,20 +16,20 @@
     "manifest.json": "cf17113aad8465555001ec128b69b0fb5d890cc35c1642dbdcdbebf544e872eb"
   },
   "pixmates.ronin": {
-    "sprites/atlas.png": "f956f25f562598558c84e46100dce75f096be1a9cb2c350b5f29d45fda87bb59",
-    "manifest.json": "9ad324ac1dd640765721b5bd320c31eb4b09454c52c0c22aaf8f61db431f3e0c"
+    "sprites/atlas.png": "7a02158e0d86ba119a2015d98e53794387ee390ea919136ef3aa1585c51cb351",
+    "manifest.json": "4d61b75576007160051ff411feb737299a5367311a53816a6f2afb92b14e1d38"
   },
   "pixmates.coder": {
     "sprites/atlas.png": "886ce5b979ed98ae627d454b3c9c504de7153a153171dcbcfa78e95478b07154",
     "manifest.json": "74c3a93056c361a29533253bd65e2dbb95d3a4ac6ff986ee5b41269cb73cb50a"
   },
   "pixmates.knight": {
-    "sprites/atlas.png": "7d50384bcf177f622376bec393f178b5592f06d7ebeaaa3f9609329c3ed0ce88",
-    "manifest.json": "00717d3fa075c5efadd17c3a8f26c2424a37c888bdac43a8ddefffa17a55cef5"
+    "sprites/atlas.png": "803fec45eec17733b37403a54eafd498ce3b4dab8bca78abaf5ded939b3b09f9",
+    "manifest.json": "2cbf625c9f456fccfbd391bc4b76a97c48ab943ee4792eb6149e5a971ba90ee7"
   },
   "pixmates.vampire": {
-    "sprites/atlas.png": "e0e61d924dc13dbdfd0901dcc01083cb5a86f20b1277888241c65b7e747984c6",
-    "manifest.json": "3983efcecca64c769a8e6c2a0f67b69c0d2ad7ef9d61c02db2b008c7f5ff3322"
+    "sprites/atlas.png": "8dd412edcefd57bfd29acf310df4b7332c4ec2c5e213eaab1a82aa15241f8bb5",
+    "manifest.json": "464db644a35e1712c4262e9739c9d142fc7fd7a323295217400abab51ceb54f7"
   },
   "fx": {
     "sprites/fx.png": "08a6f189a75dd7b9236ef967526398a8259ba319b28229c553075636c9bd0ea5",

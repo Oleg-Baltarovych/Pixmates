@@ -7,6 +7,7 @@ import { TUFT } from '../../../assets-src/characters/ronin/masks.ts';
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
 import { armTorsoContrast, armTorsoProblems } from '../../../assets-src/rig/checks.ts';
 import { bodyViewOf, createRigRenderer } from '../../../assets-src/rig/compose.ts';
+import { ARM_LABEL } from '../../../assets-src/rig/part-ids.ts';
 import type { ExpressionId } from '../../../assets-src/rig/face.ts';
 import type { Body, RigAnim } from '../../../assets-src/rig/types.ts';
 import { checkStrips, facingOf, manifestSchema } from '../../../src/shared/pack.ts';
@@ -79,6 +80,57 @@ describe('menpō (ronin.md §1, ART-BIBLE §11.10)', () => {
   ] as const)('%s: mask down — the mouth shows', (name, face) => {
     const f = frameWith(name, face);
     expect(pixels(withMouth(face, 'talk_c'), name, f)).not.toEqual(pixels(RONIN, name, f));
+  });
+  it('wraps the lower face: no face skin beside or under the mask-up menpō in any frame, front or q34 (owner 2026-11-27)', () => {
+    // The menpō starts 2 rows under the lowest iris row (1 lit skin row between). In its 5 rows every skin px must be
+    // a hand (arm-end label 3–4); face skin there means the shell is narrower than the head or ends above the chin.
+    const skin = tones('skin');
+    const jade = tones('jade');
+    const down = new Set(RONIN.mask?.downExpressions ?? []);
+    const problems: string[] = [];
+    let checked = 0;
+    for (const a of ANIMS) {
+      a.frames.forEach((fr, f) => {
+        if (down.has(fr.face)) return;
+        const { image, labels } = renderer.renderLabeled(a, f, ctx);
+        const w = image.width;
+        let eyeBottom = -1;
+        for (let i = 0; i < w * image.height; i++) {
+          if (image.data[i * 4 + 3] && jade.has(rgbAt(image.data, i))) eyeBottom = Math.floor(i / w);
+        }
+        if (eyeBottom < 0) return; // closed eyes: no iris to anchor on (the same mask as the open frames)
+        checked++;
+        // Hand = skin 4-connected to a skin px labelled arm end (the chin fist on `think` is stamped unlabelled).
+        // Only skin seeds: the lacquer sode is labelled an arm end too and touches the jaw.
+        const isSkin = (i: number): boolean => Boolean(image.data[i * 4 + 3]) && skin.has(rgbAt(image.data, i));
+        const hand = new Set<number>();
+        const todo: number[] = [];
+        for (let i = 0; i < w * image.height; i++) {
+          const l = labels.data[i * 4] ?? 0;
+          if ((l === ARM_LABEL.endL || l === ARM_LABEL.endR) && isSkin(i)) todo.push(i);
+        }
+        while (todo.length > 0) {
+          const i = todo.pop() ?? 0;
+          hand.add(i);
+          for (const n of [i - 1, i + 1, i - w, i + w]) {
+            if (n >= 0 && n < w * image.height && !hand.has(n) && isSkin(n)) {
+              hand.add(n);
+              todo.push(n);
+            }
+          }
+        }
+        for (let y = eyeBottom + 2; y < eyeBottom + 7; y++) {
+          for (let x = 0; x < w; x++) {
+            const i = y * w + x;
+            if (isSkin(i) && !hand.has(i)) {
+              problems.push(`${a.name}/${String(f)} (${String(x)},${String(y)})`);
+            }
+          }
+        }
+      });
+    }
+    expect(checked).toBeGreaterThan(20);
+    expect(problems).toEqual([]);
   });
   it('talks with the eyes: talk_a / talk_b / talk_c frames differ while the mask is up', () => {
     const talk = anim('talk');
