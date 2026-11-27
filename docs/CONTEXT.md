@@ -2,14 +2,14 @@
 
 > Current state only; update it in the commit that changes structure, systems, commands or decisions.
 > Finished narratives go to `docs/CONTEXT-HISTORY.md`.
-> Last updated: 2026-11-27 (MA-67: knight art-director round 1 notes applied, awaiting round 2).
+> Last updated: 2026-11-27 (MA-67 knight owner-signed after AD round 1; next MA-68 vampire).
 
 ## 1. Status
 - **M0 ✅** (spikes S1–S3 on unmerged `spike/*` branches). **M-ART 🚧** on `feat/m-art` (draft PR #4), plan `docs/plans/2026-11-23-m-art.md`. SPEC v1.15. MVP for the portfolio = M0 + M-ART + M1 + M2.
 - **Art direction (D-20, ADR 012; supersedes D-19 / ADR 011):** chibi, frame **48 × 56** with headroom, «anime soft» (ADR 009), `scaleRef` 48, clamp 0.25 + L 176 DIP (S/M/L ×3/×4/×5 at 1080p/125 %, ×2/×3/×4 at 100 %). Views `front` + `q34` (ADR 010).
-- **Roster v1 = 8 (D-18):** signed off — `maid`, `kitsune` (fox-girl ninja; originality re-check MA-28r pending), `witch`, `goth` (stern face, MA-64), `ronin` (armoured samurai, red menpō with a black dragon, MA-65), `coder` (stern, black `cloth_onyx` hoodie with the hood always up, steel glasses, mustard hood edge + drawstrings + badge `>_`, badge on a steel chain, D-21, MA-66; open polish: hood shade edge on dark needs a per-part outline opt-in → MA-69). Built — `knight` (AD round 1 notes applied, round 2 pending). To do — `vampire` (normal chibi; cloak reuses ronin's `back: 'cloak'`). Costume richness (ART-BIBLE §12) for all unsigned; for the signed-off maid/kitsune/witch after M1 (Q-D20-2).
-- **MA-67 knight (built, AD round 1 applied, awaiting round 2, D-22):** variant B (owner pick 2026-11-27) — human chibi in full `metal_silver` plate, great bascinet with a hounskull visor lowered per animation (`VISOR_DOWN_IN`, `Body.visor`, `Body.gauntlets`; rule `docs/art/knight.md` §1), mail camail + mail hem, `cloth_emerald` sash (baldric + panel) and eyes, sword at the hip; normal face. As built: `docs/art/knight.md` §7; tests `knight.test.ts`, `knight-palette.test.ts`.
-- **Next:** MA-67 knight art-director round 2 → owner → MA-68 vampire → MA-28r → MA-69 opt-in cleanup → MA-30…33 (stage loads `maid`, placeholder + spike removed, perf ×3). Art gates: other packs unchanged (`assets-src/sprites.lock.json`), ≤ 2 art-director rounds, owner sees round 1; every character checked against the whole lineup for look-alikes (D-21, ART-BIBLE §12 p. 5).
+- **Roster v1 = 8 (D-18):** signed off — `maid`, `kitsune` (fox-girl ninja; originality re-check MA-28r pending), `witch`, `goth` (stern face, MA-64), `ronin` (armoured samurai, red menpō with a black dragon, MA-65), `coder` (stern, black `cloth_onyx` hoodie with the hood always up, steel glasses, mustard hood edge + drawstrings + badge `>_`, badge on a steel chain, D-21, MA-66; open polish: hood shade edge on dark needs a per-part outline opt-in → MA-69), `knight` (D-22, MA-67). To do — `vampire` (normal chibi; cloak reuses ronin's `back: 'cloak'`). Costume richness (ART-BIBLE §12) for all unsigned; for the signed-off maid/kitsune/witch after M1 (Q-D20-2).
+- **MA-67 knight ✅ (owner sign-off 2026-11-27 after AD round 1, D-22):** variant B (owner pick 2026-11-27) — human chibi in full `metal_silver` plate, great bascinet with a hounskull visor lowered per animation (`VISOR_DOWN_IN`, `Body.visor`, `Body.gauntlets`; rule `docs/art/knight.md` §1), mail camail + mail hem, `cloth_emerald` sash (baldric + panel) and eyes, sword at the hip; normal face. As built: `docs/art/knight.md` §7; tests `knight.test.ts`, `knight-palette.test.ts`.
+- **Next:** MA-68 vampire (concept spike → owner pick → build) → MA-28r → MA-69 opt-in cleanup → MA-30…33 (stage loads `maid`, placeholder + spike removed, perf ×3). Art gates: other packs unchanged (`assets-src/sprites.lock.json`), ≤ 2 art-director rounds, owner sees round 1; every character checked against the whole lineup for look-alikes (D-21, ART-BIBLE §12 p. 5).
 - Owner decisions D-1…D-22 (`docs/SPEC-REVIEW.md`): Windows 11 only; Dev companion in v1 (M4); one active character, switchable; layer on-top / desktop-only, hotkey `Ctrl+Alt+P`, appId `io.github.oleg-baltarovych.pixmates`; default ≈ 136 DIP, integer physical scale; all art by code. Post-v1 backlog: `golem`, `corsair`, `salamander`, `robot`, `glitch`.
 - Repo: public `github.com/Oleg-Baltarovych/pixmates`; commits from the GitHub noreply address (repo-local `user.email`); LF via `.gitattributes`.
 
@@ -38,7 +38,7 @@ skins-local/   owner's personal packs — git-ignored, agents never write here
 | System | Milestone | Status |
 |---|---|---|
 | scaffold, typed IPC, hardening, CI, `pnpm perf`, spikes | M0 | ✅ `src/main/windows/`, `src/shared/ipc.ts`, `src/core/`, `tools/perf.ts`, ADR 007/008 |
-| palette, rig, 8 characters, FX, pack pipeline, stage loads packs | M-ART | 🚧 6/8 signed off, knight built (AD round 2 pending), vampire to do; `assets-src/`, `tools/build-sprites.ts`, `src/shared/pack.ts`, `src/main/characters/`, `stage:characters` IPC, `docs/art/` |
+| palette, rig, 8 characters, FX, pack pipeline, stage loads packs | M-ART | 🚧 7/8 signed off, vampire to do; `assets-src/`, `tools/build-sprites.ts`, `src/shared/pack.ts`, `src/main/characters/`, `stage:characters` IPC, `docs/art/` |
 
 Not started (scope in SPEC §12): M1 core behaviour, physics, surfaces, switch, tray · M2 AI service, tools, memory, evals · M3 sensors, quiet mode, reactions, Pomodoro · M4 Dev companion (hooks, MCP, git/CI) · M5 pack import, settings, uk/en · M6 NSIS, auto-update, e2e, release.
 
