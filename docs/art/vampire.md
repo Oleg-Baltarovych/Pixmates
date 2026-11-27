@@ -1,5 +1,7 @@
 # vampire — design spec (MA-29e)
 
+Status: **owner signed off 2026-11-27** after art-director round 1 (MA-68, D-23).
+
 Originality gate: **PASS** (art-director, 2026-11-24); a crimson lining (Q1-C) would reopen it. Owner decisions 2026-11-24 (§8): Q1 A midnight + old gold, Q2 crimson eyes, Q3 paired fangs in neutral. Brief: D-18. A chibi aristocrat count — theatrical, afraid of the light theme and of mornings, tied to
 night mode. Frame 48 × 56, chibi ≈ 2.2 heads. An archetype, not a portrait; no reference images. Rig items R1
 (`back: 'cloak'`), R3 (`neckAcc: 'collar'`) exist (built in MA-29b); D-20 ronin no longer uses the cloak, so vampire
