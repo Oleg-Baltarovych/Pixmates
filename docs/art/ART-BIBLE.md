@@ -75,7 +75,7 @@ ADR 009, restored by ADR 012 (D-20, 2026-11-25).
   ash-silver fur, deep indigo garb, teal scarf. Own traits: one oversized tail with a pale tip, a fox mask worn tilted
   on the side of the head, a short scarf whose ends lag in motion. Forbidden: leaf or forehead-plate headband, whisker
   marks, orange jumpsuit, nine tails, red-white shrine scheme.
-  - Fox-girl risk list (D-18) — **re-check pending (MA-28r)**: Ahri (LoL), Senko-san, Holo (Spice and Wolf), Yae Miko
+  - Fox-girl risk list (D-18) — **re-check PASS (MA-28r, art-director 2026-11-27)**: Ahri (LoL), Senko-san, Holo (Spice and Wolf), Yae Miko
     (Genshin), Shirakami Fubuki (hololive), Tamamo no Mae (Fate), Kiriko (Overwatch), Izuna (Blue Archive). Watch: no
     pink/red-white miko or shrine scheme, no multiple tails, no long white hair with a side braid, no blonde/amber
     fur with a wolf-girl read, no heart or bell charms as signature props.

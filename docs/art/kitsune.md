@@ -1,7 +1,7 @@
 # kitsune — design spec (MA-28)
 
 > **D-18 (owner, 2026-11-24):** kitsune is now **female** (fox girl ninja, hyperactive braggart); the signed-off art
-> stays. Originality re-check as a girl is **pending (MA-28r)** against the fox-girl list in ART-BIBLE §9. The body
+> stays. Originality re-check as a girl: **PASS (MA-28r, art-director 2026-11-27)** against the fox-girl list in ART-BIBLE §9. The body
 > below still says «him»/«fox-boy» from MA-28 and is not rewritten; read it as describing the same art.
 
 Originality gate: **PASS** (art-director, 2026-11-24). Owner decisions 2026-11-24: violet eyes, pale cream leg wraps,
@@ -110,3 +110,12 @@ clear (every future round and skin):
 5. No pink hair and no red anywhere (hair, mask, scarf, props).
 Owner decision 2026-11-24: add a tail ribbon wrap — a 1-row, 3-px `cloth_rose` band around the tail just above the cream
 tip, no bow, no trailing ends, front and q34, moving with the tail chain.
+
+Re-check MA-28r (art-director, 2026-11-27): **PASS**, pack unchanged. Checked as a girl against Ahri, Tamamo no Mae,
+Holo, Senko-san, Yae Miko, Shirakami Fubuki, Izuna, Kiriko and Overwatch kitsune skins, Naruto/Kurama, Tails,
+Ninetales, Zorua, Blaze, Ayame, Kasumi, Mai Shiranui and generic Inari. What separates her: a grey-reading silver bob (no
+white, no braid), violet eyes, a deep indigo short wrap with shorts, teal only on trims, an ivory side mask with teal
+marks (no red), one capped tail. Cast (D-21): knight's silver is hard-step metal in one pointed cone on green, hers is
+soft fur with two ears on indigo; maid's teal is a dress mass under lilac hair, kitsune's teal is trim on indigo. Guard:
+she stays the only cast member with upright animal ears; the rose tail ribbon (owner 2026-11-24, not built yet) stays
+1 × 3 px, rose not red, no bow or bell, re-gate when built.
