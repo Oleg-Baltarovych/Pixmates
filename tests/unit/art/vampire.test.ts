@@ -129,6 +129,35 @@ describe('crimson eyes and fangs (vampire.md §4, owner Q2 / Q3)', () => {
     expect(rampPx('idle_a', 0, 'fx_red').length).toBeGreaterThanOrEqual(16);
     expect(rampPx('walk', 1, 'fx_red').length).toBeGreaterThanOrEqual(8);
   });
+  it('no red px under the iris: every crimson row is part of an eye run ≥ 4 px wide, on every frame (no bloodshot row)', () => {
+    const eyeRamp = new Set(['fx_red', 'ink', 'cloth_cream']);
+    for (const [name, f] of allFrames()) {
+      const p = pixels(name, f);
+      for (const [x, y] of rampPx(name, f, 'fx_red')) {
+        let lo = x;
+        let hi = x;
+        while (eyeRamp.has(p.at(lo - 1, y)?.[0] ?? '')) lo--;
+        while (eyeRamp.has(p.at(hi + 1, y)?.[0] ?? '')) hi++;
+        expect(hi - lo + 1, `${name}/${String(f)} (${String(x)}, ${String(y)})`).toBeGreaterThanOrEqual(4);
+      }
+    }
+  });
+  it('no glow: crimson stays at fx_red ≤ 3, and the lower highlight is a single fx_red-3 px in the bottom iris row', () => {
+    for (const [name, f] of allFrames()) {
+      const p = pixels(name, f);
+      for (const [x, y] of rampPx(name, f, 'fx_red'))
+        expect(p.at(x, y)?.[1], `${name}/${String(f)} (${String(x)}, ${String(y)})`).toBeLessThanOrEqual(3);
+    }
+    const p = pixels('idle_a', 0);
+    const red = rampPx('idle_a', 0, 'fx_red');
+    for (const side of [(x: number): boolean => x < 24, (x: number): boolean => x >= 24]) {
+      const eye = red.filter(([x]) => side(x));
+      const bottom = Math.max(...eye.map(([, y]) => y));
+      const row = eye.filter(([, y]) => y === bottom);
+      expect(row.length).toBe(4);
+      expect(row.filter(([x, y]) => p.at(x, y)?.[1] === 3)).toHaveLength(1);
+    }
+  });
   it('neutral: a closed ink mouth line with a symmetric pair of 1-px cream fangs under it, skin between them', () => {
     expect(VAMPIRE.face.expressions.neutral.mouth).toBe('fangs');
     const p = pixels('idle_a', 0);
@@ -193,6 +222,36 @@ describe('widow’s peak and open forehead (owner D-23)', () => {
   });
 });
 
+describe('short slicked hair, no bob (art-director round 1, note 1)', () => {
+  const hairRows = (m: Mask): number[] =>
+    m.flatMap((row, r) => (row.split('').some((c) => slotOf(c) === 'hair') ? [r] : []));
+  /** Head-mask row of the open eye's bottom (face anchor row 12 + part offset + part height − 1). */
+  const eyeBottom = (open: { mask: Mask; at: readonly [number, number] } | undefined): number =>
+    12 + (open?.at[1] ?? 0) + (open?.mask.length ?? 0) - 1;
+  it('suppresses the procedural back-hair mass in both views (the head mask carries the whole contour)', () => {
+    expect(VAMPIRE.masks.hairBack?.mask).toEqual([]);
+    expect(Q34_VIEW.masks.hairBack?.mask).toEqual([]);
+  });
+  it('front: the side mass beside each cheek ends at the sideburn tip on the eye-bottom row', () => {
+    expect(Math.max(...hairRows(HEAD))).toBe(eyeBottom(VAMPIRE.face.eyes.open));
+  });
+  it('q34: the back contour tapers in 1 px per row from the ear row and ends in a 1-px nape flick at jaw − 1', () => {
+    const ear = 12 + (Q34_VIEW.face.eyes.open?.at[1] ?? 0) - 1;
+    const left = (r: number): number => (HEAD_Q34[r] ?? '').search(/[^.]/);
+    const last = Math.max(...hairRows(HEAD_Q34));
+    const firstSkinRow = HEAD_Q34.findIndex((row, r) => r > ear && slotOf(row.charAt(left(r))) === 'skin');
+    for (let r = ear + 1; r < last; r++) {
+      const step = left(r) - left(r - 1);
+      expect(step, `row ${String(r)}`).toBeGreaterThanOrEqual(0);
+      expect(step, `row ${String(r)}`).toBeLessThanOrEqual(1);
+    }
+    expect(left(ear + 2) - left(ear), 'tapers from the ear row').toBe(2);
+    // The flick: the last hair row steps 1 px back out, on the row above the jaw's first all-skin row.
+    expect(left(last)).toBe(left(last - 1) - 1);
+    expect(firstSkinRow).toBe(last + 1);
+  });
+});
+
 describe('fan collar bounds (R-V2, vampire.md §7)', () => {
   it('fits COLLAR_MAX and the whole pack validates (tips inside x 11–37 and under the eyes on every frame)', () => {
     expect(COLLAR.length).toBeLessThanOrEqual(COLLAR_MAX.h);
@@ -201,7 +260,9 @@ describe('fan collar bounds (R-V2, vampire.md §7)', () => {
       validateBody(VAMPIRE, ANIMS, 56);
     }).not.toThrow();
   });
-  it('fails R-V2 when the tips move 1 row up or 1 px out (the collar sits at the limit the owner asked for)', () => {
+  // Round 2 lowered the eye by 1 row (no red row under the iris), so the up limit is now 2 rows; the collar keeps its
+  // round-1 height (higher tips reach eye level on the head bob).
+  it('fails R-V2 when the tips move 2 rows up or 1 px out (the collar sits at the limit the owner asked for)', () => {
     const neck = VAMPIRE.masks.neckAcc;
     if (!neck) throw new Error('no collar');
     const moved = (dx: number, dy: number, w: number): Body => ({
@@ -212,7 +273,7 @@ describe('fan collar bounds (R-V2, vampire.md §7)', () => {
       },
     });
     expect(() => {
-      validateBody(moved(0, -1, 25), ANIMS, 56);
+      validateBody(moved(0, -2, 25), ANIMS, 56);
     }).toThrow(/not under the eyes/);
     expect(() => {
       validateBody(moved(-1, 0, 27), ANIMS, 56);
@@ -266,13 +327,35 @@ describe('face (normal chibi, ART-BIBLE §11.2–11.3)', () => {
     }
     for (const [id, e] of Object.entries(Q34_VIEW.face.expressions)) expect(e.cheeks, `q34 ${id}`).toBe('none');
   });
-  it('neutral raises one brow (the screen-right one sits 1 row higher)', () => {
+  it('neutral raises one brow (the screen-right one sits 2 rows higher, arched at its centre)', () => {
     const id = VAMPIRE.face.expressions.neutral.brows ?? '';
     const brows = VAMPIRE.face.brows?.[id];
     if (!brows) throw new Error('no neutral brows');
     const topOf = (lo: number, hi: number): number =>
       brows.mask.findIndex((row) => row.slice(lo, hi).includes('x') || row.slice(lo, hi).includes('X'));
-    expect(topOf(0, 10)).toBe(topOf(10, 20) + 1);
+    expect(topOf(0, 10)).toBe(topOf(10, 20) + 2);
+    // The arch: the right brow's top row is its 2 centre px, both ends 1 row lower.
+    const right = brows.mask.map((row) => row.slice(10, 20));
+    const top = right[topOf(10, 20)] ?? '';
+    const next = right[topOf(10, 20) + 1] ?? '';
+    expect(top.indexOf('x')).toBe(next.indexOf('x') + 1);
+    expect(top.lastIndexOf('x')).toBe(next.lastIndexOf('x') - 1);
+  });
+  it('petted: a skin row separates the blush from the eye', () => {
+    for (let f = 0; f < anim('petted').frames.length; f++) {
+      const p = pixels('petted', f);
+      const rose = rampPx('petted', f, 'cloth_rose');
+      expect(rose.length, `petted/${String(f)}`).toBeGreaterThan(0);
+      for (const [x, y] of rose) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const above = p.at(x + dx, y - 1)?.[0];
+          expect(
+            above === 'fx_red' || above === 'ink' || above === 'cloth_cream',
+            `petted/${String(f)} (${String(x)}, ${String(y)})`,
+          ).toBe(false);
+        }
+      }
+    }
   });
 });
 

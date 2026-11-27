@@ -14,6 +14,8 @@ import * as M from './masks.ts';
 const T6 = [0, 1, 2, 3, 4, 5] as const;
 const T6UP = [1, 2, 3, 4, 5, 6] as const;
 const HEAD_AT = [-15, -14] as const;
+/** Short slicked hair: no procedural back-hair mass (it read as a bob); the head mask carries the whole contour. */
+const NO_BACK_HAIR = { mask: [], at: [0, 0] } as const;
 
 const OUTFIT: Outfit = {
   skin: { ramp: 'skin', tones: T6UP },
@@ -31,7 +33,7 @@ const OUTFIT: Outfit = {
 const Q34: BodyView = {
   head: { mask: M.HEAD_Q34, at: HEAD_AT, band: M.BAND },
   face: VAMPIRE_FACE_Q34,
-  masks: { shoe: M.SHOE_Q34, neckAcc: { mask: M.COLLAR_Q34, at: M.COLLAR_AT } },
+  masks: { shoe: M.SHOE_Q34, hairBack: NO_BACK_HAIR, neckAcc: { mask: M.COLLAR_Q34, at: M.COLLAR_AT } },
   torsoMask: { mask: M.CHEST_Q34, at: [-7, 0] },
   hideFarShoulder: true,
   farLegShade: 2,
@@ -57,13 +59,15 @@ export const VAMPIRE: Body = {
   sleeve: { ramp: 'cloth_midnight', shade: 3 },
   sleeveRim: 4,
   cuff: { ramp: 'cloth_cream', shade: 4 },
+  // A flat 1-px cream-4 shirt cuff band at each wrist (the kote opt-in locks the cuff px to one tone; no frill, no stud).
+  kote: { side: 'L', both: true, ramp: 'cloth_cream', shade: 4, stud: { ramp: 'cloth_cream', shade: 4, count: 0 } },
   silhouetteOutline: [
     { ramp: 'cloth_midnight', lit: 5, shade: 3 },
     { ramp: 'hair_black', lit: 5, shade: 4 },
   ],
   head: { mask: M.HEAD, at: HEAD_AT, band: M.BAND },
   face: VAMPIRE_FACE,
-  masks: { shoe: M.SHOE, neckAcc: { mask: M.COLLAR, at: M.COLLAR_AT } },
+  masks: { shoe: M.SHOE, hairBack: NO_BACK_HAIR, neckAcc: { mask: M.COLLAR, at: M.COLLAR_AT } },
   torsoMask: { mask: M.CHEST, at: [-6, 0] },
   sash: { rows: 1, knot: { mask: [], at: [0, 0] } },
   shorts: { shade: 3, raise: 0 },
