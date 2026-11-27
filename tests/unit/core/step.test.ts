@@ -40,16 +40,22 @@ describe('step determinism', () => {
     expect(a).toEqual(replay(initialState(7), SCRIPT));
   });
 
-  it('click reactions come from the seeded RNG (seeds can differ, the RNG state advances)', () => {
+  it('click reactions come from the seeded RNG: across seeds every reaction shows up, and nothing else', () => {
     const clicks = Array.from({ length: 12 }, (_, i) => [i * 100, input({ kind: 'click' })] as const);
     const runs = [1, 2, 3, 4, 5].map((seed) => replay(initialState(seed), clicks).effects);
     expect(new Set(runs.map((run) => JSON.stringify(run))).size).toBeGreaterThan(1);
-    const allowed: readonly string[] = CLICK_REACTIONS;
-    for (const run of runs) {
-      expect(run).toHaveLength(12);
-      for (const effect of run) expect(effect.type === 'PlayAnimation' && allowed.includes(effect.name)).toBe(true);
-    }
+    const names = new Set(runs.flat().map((effect) => (effect.type === 'PlayAnimation' ? effect.name : effect.type)));
+    expect(names).toEqual(new Set(CLICK_REACTIONS));
     expect(replay(initialState(1), clicks).state.rng).not.toBe(initialState(1).rng);
+  });
+
+  it('a click plays the reaction it picked and the state shows it', () => {
+    const { state, effects } = step(initialState(3), input({ kind: 'click' }), 0);
+    expect(effects).toHaveLength(1);
+    const [effect] = effects;
+    expect(effect?.type).toBe('PlayAnimation');
+    if (effect?.type !== 'PlayAnimation') return;
+    expect(state.animation).toBe(effect.name);
   });
 
   it('does not mutate the input state', () => {
