@@ -55,6 +55,25 @@ brows and bare legs — every boy cue below targets one of these).
 - Slots: `horn` = metal (zipper pull), `apron` = cream (tee, cord, badge, sneakers), `trim` = ochre (`>_`), `shoe` =
   indigo (print). Open for round 1: the q34 jeans seat flares like kitsune's shorts on the passing frames.
 
+### As built (MA-66 round 1, 2026-11-27) — art-director notes applied
+- **Eyes** (neutral / glance / talk / wince, both views): both lid rows run 1 px past the outer corner; the lower lid
+  row's inner end drops 1 px onto the iris (`x`, the brow–lid wedge); the iris is ash 1 / ash 0 with one 1 × 1
+  highlight top-left of each iris (screen-right eye: on its 2nd row, under the wedge) and **no lower highlight**.
+  The eye slot now maps `c` → ash 1 (`C` = ash 0), so happy / startle / worried keep their round-0 look via `C` rims.
+  Brows were already hair 0 with a clean skin row above them (now tested). Supersedes §4 «lower highlight at k».
+- **Chest** (supersedes «D-20» richness and owner Q3 a): the `{ }` print is **removed** — 2-px braces ≥ 4 rows tall
+  did not fit on the 12-px chest beside the V and the badge with 2 px of hoodie between them (the note's own
+  fallback). Lanyard: a dark 1-px indigo-2 cord V from the collar (never a branded strip), a 1-px steel-5 clip, a blank
+  3 × 3 cream badge with the 2-px amber `>_` and a mustard-1 right + bottom edge, hung 2 rows lower (over the rib).
+  Pocket: a continuous 8-px mustard-2 top edge (q34 5 px) with mustard-1 openings; rib ticks every 4 px; tee hem = 3
+  broken cream px lit-left only, the rest of that row is the rib's mustard-1 bottom.
+- **Hair**: the cowlick lies sideways 2 px right of the axis (cols 17–19 of the head mask) on the same top row as a
+  6-px left tuft (flat messy top, never the highest point; separated bumps read as ears and were rejected); a 1-px
+  hair-5 rim inside the top-left crown and left tufts, the angel ring 1 px further left to meet it; hair lit outline
+  cocoa 2 via `silhouetteOutline`, shade side cocoa 1.
+- **Not done — q34 seat (note 7):** the passing-frame seat bump is the procedural `hem: 'shorts'` seat; masks only add
+  px, so removing it needs a shared-rig opt-in (e.g. R-C4 extended to q34: no seat flare). Left for the rig.
+
 ## Lookalikes checked
 - L (Death Note): hair cocoa, never black; hoodie never white; shoes always drawn; no crouch-sit, no thumb-bite (think
   uses the chin fist); eye bags 2 px of skin 2, never ink or dark rings.
