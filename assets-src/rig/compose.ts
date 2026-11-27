@@ -311,7 +311,11 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
       tailParts.push(buildSpadeTail(body, j.back, trailSide, hipLag, hairDx));
     } else if (!p.tailTucked && v.back === 'fox_tail') {
       const line = tail(anim, frame);
-      if (line) tailParts.push(...buildFoxTailParts(body, line, q, tailFront.shine === true));
+      // Rows the waist squash drops (squash > 0) or repeats (stretch): the ribbon band never sits on them.
+      const cut = waistRow(j, layout);
+      const skip =
+        p.squash > 0 ? ([cut - p.squash, cut - 1] as const) : p.squash < 0 ? ([cut - 1, cut - 1] as const) : undefined;
+      if (line) tailParts.push(...buildFoxTailParts(body, line, q, tailFront.shine === true, skip));
     }
     if (!q) back.push(...tailParts);
     // Follow-through (q34 opt-in `hairTipLag`): the tips add the previous frame's offset, capped at HAIR_TIP_MAX px.

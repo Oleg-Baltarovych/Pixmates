@@ -160,6 +160,8 @@ export const FOX_TAIL_Q34: NonNullable<FoxTail['q34']> = {
 const FOX_TAIL_ROOT: Point = [1, 1];
 /** Fox tail tones (tail / tailTip ramps): fur, front tip, q34 tip (one step under), shine. */
 const FOX_TAIL_SHADE = { fur: 3, tipFront: 4, tipQ34: 3, shine: 5 } as const;
+/** Ribbon wrap: band width (px) and its distance back from the first tip point, per tip radius. */
+const FOX_TAIL_RIBBON = { width: 3, back: 1 } as const;
 /** Shine stroke inside the fur's upper-left edge: offset per fur radius (x, y) and its radius. */
 const FOX_TAIL_SHINE = { dx: 0.45, dy: 0.4, radius: 0.55 } as const;
 
@@ -188,7 +190,13 @@ export function frontTailLine(front: NonNullable<FoxTail['front']>, raw: readonl
 }
 
 /** Fox tail parts: fur stroke, pale tip (q34 one ramp step under the front tip), opt-in front shine. */
-export function buildFoxTailParts(body: Body, line: TailLine, q: boolean, shine: boolean): Part[] {
+export function buildFoxTailParts(
+  body: Body,
+  line: TailLine,
+  q: boolean,
+  shine: boolean,
+  ribbonSkip?: readonly [number, number],
+): Part[] {
   const tipN = line.tipRadii.length;
   const parts: Part[] = [
     part(
@@ -214,6 +222,37 @@ export function buildFoxTailParts(body: Body, line: TailLine, q: boolean, shine:
     if (points.length >= 2) {
       parts.push(part(stroke(points), flat(MAT.fur, body.ramps.tail, FOX_TAIL_SHADE.shine), PART_ID.tail, 0.12));
     }
+  }
+  // Opt-in ribbon wrap (after the shine, so it wraps over it): one 3-px row centred on the tube just before the pale
+  // tip stroke starts. A row inside `ribbonSkip` (rows the waist squash drops or repeats, which would hide or double
+  // the band) slides down the line to the first row under it; the squash moves the tip down onto it.
+  const ribbon = body.foxTail?.ribbon;
+  const tip = line.points[line.points.length - tipN];
+  const prev = line.points[line.points.length - tipN - 1];
+  if (ribbon && tip && prev) {
+    const len = Math.max(1e-6, Math.hypot(tip[0] - prev[0], tip[1] - prev[1]));
+    const ux = (tip[0] - prev[0]) / len;
+    const uy = (tip[1] - prev[1]) / len;
+    const back = (line.tipRadii[0] ?? 1) * FOX_TAIL_RIBBON.back;
+    let px = tip[0] + 0.5 - ux * back;
+    let py = tip[1] + 0.5 - uy * back;
+    const row = Math.floor(py);
+    if (ribbonSkip && row >= ribbonSkip[0] && row <= ribbonSkip[1]) {
+      const down = ribbonSkip[1] + 1 - row;
+      px -= uy < 0 ? (ux * down) / -uy : 0;
+      py = ribbonSkip[1] + 1.5;
+    }
+    const cx = Math.floor(px);
+    const cy = Math.floor(py);
+    const half = (FOX_TAIL_RIBBON.width - 1) / 2;
+    parts.push(
+      part(
+        rect(cx - half, cy, FOX_TAIL_RIBBON.width, 1),
+        flat(MAT.cloth, ribbon.ramp, ribbon.shade),
+        PART_ID.tail,
+        0.16,
+      ),
+    );
   }
   return parts;
 }

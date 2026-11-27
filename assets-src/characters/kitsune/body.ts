@@ -128,7 +128,8 @@ export const KITSUNE: Body = {
   },
   // Front scarf ends hang from under the knot (screen-right), 4 and 5 px.
   scarf: { at: [3, 4], lengths: [4, 5] },
-  foxTail: { front: TAIL_FRONT, q34: TAIL_Q34 },
+  // Owner 2026-11-24: a 1-row, 3-px rose ribbon wrap just before the cream tip (rose, never red; no bow or ends).
+  foxTail: { front: TAIL_FRONT, q34: TAIL_Q34, ribbon: { ramp: 'cloth_rose', shade: 3 } },
   // Short boy's mop: back hair ends at the nape, no procedural side-lock chains (the head mask's locks end mid-cheek).
   hairBackStretch: 0.2,
   // Tailored shorts 1 indigo step under the top, hem raised 2 rows; a darker wrap row on each shin.

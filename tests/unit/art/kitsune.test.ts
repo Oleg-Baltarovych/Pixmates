@@ -587,3 +587,83 @@ describe('art gate (kitsune.md): side mask, front tail, shins, neutral face', ()
     expect(KITSUNE_FACE.expressions.petted.cheeks).toBe('strong');
   });
 });
+
+describe('art gate (kitsune.md, owner 2026-11-24): rose tail ribbon', () => {
+  const rose = new Set(palette.ramps.get('cloth_rose') ?? []);
+  const { ribbon, ...noRibbonTail } = KITSUNE.foxTail ?? {};
+  const plain = createRigRenderer({ ...KITSUNE, foxTail: noRibbonTail });
+  const r = createRigRenderer(KITSUNE);
+  const rgbAt = (img: { data: Uint8Array; width: number }, i: number): number =>
+    ((img.data[i * 4] ?? 0) << 16) | ((img.data[i * 4 + 1] ?? 0) << 8) | (img.data[i * 4 + 2] ?? 0);
+  /** Px that are rose with the ribbon and not rose without it; `edge` = next to a transparent px (the outline). */
+  const ribbonPx = (a: RigAnim, f: number): { x: number; y: number; edge: boolean }[] => {
+    const img = r.render(a, f, ctx);
+    const base = plain.render(a, f, ctx);
+    const clear = (x: number, y: number): boolean =>
+      x < 0 || y < 0 || x >= img.width || y >= img.height || (img.data[(y * img.width + x) * 4 + 3] ?? 0) === 0;
+    const out: { x: number; y: number; edge: boolean }[] = [];
+    for (let i = 0; i < img.width * img.height; i++) {
+      if ((img.data[i * 4 + 3] ?? 0) === 0 || !rose.has(rgbAt(img, i))) continue;
+      if (rose.has(rgbAt(base, i)) && (base.data[i * 4 + 3] ?? 0) > 0) continue;
+      const [x, y] = [i % img.width, Math.floor(i / img.width)];
+      out.push({ x, y, edge: clear(x - 1, y) || clear(x + 1, y) || clear(x, y - 1) || clear(x, y + 1) });
+    }
+    return out;
+  };
+
+  it('is a cloth_rose ribbon', () => {
+    expect(ribbon?.ramp).toBe('cloth_rose');
+  });
+
+  it('every frame with a tail: one row of ≤ 3 fill px (+ its outline) next to the cream tip; tucked = none', () => {
+    for (const a of ANIMS) {
+      for (let f = 0; f < a.frames.length; f++) {
+        const t = r.tail(a, f);
+        const px = ribbonPx(a, f);
+        const label = `${a.name}/${String(f)} ${bodyViewOf(a, f)}`;
+        if (!t) {
+          expect(px, label).toHaveLength(0);
+          continue;
+        }
+        // Fill: one row of 2–3 contiguous px; its outline px (next to transparency) stay within a row of it.
+        const fillPx = px.filter((p) => !p.edge);
+        expect(new Set(fillPx.map((p) => p.y)).size, label).toBe(1);
+        const y0 = fillPx[0]?.y ?? 0;
+        const xs = fillPx.map((p) => p.x).sort((m, n) => m - n);
+        expect((xs.at(-1) ?? 0) - (xs[0] ?? 0), label).toBe(xs.length - 1);
+        expect(xs.length, label).toBeGreaterThanOrEqual(2);
+        expect(xs.length, label).toBeLessThanOrEqual(3);
+        for (const e of px.filter((p) => p.edge)) {
+          expect(Math.abs(e.y - y0), label).toBeLessThanOrEqual(1);
+          expect(e.x, label).toBeGreaterThanOrEqual((xs[0] ?? 0) - 1);
+          expect(e.x, label).toBeLessThanOrEqual((xs.at(-1) ?? 0) + 1);
+        }
+        // Near the tip: within 4 px (+ the waist squash) of the first cream point (the line is pre-squash).
+        const tip = t.points[t.points.length - t.tipRadii.length];
+        if (!tip) throw new Error(label);
+        const cx = (xs[0] ?? 0) + (xs.length - 1) / 2;
+        const dist = Math.hypot(cx - (tip[0] + 0.5), y0 - (tip[1] + 0.5));
+        expect(dist, label).toBeLessThanOrEqual(4 + Math.abs(a.frames[f]?.squash ?? 0));
+      }
+    }
+  });
+
+  it('adds only rose: every other px it changes keeps its ramp (no red, no bow or ends)', () => {
+    const rampOf = new Map<number, string>();
+    for (const [name, tones] of palette.ramps) for (const t of tones) rampOf.set(t, name);
+    for (const name of ['idle_a', 'walk', 'happy']) {
+      const a = anim(name);
+      for (let f = 0; f < a.frames.length; f++) {
+        const img = r.render(a, f, ctx);
+        const base = plain.render(a, f, ctx);
+        for (let i = 0; i < img.width * img.height; i++) {
+          if ((img.data[i * 4 + 3] ?? 0) !== (base.data[i * 4 + 3] ?? 0))
+            throw new Error(`${name}: silhouette changed`);
+          if (rgbAt(img, i) === rgbAt(base, i)) continue;
+          const ramp = rampOf.get(rgbAt(img, i));
+          expect([rampOf.get(rgbAt(base, i)), 'cloth_rose'], `${name}/${String(f)} px ${String(i)}`).toContain(ramp);
+        }
+      }
+    }
+  });
+});

@@ -188,6 +188,11 @@ export interface FoxTail {
     /** A thin lit shine stroke (tail ramp shade 5) along the upper-left edge of the fur part. */
     readonly shine?: true;
   };
+  /**
+   * Opt-in ribbon wrap (both views): a 1-row, 3-px band of `ramp`/`shade` across the tube just before the pale tip,
+   * moving with the tail line (hidden when tucked).
+   */
+  readonly ribbon?: { readonly ramp: RampName; readonly shade: number };
   /** q34: a fixed centre line from the back joint (trailing = −x); the tip swings against `hairDx`. */
   readonly q34?: {
     readonly points: readonly Point[];
