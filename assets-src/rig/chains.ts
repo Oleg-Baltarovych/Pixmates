@@ -498,20 +498,17 @@ export function buildSkirt(body: Body, p: PoseFrame, hip: Point, q: boolean): Pa
   // `skirtLace: false`: the plain cloth runs down over the rows the lace would take (same hem length).
   const plain = body.skirtLace === false ? (p.parts.legs === 'sit' ? 1 : 2) : 0;
   const sk = layoutOf().torso.skirt;
-  // `Body.hakama.drop`: the hakama reaches the ankles on every leg pose (standing, dangling, seated, curled) — the
-  // legs never show bare under a knee-length hem (art round 3 N2).
-  const hemY = hip[1] + sk.hemDy - lift + plain + (body.hakama?.drop ?? 0);
+  const hemY = hip[1] + sk.hemDy - lift + plain;
   // `Body.skirtSplit.notch` (front): a 2-px gap between the legs at the hem (divided skirt / hakama).
   const notch = q ? 0 : (body.skirtSplit?.notch ?? 0);
   const hemHalf = body.skirtSplit?.hemHalf ?? sk.hemHalf;
-  const nh = body.skirtSplit?.notchHalf ?? 1;
   const gap: [number, number][] =
     notch > 0
       ? [
-          [hip[0] + nh + hemDx, hemY],
-          [hip[0] + nh + hemDx, hemY - notch],
-          [hip[0] - nh + hemDx, hemY - notch],
-          [hip[0] - nh + hemDx, hemY],
+          [hip[0] + 1 + hemDx, hemY],
+          [hip[0] + 1 + hemDx, hemY - notch],
+          [hip[0] - 1 + hemDx, hemY - notch],
+          [hip[0] - 1 + hemDx, hemY],
         ]
       : [];
   const skirt = poly([
@@ -529,9 +526,7 @@ export function buildSkirt(body: Body, p: PoseFrame, hip: Point, q: boolean): Pa
   );
   const skirtPart = part(
     curveX(skirt, hip[0] + (q ? 1 : 0), sk.curve),
-    body.hakama
-      ? cloth(MAT.cloth, body.hakama.ramp, body.hakama.shade, { folds: 1, cell: 3, seed: `${body.id}:skirt` })
-      : cloth3(body, 'skirt', 1, dressShadeOf(body)),
+    cloth3(body, 'skirt', 1, dressShadeOf(body)),
     PART_ID.hem,
     1,
   );
@@ -590,8 +585,6 @@ export const DEFAULT_SLEEVE_SHADE = 2;
 /** Bodice shade lift on breath frames (`PoseFrame.breath`). */
 export const BREATH_GLOW = 0.4;
 export const dressShadeOf = (body: Body): number => body.dressShade ?? BODICE_SHADE;
-/** Ramp of the skirt and its split / pleat / rim tones (`Body.hakama` or the cloth ramp). */
-export const skirtRampOf = (body: Body): RampName => body.hakama?.ramp ?? body.ramps.cloth;
 /** Default bell-cuff shade on the clothAlt ramp. */
 export const DEFAULT_CUFF_SHADE = 3;
 /** Cuff position along elbow → hand of a long sleeve (and of a raised sleeve-over-hand, slid back to it). */

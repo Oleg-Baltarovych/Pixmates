@@ -239,17 +239,6 @@ export interface Cloak {
     readonly curl?: number;
     /** Shade of the 1-px curl line above each lobe dip (default none). */
     readonly curlShade?: number;
-    /**
-     * Opt-in (MA-46): `count` regular tapered tongues per side hanging under the hem, evenly spaced over the outer
-     * `span` px of each side (so they clear a hem / skirt in front), each `length` rows (≤ `CLOAK_MAX.wispLength`)
-     * narrowing 1 px per row (3 → 2 → 1); `tipShade` on the last row.
-     */
-    readonly wisps?: {
-      readonly count: number;
-      readonly length: number;
-      readonly span: number;
-      readonly tipShade?: number;
-    };
   };
   /**
    * Opt-in inner shadow: cloak px 4-touching a drawn hem / leg / torso px take this shade (0..5), a 1-px column where
@@ -283,20 +272,13 @@ export interface Cloak {
  * hip lag + the frame's `hairDx` (clamped to ±1).
  */
 export interface Prop extends PlacedMask {
-  /** `overHem`: the dangle hangs in front of the skirt and legs (never over an arm), e.g. a charm over a hakama. */
+  /** `overHem`: the dangle hangs in front of the skirt and legs (never over an arm), e.g. a charm over a skirt. */
   readonly dangle?: PlacedMask & { readonly overHem?: true };
   /**
    * Front projection (MA-45 round 2): a foreshortened hilt poking toward the viewer, offset from the prop's `at`,
    * stamped over the torso, hem and legs (never over an arm) while the main mask stays behind them.
    */
   readonly hilt?: PlacedMask;
-  /**
-   * Opt-in layering (MA-46): `'hilt'` stamps the hilt over the arms too (only the hands and cuffs stay on top);
-   * `'all'` lays the main mask over the cloak, hem, legs and sleeves (a saya worn across the coat, front view; the
-   * hilt stays under the arms),
-   * validated with the other prop bounds.
-   */
-  readonly over?: 'hilt' | 'all';
 }
 
 /** Head-accessory masks shared by the front body and every view. */
@@ -501,18 +483,6 @@ export interface Body {
   /** Procedural side-lock chains (default true); false = the head mask's own (short) locks only. */
   readonly sideLocks?: boolean;
   /**
-   * Opt-in (MA-46 F3, long sleeves): haori tamoto — every sleeve cloth px flat at `shade` (no lit stroke streaks), a
-   * 1-px `lineShade` seam row under each shoulder joint, 2 short diagonal folds from the elbow and a shadow row 2 rows
-   * above the hand (all in the sleeve ramp, locked).
-   */
-  readonly tamoto?: { readonly shade: number; readonly lineShade: number };
-  /**
-   * Opt-in (MA-46): the last pass gives every px of this ramp that has no 4-neighbour of the same ramp the most
-   * common opaque 4-neighbour colour (ties → the darker), so a pale cloth (e.g. ronin's mist haori sleeves) never
-   * leaves a 1-px speck at a cuff, hand or lapel (a floating pale dot reads as a hitodama).
-   */
-  readonly despeckle?: RampName;
-  /**
    * Opt-in: each drawn side lock is one straight lean from its root to its simulated tip (`leanLock`), so a lagging
    * chain never steps out locally (no headphone bulge at cheek height); the tip keeps its secondary motion.
    */
@@ -568,20 +538,12 @@ export interface Body {
    * Front only: a 1-px centre line `rows` high from the skirt hem in cloth `shade` (0..5, whole), e.g. a hakama split;
    * `notch` cuts a 2-px gap that many rows up from the hem between the legs (default 0).
    */
-  /**
-   * Opt-in hakama (MA-46): the skirt (and every `skirtSplit` tone) in its own `ramp` / whole `shade` instead of the
-   * cloth ramp + `dressShade`, and `drop` extra hem rows on every leg pose (≤ `HAKAMA_DROP_MAX`) so the trapezoid
-   * reaches the ankles over the split legs (standing, dangling, seated and curled alike; never bare legs).
-   */
-  readonly hakama?: { readonly ramp: RampName; readonly shade: number; readonly drop: number };
   readonly skirtSplit?: {
     readonly rows: number;
     readonly shade: number;
     readonly notch?: number;
     /** Opt-in: the notch px (legs or the cloak behind) take this cloth shade (0..5): an inner leg shadow. */
     readonly notchShade?: number;
-    /** Opt-in (MA-46): notch half-width in px from the hip axis (default 1 = the 2-px gap; ≤ 3), legs read apart. */
-    readonly notchHalf?: number;
     /** Opt-in: skirt hem half-width in px (default 10; a straight trapezoid, e.g. hakama legs, not a bell). */
     readonly hemHalf?: number;
     /**
@@ -605,8 +567,6 @@ export interface Body {
       readonly notch: number;
       readonly passNotch: number;
       readonly pleat?: number;
-      /** Opt-in (MA-46): the notch px are cut out (see-through leg gap) instead of painted. */
-      readonly clear?: true;
     };
   };
   /** Fox tail shape per view (default: the rig's dummy-b tail). */

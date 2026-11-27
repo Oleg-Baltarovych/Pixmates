@@ -71,7 +71,7 @@ cuirass, a tasset skirt over a split hakama, feet apart, one hilt at the hip. No
   lace row each, 1-px gaps between plates; dangle ±1 px with hip lag; seated variant sits on the thighs.
 - **Hakama** under: `cloth_ash` 3 (cool grey, so legs separate from the black armour on a dark IDE), split + notch
   (`skirtSplit`), visible 4–5 rows below the kusazuri. Feet: zori with a lit toe, ash tabi (no split toe).
-- **Katana** (`Body.prop`, `Prop.over: 'hilt'` if needed): sheathed through the obi on his left hip (screen-right),
+- **Katana** (`Body.prop`): sheathed through the obi on his left hip (screen-right),
   `lacquer_black` saya with a red sageo, 3 × 3 brass tsuba, cream/ink grip diamonds; the paper charm is dropped
   (richness budget goes to the armour).
 

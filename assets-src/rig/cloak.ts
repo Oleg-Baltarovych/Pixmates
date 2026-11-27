@@ -121,27 +121,6 @@ export function cloakGeometry(
     }
     for (let s = 1; s <= (cloak.hem.cornerDrop ?? 0); s++) put(x, hemY + s);
   }
-  // Wisps (opt-in): per side `count` tongues evenly spaced over the outer `span` px, widths length → 1.
-  const wisps = cloak.hem.wisps;
-  const wispTips: number[] = [];
-  if (wisps && wisps.count > 0) {
-    const centres: number[] = [];
-    for (let k = 0; k < wisps.count; k++) {
-      const off = Math.floor(((2 * k + 1) * wisps.span) / (2 * wisps.count));
-      centres.push(h0 + off);
-      if (!q) centres.push(h1 - off);
-    }
-    for (const c of centres) {
-      for (let s = 1; s <= wisps.length; s++) {
-        const ww = wisps.length - s + 1;
-        const x0 = c - Math.floor((ww - 1) / 2);
-        for (let x = x0; x < x0 + ww; x++) {
-          put(x, hemY + s);
-          if (s === wisps.length) wispTips.push((hemY + s) * width + x);
-        }
-      }
-    }
-  }
   // Tones: bands with rounded ends, interior-only dither, lobe curl lines, lit left edge, corner lining.
   const inside = (x: number, y: number): boolean => px.has(y * width + x);
   const interior = (x: number, y: number): boolean => {
@@ -180,9 +159,6 @@ export function cloakGeometry(
         px.set(i, { lining: false, shade: lit });
       }
     }
-  }
-  if (wisps?.tipShade !== undefined) {
-    for (const i of wispTips) px.set(i, { lining: false, shade: wisps.tipShade });
   }
   if (cloak.lining) {
     const [cw, ch] = cloak.lining.corner;

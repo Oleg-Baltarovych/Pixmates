@@ -23,9 +23,11 @@ bodies in `assets-src/characters/<id>/` (from MA-27). Plan: `docs/plans/2026-11-
 ## D-20 (ADR 012, 2026-11-25): chibi 48 × 56 is the only layout
 The adult layer was **removed in MA-61** (2026-11-25; git history keeps it, last at 2ce10fa): `LAYOUT_ADULT`,
 `Body.layout` / `build`, `anims/adult.ts`, `dummies-adult.ts`, `ADULT_PROP`, two-segment limbs, adult face rules,
-`WALK_TRAVEL.adult`, `--adult` sheets. `RigLayout` stays with one layout (`LAYOUT`). D-19 opt-ins kept for chibi
-re-validation (deleted in MA-69 if unused): `Prop.over`, `Body.kote`, `Body.tamoto`, `skirtSplit.notchHalf` /
-`q34.clear`, `Cloak.hem.wisps`, `Body.hakama`, `Body.despeckle`, front `masks.hairBack`.
+`WALK_TRAVEL.adult`, `--adult` sheets. `RigLayout` stays with one layout (`LAYOUT`). D-19 opt-ins after the MA-69
+cleanup (2026-11-27, all packs byte-identical): **kept** `Body.kote` (ronin, vampire) and front `masks.hairBack`
+(coder, knight); **deleted** (no pack used them; git history keeps them, last at 428288c) `Prop.over`, `Body.tamoto`,
+`skirtSplit.notchHalf`, `skirtSplit.q34.clear`, `Cloak.hem.wisps`, `Body.hakama` (+ `HAKAMA_DROP_MAX`, `skirtRampOf`),
+`Body.despeckle`.
 New opt-ins (D-20, unset = byte-identical):
 - **`Body.face.style: 'stern'`** (MA-62) — shared kit `rig/faces/stern.ts`; `validateFace` stern rules (ART-BIBLE
   §11.9): lid covers the iris top row on stern expressions, ≥ 3 iris rows visible, brows present with inner end 1 row

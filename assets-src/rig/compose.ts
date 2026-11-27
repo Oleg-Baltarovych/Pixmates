@@ -24,7 +24,7 @@ import { MAT } from '../lib/materials.ts';
 import { compose, outline, selectiveOutline, type Part } from '../lib/passes.ts';
 import { antiAlias, rimLight } from '../lib/polish.ts';
 import type { AnimDef, PackDef, RenderContext } from '../lib/types.ts';
-import { elbowOf, FIGURE_H, resolveJoints, withBand } from './body.ts';
+import { FIGURE_H, resolveJoints, withBand } from './body.ts';
 import { LAYOUT, layoutOf, type RigLayout } from './layout.ts';
 import {
   buildArm,
@@ -40,7 +40,6 @@ import {
   capScarfEnds,
   DEFAULT_SLEEVE_SHADE,
   dressShadeOf,
-  skirtRampOf,
   FOX_TAIL_FRONT,
   FOX_TAIL_Q34,
   frontTailLine,
@@ -58,7 +57,6 @@ import {
   armOverTorso,
   clipFarShoulder,
   closeSeams,
-  despeckle,
   cutSpadeNotches,
   farLegGap,
   fistKindOf,
@@ -401,11 +399,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     if (prop) {
       const [px, py] = [Math.round(j.hip[0] + prop.at[0]), Math.round(j.hip[1] + prop.at[1])];
       const opts = { partId: PART_ID.prop, allow: BEHIND_TORSO };
-      // `Prop.over`: everything but the hands / cuffs may sit under the prop.
-      const handIds = new Set<number>([ARM_IDS_L.end, ARM_IDS_R.end]);
-      const overOpts = { partId: PART_ID.prop, allow: (id: number): boolean => !handIds.has(id) };
-      if (prop.over === 'all') stampMask(buf, body, prop.mask, px, py, DEPTH_TIES, MAT.metal, locked, overOpts);
-      else stampMask(buf, body, prop.mask, px, py, DEPTH_PROP, MAT.metal, locked, opts);
+      stampMask(buf, body, prop.mask, px, py, DEPTH_PROP, MAT.metal, locked, opts);
       if (prop.dangle) {
         const prev = joints(anim, prevFrameOf(anim, frame));
         // Hip lag + the stride's back-hair trail (`hairDx`), clamped to ±1 px.
@@ -416,7 +410,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
       }
       // A projected hilt pokes forward over the torso / hem / legs, under the arms.
       if (prop.hilt) {
-        const hOpts = prop.over === 'hilt' ? overOpts : { partId: PART_ID.prop, allow: NOT_ARM };
+        const hOpts = { partId: PART_ID.prop, allow: NOT_ARM };
         stampMask(
           buf,
           body,
@@ -626,13 +620,13 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     const split = body.skirtSplit;
     if (split && !q && v.hem === 'skirt') {
       const x = Math.round(j.hip[0] + (p.parts.hem?.dx ?? 0)) - 1;
-      const clothRamp = ctx.palette.rampNames.indexOf(skirtRampOf(body));
+      const clothRamp = ctx.palette.rampNames.indexOf(body.ramps.cloth);
       skirtSplit(buf, x, split.rows, clothRamp, split.shade, locked);
       skirtDetail(buf, x, split, clothRamp, locked);
     }
     if (split?.q34 && q && v.hem === 'skirt') {
       const top = j.hip[0] + (p.parts.hem?.dx ?? 0);
-      const clothRamp = ctx.palette.rampNames.indexOf(skirtRampOf(body));
+      const clothRamp = ctx.palette.rampNames.indexOf(body.ramps.cloth);
       skirtSplitQ34(buf, top, j.footL, j.footR, split, clothRamp, locked);
     }
     // `Body.kote`: the cuff px (apron material) of one arm end become a lacquer forearm guard with brass studs (final, locked).
@@ -697,68 +691,6 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
         locked.set(i, [buf.ramp[i] ?? -1, buf.shade[i] ?? 0]);
       }
     }
-    // `Body.tamoto`: long haori sleeves as flat cloth (no lit stroke streaks), a 1-px seam row under the shoulder,
-    // 2 short diagonal folds from the elbow and a shadow row above the cuff (final, locked).
-    if (body.tamoto) {
-      const tm = body.tamoto;
-      const sRamp = ctx.palette.rampNames.indexOf(sleeve.ramp);
-      const W = buf.width;
-      const view = bodyViewOf(anim, frame);
-      for (const side of ['L', 'R'] as const) {
-        const ids = side === 'L' ? ARM_IDS_L : ARM_IDS_R;
-        const isSleeve = (i: number): boolean =>
-          (buf.partId[i] === ids.upper || buf.partId[i] === ids.fore) &&
-          buf.material[i] === MAT.cloth &&
-          buf.ramp[i] === sRamp;
-        const paint = (x: number, y: number, shade: number): void => {
-          const i = y * W + x;
-          if (x < 0 || y < 0 || x >= W || y >= buf.height || !isSleeve(i)) return;
-          buf.shade[i] = shade;
-          locked.set(i, [sRamp, shade]);
-        };
-        for (let i = 0; i < W * buf.height; i++) if (isSleeve(i)) paint(i % W, Math.floor(i / W), tm.shade);
-        const sh = j[side === 'L' ? 'shoulderL' : 'shoulderR'];
-        const hand = j[side === 'L' ? 'handL' : 'handR'];
-        const arm = side === 'L' ? p.parts.armL : p.parts.armR;
-        const el = elbowOf(j, side, arm, view, layout);
-        const seamY = Math.round(sh[1]) + 1;
-        // Square shoulder: rows above the seam extend to the seam row's outer edge (1-px chamfer on the top row).
-        const out = side === 'L' ? -1 : 1;
-        const outerAt = (y: number): number | undefined => {
-          let best: number | undefined;
-          for (let x = 0; x < W; x++) if (isSleeve(y * W + x) && (best === undefined || (x - best) * out > 0)) best = x;
-          return best;
-        };
-        let top = seamY;
-        while (top > 0 && outerAt(top - 1) !== undefined) top--;
-        let edge: number | undefined;
-        for (let y = top; y <= seamY; y++) {
-          const e = outerAt(y);
-          if (e !== undefined && (edge === undefined || (e - edge) * out > 0)) edge = e;
-        }
-        if (edge !== undefined) {
-          for (let y = top; y <= seamY; y++) {
-            const from = outerAt(y);
-            if (from === undefined) continue;
-            const src = buf.get(from, y);
-            const to = y === top ? edge - out : edge;
-            for (let x = from + out; (to - x) * out >= 0; x += out) {
-              const i = y * W + x;
-              if ((buf.ramp[i] ?? -1) >= 0 && buf.partId[i] !== PART_ID.cloak) continue;
-              if (src.ramp === null) continue;
-              buf.set(x, y, { ...src, ramp: src.ramp });
-              locked.set(i, [sRamp, tm.shade]);
-            }
-          }
-        }
-        for (let x = Math.round(sh[0]) - 3; x <= Math.round(sh[0]) + 3; x++) paint(x, seamY, tm.lineShade);
-        const dir = side === 'L' ? 1 : -1;
-        for (const dy of [0, 2])
-          for (let k = 0; k < 2; k++) paint(Math.round(el[0]) + dir * k, Math.round(el[1]) + dy + k, tm.lineShade);
-        const shadowY = Math.round(hand[1]) - 2;
-        for (let x = Math.round(hand[0]) - 3; x <= Math.round(hand[0]) + 3; x++) paint(x, shadowY, tm.lineShade);
-      }
-    }
     // 4. Outline, AA, locked tones restored, rim.
     const map = outline(buf, ctx.rampSize, { drop: style.drop, internal: true });
     if (body.hornOutline) recolorHornOutline(buf, map, body.hornOutline);
@@ -793,8 +725,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     const squashed = squashRows(quantize(buf, ctx.palette), cut, p.squash);
     const deep = ctx.palette.ramps.get(sleeve.ramp)?.[0];
     const sealed = closeSeams(p.squash > 0 && deep !== undefined ? squashSeparator(squashed, labels, deep) : squashed);
-    const speckRamp = body.despeckle === undefined ? undefined : ctx.palette.ramps.get(body.despeckle);
-    return { image: speckRamp ? despeckle(sealed, new Set(speckRamp)) : sealed, labels };
+    return { image: sealed, labels };
   };
   const render = (anim: RigAnim, frame: number, ctx: RenderContext): RgbaImage => renderLabeled(anim, frame, ctx).image;
   const toneOf = (ctx: RenderContext, ramp: RampName, shade: number): number => {
