@@ -4,7 +4,7 @@
 import { LEGEND, type Mask } from '../lib/mask.ts';
 import type { ExpressionId, FacePart, ViewFaceLibrary } from './face.ts';
 
-/** Front head mask layout (the dummies' spike-derived head): 30 wide, face anchor at col 5. */
+/** Front head mask layout (the dummies' preview head, ./preview-masks.ts): 30 wide, face anchor at col 5. */
 const HEAD_W = 30;
 const FACE_COL = 5;
 /** q34 shift of the head content toward the facing (with the +1 head-joint lean the face sits +3). */

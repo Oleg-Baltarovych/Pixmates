@@ -1,8 +1,8 @@
 // Test and review bodies for the rig (plan M-ART MA-23…MA-26): `rig-dummy-a` (biped: short hair, shorts, hair clip,
 // bow) and `rig-dummy-b` (biped + fox ears + fox tail: long hair, skirt, choker, long sleeves), plus
-// `rig-maid48-preview` (the art-spike maid's masks on the rig, so art-director can judge the shared poses on her).
-// None of these is built into resources/; tests and `pnpm sprites:sheet --review` use them. The head, face, bow,
-// shoe and spade masks are the spike copies in ./preview-masks.ts.
+// `rig-maid48-preview` (the original 48-px maid review masks on the rig, so art-director can judge the shared poses
+// on her). None of these is built into resources/; tests and `pnpm sprites:sheet --review` use them.
+// The head, face, bow, shoe and spade masks come from ./preview-masks.ts.
 import type { Point } from '../lib/chain.ts';
 import { LEGEND, type Mask, type Outfit } from '../lib/mask.ts';
 import type { PackDef } from '../lib/types.ts';
@@ -32,7 +32,7 @@ const outfit = (over: Partial<Outfit>): Outfit => ({
 });
 
 /** The preview head without its horns (rows 0–4: horn and horn-base px removed). */
-const HORNLESS: Mask = PREVIEW_MASKS.head.mask.map((row, y) =>
+const HORNLESS: Mask = PREVIEW_MASKS.head.map((row, y) =>
   y > 4
     ? row
     : row
@@ -130,7 +130,7 @@ const Q34_EARS: Mask = FAR_EAR.map((far, y) => (EAR[y] ?? '......') + '.........
 const dummyQ34 = (headMask: Mask, masks: Omit<BodyView['masks'], 'shoe'>): BodyView => ({
   head: { mask: deriveQ34Head(headMask), at: HEAD_AT, band: PREVIEW_MASKS.band },
   face: deriveQ34Face(DUMMY_FACE),
-  masks: { shoe: deriveQ34Shoe(PREVIEW_MASKS.shoe.mask), ...masks },
+  masks: { shoe: deriveQ34Shoe(PREVIEW_MASKS.shoe), ...masks },
 });
 
 export const DUMMY_A: Body = {
@@ -150,14 +150,14 @@ export const DUMMY_A: Body = {
   head: { mask: HORNLESS, at: HEAD_AT, band: PREVIEW_MASKS.band },
   face: DUMMY_FACE,
   masks: {
-    shoe: PREVIEW_MASKS.shoe.mask,
+    shoe: PREVIEW_MASKS.shoe,
     headAcc: { mask: ['.rt', 'rtg', '.g.'], at: [6, 4] },
-    neckAcc: { mask: PREVIEW_MASKS.bow.mask, at: [-3, 3] },
+    neckAcc: { mask: PREVIEW_MASKS.bow, at: [-3, 3] },
   },
   views: {
     q34: dummyQ34(HORNLESS, {
       headAcc: { mask: ['.rt', 'rtg', '.g.'], at: [-10, 4] },
-      neckAcc: { mask: PREVIEW_MASKS.bow.mask, at: [-2, 3] },
+      neckAcc: { mask: PREVIEW_MASKS.bow, at: [-2, 3] },
     }),
   },
 };
@@ -186,7 +186,7 @@ export const DUMMY_B: Body = {
   head: { mask: HORNLESS, at: HEAD_AT, band: PREVIEW_MASKS.band },
   face: DUMMY_FACE,
   masks: {
-    shoe: PREVIEW_MASKS.shoe.mask,
+    shoe: PREVIEW_MASKS.shoe,
     headAcc: { mask: FOX_EARS, at: [-11, -4] },
     neckAcc: { mask: ['gtTTtg', '..rr..'], at: [-3, 2] },
   },
@@ -213,15 +213,15 @@ export const MAID_PREVIEW: Body = {
     tailTip: 'hair_plum',
   },
   variants: { headAcc: 'horns', hairBack: 'short', hem: 'skirt', back: 'spade_tail', neckAcc: 'bow', sleeves: 'short' },
-  head: { mask: PREVIEW_MASKS.head.mask, at: HEAD_AT, band: PREVIEW_MASKS.band },
+  head: { mask: PREVIEW_MASKS.head, at: HEAD_AT, band: PREVIEW_MASKS.band },
   face: DUMMY_FACE,
   masks: {
-    shoe: PREVIEW_MASKS.shoe.mask,
-    neckAcc: { mask: PREVIEW_MASKS.bow.mask, at: [-3, 3] },
+    shoe: PREVIEW_MASKS.shoe,
+    neckAcc: { mask: PREVIEW_MASKS.bow, at: [-3, 3] },
     spade: PREVIEW_MASKS.spade,
   },
   hornOutline: 'hair_plum',
-  views: { q34: dummyQ34(PREVIEW_MASKS.head.mask, { neckAcc: { mask: PREVIEW_MASKS.bow.mask, at: [-2, 3] } }) },
+  views: { q34: dummyQ34(PREVIEW_MASKS.head, { neckAcc: { mask: PREVIEW_MASKS.bow, at: [-2, 3] } }) },
 };
 
 /** Stern-look review body (MA-62): dummy B with the shared stern kit (front only; its q34 face stays the dummy one). */
