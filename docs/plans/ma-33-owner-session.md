@@ -57,7 +57,7 @@ Per character (sign-off on the real overlay):
 | kitsune | ✅ | |
 | witch | ✅ | |
 | ronin | ✅ after fix (292a735) | lower-face mask covers only part of the face; on walk the face seems to stick out past it → menpo spans the full head width |
-| knight | ✅ after fix (c011e68) | too much mail (camail) under the helmet → camail 7 rows, calm texture |
+| knight | ✅ after fix (c011e68) | too much mail (camail) under the helmet → camail 5 mask rows (was 7; 7 px rendered, was 9), calm texture |
 | coder | ✅ | |
 | vampire | ✅ after fix (b2a33d0 + d3f12c1) | cheeks "glitter" while walking → steady jaw outline; s6 rim kept only at the cheekbone |
 
