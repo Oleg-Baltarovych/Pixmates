@@ -70,3 +70,33 @@ describe('metal_silver vs the cast (D-21 uniqueness)', () => {
     expect(hueGap(hueDeg(lab(SILVER, s)), hueDeg(lab('cloth_cream', s)))).toBeGreaterThanOrEqual(120);
   });
 });
+
+// Variant B (owner pick 2026-11-27): `cloth_emerald`, the sash / tabard panel / eye ramp — the free emerald gap of the
+// cast (knight.md §4), well apart from witch's `cloth_moss` (a duller, yellower green) and never a Link-tunic flat green.
+const EMERALD = 'cloth_emerald';
+
+describe('cloth_emerald (shared ramp rules, ART-BIBLE §4)', () => {
+  it('has 7 steps, OKLab L strictly rising, darkest never #000, hue drift ≥ 15°', () => {
+    const ls = ramp(EMERALD).map((_, s) => L(EMERALD, s));
+    expect(ls).toHaveLength(7);
+    ls.slice(1).forEach((l, i) => {
+      expect(l).toBeGreaterThan(ls[i] ?? 1);
+    });
+    expect(ramp(EMERALD)[0]).not.toBe('#000000');
+    expect(hueGap(hueDeg(lab(EMERALD, 0)), hueDeg(lab(EMERALD, 6)))).toBeGreaterThanOrEqual(15);
+  });
+  it.each([2, 3, 4, 5])('step %i: hue 145–165° (emerald, not teal or olive)', (s) => {
+    const h = hueDeg(lab(EMERALD, s));
+    expect(h).toBeGreaterThanOrEqual(145);
+    expect(h).toBeLessThanOrEqual(165);
+  });
+});
+
+describe('cloth_emerald vs the cast (D-21 uniqueness)', () => {
+  it.each([3, 4, 5])('step %i is ≥ 20° in hue from witch cloth_moss (bluer green)', (s) => {
+    expect(hueGap(hueDeg(lab(EMERALD, s)), hueDeg(lab('cloth_moss', s)))).toBeGreaterThanOrEqual(20);
+  });
+  it.each([3, 4])('step %i carries ≥ 1.6 × the chroma of witch cloth_moss (a jewel green, not a muted moss)', (s) => {
+    expect(chroma(lab(EMERALD, s))).toBeGreaterThanOrEqual(1.6 * chroma(lab('cloth_moss', s)));
+  });
+});
