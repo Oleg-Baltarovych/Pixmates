@@ -4,6 +4,7 @@
 // IPC is keyed by them, so every name has exactly one contract.
 import { z } from 'zod';
 import { CHANNEL } from './ipc-channels.ts';
+import { ANIM_NAME, PACK_LIMITS, facingSchema, unitPoint } from './pack.ts';
 import type { WindowRole } from './windows.ts';
 
 export { CHANNEL };
@@ -13,9 +14,54 @@ export const LIMITS = {
   pingNonceMax: 64,
   versionMax: 32,
   /** Upper bound for the integer sprite scale: a sanity cap far above any real clamp (main limits the sprite to
-   * MAX_HEIGHT_FRACTION of the work area for whatever FRAME_HEIGHT_PX the art uses). */
+   * MAX_HEIGHT_FRACTION of the work area for whatever frame height the pack uses). */
   scaleMax: 32,
+  /** Characters on stage: 1 in product (D-8), up to 4 in the dev art lineup. */
+  stageCharactersMax: 4,
+  atlasUrlMax: 160,
 } as const;
+
+/** Built-in atlases only come from the `app://characters` host (plan M-ART MA-10). */
+export const ATLAS_URL =
+  /^app:\/\/characters\/[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?\/sprites\/[a-z0-9_-]{1,64}\.(?:png|webp)$/;
+
+const stageAnimation = z
+  .object({
+    frames: z.int().min(1).max(PACK_LIMITS.framesMax),
+    fps: z.number().min(1).max(PACK_LIMITS.fpsMax),
+    loop: z.boolean(),
+    origin: z
+      .object({ x: z.int().min(0).max(PACK_LIMITS.textureMax), y: z.int().min(0).max(PACK_LIMITS.textureMax) })
+      .strict(),
+    /** Per-animation pivot (manifest `anchor`, e.g. the sit_edge seat); the stage renderer applies it from M1. */
+    anchor: unitPoint.optional(),
+    /** Authored facing (manifest `facing`, ADR 010); absent = `front`. The dev cycle mirrors it (MA-33); M1 travel too. */
+    facing: facingSchema.optional(),
+  })
+  .strict();
+
+const stageCharacter = z
+  .object({
+    key: z.string().regex(/^[A-Za-z0-9._-]{1,64}$/),
+    /** Dev art lineup position label, in `--art-lineup` order (dev only). */
+    label: z.enum(['A', 'B', 'C', 'D']).optional(),
+    frameSize: z
+      .object({
+        w: z.int().min(PACK_LIMITS.frameMin).max(PACK_LIMITS.frameMax),
+        h: z.int().min(PACK_LIMITS.frameMin).max(PACK_LIMITS.frameMax),
+      })
+      .strict(),
+    anchor: z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }).strict(),
+    animations: z
+      .record(z.string().regex(ANIM_NAME), stageAnimation)
+      .refine((a) => Object.keys(a).length >= 1 && Object.keys(a).length <= PACK_LIMITS.animationsMax),
+    fallbacks: z
+      .record(z.string().max(65), z.string().regex(ANIM_NAME))
+      .refine((f) => Object.keys(f).length <= PACK_LIMITS.fallbacksMax),
+    atlasUrl: z.string().max(LIMITS.atlasUrlMax).regex(ATLAS_URL),
+    scale: z.int().min(1).max(LIMITS.scaleMax),
+  })
+  .strict();
 
 interface InvokeChannel<Req extends z.ZodType, Res extends z.ZodType> {
   readonly kind: 'invoke';
@@ -59,10 +105,18 @@ export const IPC = {
     request: z.object({ kind: z.enum(['drag-start', 'drag-end', 'click']) }).strict(),
     windows: ['stage'],
   },
-  /** Integer sprite scale chosen by main (size preset / fine steps, display metrics). */
-  [CHANNEL.stageScale]: {
+  /** What to draw (replaces M0 `stage:scale`): the active character(s) with atlas URL and integer scale.
+   * Re-pushed on load, size change and display change. No PNG bytes cross IPC; the stage fetches `atlasUrl`.
+   * Empty `entries` = no valid pack (main has logged an error): the stage draws nothing. */
+  [CHANNEL.stageCharacters]: {
     kind: 'event',
-    payload: z.object({ scale: z.int().min(1).max(LIMITS.scaleMax) }).strict(),
+    payload: z
+      .object({
+        entries: z.array(stageCharacter).max(LIMITS.stageCharactersMax),
+        /** Dev: play `DEV_ANIM_CYCLE` (content/stage.ts; art lineup / --anim-cycle). */
+        animCycle: z.boolean(),
+      })
+      .strict(),
     windows: ['stage'],
   },
 } as const satisfies Record<
@@ -71,6 +125,7 @@ export const IPC = {
 >;
 
 export type ChannelName = keyof typeof IPC;
+export type StageAnimation = z.infer<typeof stageAnimation>;
 export type InvokeChannelName = {
   [K in ChannelName]: (typeof IPC)[K]['kind'] extends 'invoke' ? K : never;
 }[ChannelName];
@@ -102,7 +157,7 @@ export interface PixmatesApi {
   readonly stage?: {
     reportHit(overOpaque: boolean): void;
     sendInput(kind: RequestOf<'stage:input'>['kind']): void;
-    /** Subscribes to scale changes; returns an unsubscribe function. */
-    onScale(listener: (payload: PayloadOf<'stage:scale'>) => void): () => void;
+    /** Subscribes to the characters to draw; returns an unsubscribe function. */
+    onCharacters(listener: (payload: PayloadOf<'stage:characters'>) => void): () => void;
   };
 }

@@ -1,12 +1,14 @@
 // `pnpm perf` (plan M0-08, SPEC §1 budget): builds the unpacked app, launches it with a fixed seed, samples CPU and
-// memory of the whole Electron process tree at 1 Hz and writes reports/perf/<date>.md. Exit 1 over budget.
+// memory of the whole Electron process tree at 1 Hz and writes reports/perf/<date>-<character>.md. Exit 1 over budget.
 // Windows only. No dependencies: one long-running PowerShell sampler (Win32_Process tree + Get-Process counters).
 // Not via Playwright: the EnableNodeCliInspectArguments fuse is off, so `_electron` cannot drive the build.
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
+import { runCli } from './lib/cli.ts';
+import { checkShipped, parsePerfArgs, PERF_USAGE, perfReportName } from './lib/perf-args.ts';
 
 // Memory is checked on the private-bytes sum (avg) for now; working set is reported alongside. The final metric is
 // decided in ADR 007.
@@ -15,15 +17,7 @@ const BUDGET = { cpuPercent: 2, memoryMb: 280 } as const; // ADR 007: private-by
 const TIMEOUT_MS = { build: 10 * 60_000, short: 30_000 } as const;
 const root = path.resolve(import.meta.dirname, '..');
 const exe = path.join(root, 'release', 'win-unpacked', 'Pixmates.exe');
-
-function arg(name: string, fallback: number): number {
-  const raw = process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
-  const value = Number(raw);
-  return raw !== undefined && Number.isFinite(value) && value > 0 ? value : fallback;
-}
-const warmupS = arg('warmup', 30);
-const durationS = arg('duration', 120);
-const skipBuild = process.argv.includes('--skip-build');
+const shippedRoot = path.join(root, 'release', 'win-unpacked', 'resources', 'characters');
 
 interface Proc {
   readonly pid: number;
@@ -84,26 +78,66 @@ const mb = (bytes: number): number => bytes / 1024 / 1024;
 const avg = (values: readonly number[]): number => values.reduce((a, b) => a + b, 0) / Math.max(1, values.length);
 
 async function main(): Promise<void> {
+  // Arguments first, so a usage error shows on any platform; then the Windows-only check.
+  const { help, skipBuild, warmupS, durationS, character } = parsePerfArgs(process.argv.slice(2));
+  if (help) {
+    console.log(PERF_USAGE);
+    return;
+  }
   if (process.platform !== 'win32') throw new Error('pnpm perf measures the Windows build only');
   if (!skipBuild)
     execFileSync('pnpm dist:dir', { cwd: root, stdio: 'inherit', shell: 'cmd.exe', timeout: TIMEOUT_MS.build }); // fixed command, no arguments interpolated
 
+  if (character !== undefined) {
+    checkShipped(
+      character,
+      readdirSync(shippedRoot, { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name),
+    );
+  }
   const env = { ...process.env };
   delete env['ELECTRON_RUN_AS_NODE']; // ignored by the RunAsNode fuse anyway; keep the launch clean
   // Own temp profile: a running `pnpm dev` or installed instance holds the single-instance lock of the default
   // userData, which would make the measured launch quit at once; it also keeps perf runs off real user data.
   const userData = mkdtempSync(path.join(os.tmpdir(), 'pixmates-perf-'));
-  const app = spawn(exe, ['--perf-seed=1', `--user-data-dir=${userData}`], { cwd: root, env, stdio: 'ignore' });
-  if (app.pid === undefined) throw new Error(`could not start ${exe}`);
-  const sampler = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', SAMPLER], {
-    env: { ...env, PERF_ROOT_PID: String(app.pid) },
-    stdio: ['ignore', 'pipe', 'inherit'],
-  });
-
+  const extra = character === undefined ? [] : [`--character=${character}`];
   const samples: Sample[] = [];
   const totalS = warmupS + durationS;
-  console.log(`[perf] warm-up ${String(warmupS)} s, measuring ${String(durationS)} s …`);
+  let app: ReturnType<typeof spawn> | undefined;
+  let sampler: ReturnType<typeof spawn> | undefined;
+  // Cleanup must also run on Ctrl+C: `finally` does not run when the process is killed by a signal.
+  const cleanup = (): void => {
+    sampler?.kill();
+    if (app?.pid !== undefined) {
+      try {
+        execFileSync('taskkill', ['/PID', String(app.pid), '/T', '/F'], { stdio: 'ignore', timeout: TIMEOUT_MS.short });
+      } catch {
+        // the app may already have exited
+      }
+    }
+    rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+  };
+  const onSigint = (): void => {
+    cleanup();
+    process.exit(130);
+  };
+  process.once('SIGINT', onSigint);
   try {
+    // Spawn inside `try`, so a failed spawn still removes the temp profile.
+    const started = spawn(exe, ['--perf-seed=1', `--user-data-dir=${userData}`, ...extra], {
+      cwd: root,
+      env,
+      stdio: 'ignore',
+    });
+    app = started;
+    if (started.pid === undefined) throw new Error(`could not start ${exe}`);
+    const sampling = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', SAMPLER], {
+      env: { ...env, PERF_ROOT_PID: String(started.pid) },
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+    sampler = sampling;
+    console.log(`[perf] warm-up ${String(warmupS)} s, measuring ${String(durationS)} s …`);
     await new Promise<void>((resolve) => {
       // Overall deadline: never hang if the sampler dies while the app keeps running.
       const deadline = setTimeout(resolve, (totalS + 60) * 1000);
@@ -111,7 +145,7 @@ async function main(): Promise<void> {
         clearTimeout(deadline);
         resolve();
       };
-      const lines = createInterface({ input: sampler.stdout });
+      const lines = createInterface({ input: sampling.stdout });
       lines.on('line', (line) => {
         let parsed: Sample;
         try {
@@ -122,16 +156,11 @@ async function main(): Promise<void> {
         samples.push(parsed);
         if (parsed.t >= totalS * 1000) done();
       });
-      app.on('exit', done);
+      started.on('exit', done);
     });
   } finally {
-    sampler.kill();
-    try {
-      execFileSync('taskkill', ['/PID', String(app.pid), '/T', '/F'], { stdio: 'ignore', timeout: TIMEOUT_MS.short });
-    } catch {
-      // the app may already have exited
-    }
-    rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+    process.removeListener('SIGINT', onSigint);
+    cleanup();
   }
 
   const measured = samples.filter((s) => s.t >= warmupS * 1000);
@@ -163,12 +192,14 @@ async function main(): Promise<void> {
   const processCount = measured.at(-1)?.procs.length ?? 0;
 
   const cpuAvg = avg(cpu);
-  const ws = { avg: mb(avg(wsTotals)), p95: mb(percentile(wsTotals, 95)) };
-  const priv = { avg: mb(avg(privTotals)), p95: mb(percentile(privTotals, 95)) };
+  const cpuP95 = percentile(cpu, 95);
+  const cpuMax = Math.max(0, ...cpu);
+  const ws = { avg: mb(avg(wsTotals)), p95: mb(percentile(wsTotals, 95)), max: mb(Math.max(0, ...wsTotals)) };
+  const priv = { avg: mb(avg(privTotals)), p95: mb(percentile(privTotals, 95)), max: mb(Math.max(0, ...privTotals)) };
   const verdict = cpuAvg < BUDGET.cpuPercent && priv.avg <= BUDGET.memoryMb ? 'within budget' : 'OVER BUDGET';
   const date = new Date().toISOString().slice(0, 10);
   const report = [
-    `# Perf — ${date} — idle placeholder`,
+    `# Perf — ${date} — idle ${character ?? 'default character'}`,
     '',
     `- Build: release/win-unpacked (electron-builder --dir, fuses on), \`--perf-seed=1\``,
     `- Machine: ${os.cpus()[0]?.model ?? 'unknown CPU'}, ${String(cores)} logical cores, ${String(Math.round(mb(os.totalmem())))} MB RAM, Windows ${os.release()}`,
@@ -177,12 +208,11 @@ async function main(): Promise<void> {
     `- Budget (SPEC §1): CPU < ${String(BUDGET.cpuPercent)} % (avg), memory ≤ ${String(BUDGET.memoryMb)} MB (sum of all processes)`,
     '- Memory metric: the verdict uses the **private-bytes sum (avg)** for now; working set is shown alongside (it double-counts shared pages). The final metric is decided in ADR 007.',
     '',
-    '| Metric | Value |',
-    '|---|---|',
-    `| CPU avg | ${cpuAvg.toFixed(2)} % |`,
-    `| CPU p95 | ${percentile(cpu, 95).toFixed(2)} % |`,
-    `| Private bytes, sum (avg / p95) — budget metric | ${priv.avg.toFixed(1)} / ${priv.p95.toFixed(1)} MB |`,
-    `| Working set, sum (avg / p95) | ${ws.avg.toFixed(1)} / ${ws.p95.toFixed(1)} MB |`,
+    '| Metric | avg | p95 | max |',
+    '|---|---|---|---|',
+    `| CPU, % | ${cpuAvg.toFixed(2)} | ${cpuP95.toFixed(2)} | ${cpuMax.toFixed(2)} |`,
+    `| Private bytes, sum, MB — budget metric | ${priv.avg.toFixed(1)} | ${priv.p95.toFixed(1)} | ${priv.max.toFixed(1)} |`,
+    `| Working set, sum, MB | ${ws.avg.toFixed(1)} | ${ws.p95.toFixed(1)} | ${ws.max.toFixed(1)} |`,
     '',
     '| Process type | WS avg MB | Private avg MB |',
     '|---|---|---|',
@@ -193,11 +223,11 @@ async function main(): Promise<void> {
   ].join('\n');
   const dir = path.join(root, 'reports', 'perf');
   mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${date}.md`);
+  const file = path.join(dir, perfReportName(date, character));
   writeFileSync(file, report);
   console.log(report);
   console.log(`[perf] report: ${file}`);
   if (verdict !== 'within budget') process.exitCode = 1;
 }
 
-await main();
+await runCli(PERF_USAGE, main);

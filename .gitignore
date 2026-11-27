@@ -10,6 +10,7 @@ playwright-report/
 
 # generated character sheets (pnpm sprites)
 resources/characters/
+resources/fx/
 
 # owner's personal character packs — never committed or bundled (ADR 005)
 skins-local/

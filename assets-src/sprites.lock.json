@@ -1,0 +1,38 @@
+{
+  "pixmates.maid": {
+    "sprites/atlas.png": "501576cdc710be02b83a08b82e7ae39ce9b3e796aa75b372434ea7faffb20684",
+    "manifest.json": "4d910abf2e4cd702cdee460dd21e6f386f3b78ebaffbe8b358becce010fcc7a7"
+  },
+  "pixmates.kitsune": {
+    "sprites/atlas.png": "79108853932d1d04f1a47a5f29ace2444304084c0b95a08f00e7ed73964c7e44",
+    "manifest.json": "729106227875f2c122f92ca3b09d099de6cb7425ea3e280bf4761f31878bfde3"
+  },
+  "pixmates.goth": {
+    "sprites/atlas.png": "15d79048d93b3be5deb36febe45e1e3b23ad9411f915875f9ec13ab9c96bb56d",
+    "manifest.json": "d23ac289993dc68cb525459914aa546c2527c52fc74f4fda605c16f045a54e28"
+  },
+  "pixmates.witch": {
+    "sprites/atlas.png": "8329225ea1058b07477964df4772cfc343b1d6d93dfcfd32cd615f557c9ab4c3",
+    "manifest.json": "cf17113aad8465555001ec128b69b0fb5d890cc35c1642dbdcdbebf544e872eb"
+  },
+  "pixmates.ronin": {
+    "sprites/atlas.png": "7a02158e0d86ba119a2015d98e53794387ee390ea919136ef3aa1585c51cb351",
+    "manifest.json": "4d61b75576007160051ff411feb737299a5367311a53816a6f2afb92b14e1d38"
+  },
+  "pixmates.coder": {
+    "sprites/atlas.png": "886ce5b979ed98ae627d454b3c9c504de7153a153171dcbcfa78e95478b07154",
+    "manifest.json": "74c3a93056c361a29533253bd65e2dbb95d3a4ac6ff986ee5b41269cb73cb50a"
+  },
+  "pixmates.knight": {
+    "sprites/atlas.png": "803fec45eec17733b37403a54eafd498ce3b4dab8bca78abaf5ded939b3b09f9",
+    "manifest.json": "2cbf625c9f456fccfbd391bc4b76a97c48ab943ee4792eb6149e5a971ba90ee7"
+  },
+  "pixmates.vampire": {
+    "sprites/atlas.png": "98ee837be9fb46e4b343ada4eb10a3be345cce2452a75ab9dfe7e9301b7c77ea",
+    "manifest.json": "326389b4be7ec108822231cd2b5fdca3c764318b3d23976707f1637c5ac3e0e2"
+  },
+  "fx": {
+    "sprites/fx.png": "08a6f189a75dd7b9236ef967526398a8259ba319b28229c553075636c9bd0ea5",
+    "manifest.json": "5110ee9cd82630958d4220e3e015f126f6afe8e552bcb7ff084a091d15c209ae"
+  }
+}

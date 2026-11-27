@@ -10,4 +10,8 @@
 | 006 | [Dev companion: local hooks endpoint + MCP server](006-dev-companion.md) | Accepted |
 | 007 | [Window strategy: stage overlay (A); RAM budget ≤ 280 MB private](007-window-strategy.md) | Accepted |
 | 008 | [SQLite driver: `node:sqlite` behind `storage/db.ts`](008-sqlite-driver.md) | Accepted |
-| 009 | Frame size (48/64) and style direction for all-code art | Pending — M-ART spike |
+| 009 | [Character frame 48 px, style «anime soft»](009-art-frame-and-style.md) | Accepted (restored in full by 012) |
+| 010 | [Rig views: front + three-quarter (3/4) for travel](010-rig-views-front-and-three-quarter.md) | Accepted (D-16); own numbers hold (011's revision void) |
+| 011 | [Adult proportions for all built-in characters, frame 56 × 72](011-adult-proportions.md) | Superseded by 012 (D-20) |
+| 012 | [Return to chibi 48 × 56 with a stern-look face option and a mouth-mask slot](012-return-to-chibi-stern-look.md) | Accepted (D-20, owner 2026-11-25) |
+| 013 | [MCP client: user-connected tools for the in-character agent](013-mcp-client.md) | Proposed (D-24, 2026-11-28) |

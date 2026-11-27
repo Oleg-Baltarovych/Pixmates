@@ -3,7 +3,6 @@
 import type { BrowserWindow, BrowserWindowConstructorOptions, Display } from 'electron';
 import {
   DEFAULT_SIZE_PRESET,
-  FRAME_HEIGHT_PX,
   MAX_HEIGHT_FRACTION,
   MIN_SCALE,
   SIZE_PRESETS_DIP,
@@ -12,10 +11,31 @@ import {
 import { maxScale, presetScales, stepScale, type ScaleInput } from '../../core/scale.ts';
 import { initialState, step } from '../../core/step.ts';
 import type { CoreEvent, CoreState, Effect } from '../../core/types.ts';
-import { CHANNEL } from '../../shared/ipc.ts';
+import { CHANNEL, type StageAnimation } from '../../shared/ipc.ts';
+import type { Manifest } from '../../shared/pack.ts';
 import { sendEvent, type IpcRouter } from '../ipc/handle.ts';
+import type { StageCharacter } from '../characters/selection.ts';
+
+/** One `stage:characters` animation entry from a validated manifest animation (pivot and facing pass through). */
+export function stageAnimation(a: Manifest['animations'][string]): StageAnimation {
+  return {
+    frames: a.frames,
+    fps: a.fps,
+    loop: a.loop,
+    origin: a.origin ?? { x: 0, y: 0 },
+    // Per-animation pivot (sit_edge seat) and authored facing (ADR 010); the renderer mirrors facing in the dev cycle
+    // (MA-33) and applies the pivot from M1.
+    ...(a.anchor ? { anchor: a.anchor } : {}),
+    ...(a.facing ? { facing: a.facing } : {}),
+  };
+}
 
 export type LayerMode = 'on-top' | 'desktop';
+
+interface Sizing {
+  readonly frameH: number;
+  readonly refH: number | undefined;
+}
 
 /** Overlay window on the display's work area (SPEC §3.1 variant A). */
 export function stageWindowOptions(
@@ -44,6 +64,10 @@ export interface StageControllerDeps {
   readonly display: () => Pick<Display, 'workArea' | 'scaleFactor'>;
   readonly now: () => number;
   readonly seed: number;
+  /** Packs on stage (1 in product; ≤ 4 in the dev lineup). Empty = no valid pack: nothing to draw or size. */
+  readonly characters?: () => readonly StageCharacter[];
+  /** Dev: cycle idle → walk → happy. */
+  readonly animCycle?: boolean;
 }
 
 export class StageController {
@@ -84,20 +108,22 @@ export class StageController {
     win.setIgnoreMouseEvents(this.#core.hitThrough, { forward: true });
     this.#applyLayer(win);
     win.webContents.on('did-finish-load', () => {
-      this.#pushScale();
+      this.#pushCharacters();
     });
   }
 
   setPreset(preset: SizePreset): void {
     this.#preset = preset;
     this.#scale = this.#presetScale(preset);
-    this.#pushScale();
+    this.#pushCharacters();
   }
 
   /** «Більше» / «Менше»: one integer step within [MIN_SCALE, clamp]. */
   nudge(delta: 1 | -1): void {
-    this.#scale = stepScale(this.#scale, delta, MIN_SCALE, maxScale(this.#scaleInput(0)));
-    this.#pushScale();
+    const sizing = this.#sizing();
+    if (!sizing) return;
+    this.#scale = stepScale(this.#scale, delta, MIN_SCALE, maxScale(this.#scaleInput(0, sizing)));
+    this.#pushCharacters();
   }
 
   setLayer(layer: LayerMode): void {
@@ -111,28 +137,65 @@ export class StageController {
     const win = this.#deps.stage();
     if (win) win.setBounds(this.#deps.display().workArea);
     this.#scale = this.#presetScale(this.#preset);
-    this.#pushScale();
+    this.#pushCharacters();
   }
 
-  #scaleInput(targetDip: number): ScaleInput {
+  #characters(): readonly StageCharacter[] {
+    return this.#deps.characters?.() ?? [];
+  }
+
+  /** Sizing of the primary character (frame height + manifest `scaleRef`, ADR 009); undefined = nothing on stage. */
+  #sizing(): Sizing | undefined {
+    const manifest = this.#characters()[0]?.pack.manifest;
+    if (!manifest) return undefined;
+    return { frameH: manifest.frameSize.h, refH: manifest.scaleRef };
+  }
+
+  #scaleInput(targetDip: number, { frameH, refH }: Sizing): ScaleInput {
     const display = this.#deps.display();
     return {
       targetDip,
       scaleFactor: display.scaleFactor,
-      frameH: FRAME_HEIGHT_PX,
+      frameH,
+      refH,
       workAreaHeightDip: display.workArea.height,
       maxFraction: MAX_HEIGHT_FRACTION,
       minScale: MIN_SCALE,
     };
   }
 
-  #presetScale(preset: SizePreset): number {
-    return presetScales(SIZE_PRESETS_DIP, this.#scaleInput(0))[preset];
+  /** Preset scale for `sizing` (default: the primary character); MIN_SCALE when no pack is on stage. */
+  #presetScale(preset: SizePreset, sizing = this.#sizing()): number {
+    return sizing ? presetScales(SIZE_PRESETS_DIP, this.#scaleInput(0, sizing))[preset] : MIN_SCALE;
   }
 
-  #pushScale(): void {
+  #pushCharacters(): void {
     const win = this.#deps.stage();
-    if (win) sendEvent(win.webContents, CHANNEL.stageScale, { scale: this.#scale });
+    if (!win) return;
+    const entries = this.#characters().map(({ key, label, pack }, index) => {
+      const { manifest } = pack;
+      const animations = Object.fromEntries(
+        Object.entries(manifest.animations).map(([name, a]) => [name, stageAnimation(a)]),
+      );
+      return {
+        key,
+        ...(label === undefined ? {} : { label }),
+        frameSize: manifest.frameSize,
+        anchor: manifest.anchor,
+        animations,
+        fallbacks: manifest.fallbacks,
+        atlasUrl: `app://characters/${pack.id}/${pack.atlas}`,
+        // The primary character follows the fine steps; lineup entries use the preset for their own frame size.
+        scale:
+          index === 0
+            ? this.#scale
+            : this.#presetScale(this.#preset, { frameH: manifest.frameSize.h, refH: manifest.scaleRef }),
+      };
+    });
+    const payload = { entries, animCycle: this.#deps.animCycle ?? false };
+    if (!sendEvent(win.webContents, CHANNEL.stageCharacters, payload)) {
+      console.error('[stage] stage:characters payload failed its contract');
+    }
   }
 
   #applyLayer(win: BrowserWindow): void {
@@ -153,7 +216,7 @@ export class StageController {
         this.#deps.stage()?.setIgnoreMouseEvents(effect.ignore, { forward: true });
         return;
       case 'PlayAnimation':
-        // M0 has one placeholder frame; animations reach the renderer with the rig (M1).
+        // The stage plays only idle until M1 behaviour sends animations to the renderer.
         return;
     }
   }

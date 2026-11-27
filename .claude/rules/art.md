@@ -7,7 +7,8 @@ paths:
 # Art pipeline rules — SPEC §5.2; ADR 004, 005
 
 - The source of style is `docs/art/` (art bible, master palette, rig spec). A sprite that contradicts it is wrong even if it "looks fine".
-- Detail first (D-10): very detailed, stylish pixel art; frame 48 or 64 px (fixed at M-ART), rich materials and secondary details (fabric folds, highlights, accessories) without losing the silhouette.
+- Detail first (D-10): very detailed, stylish pixel art; frame 48 × 56 (ADR 009, ADR 012), rich materials and secondary details (fabric folds, highlights, accessories) without losing the silhouette.
+- Style = pixel anime with CHIBI proportions (D-13, D-20, ADR 012, SPEC §5.2): ~2–2.5 heads in a 48 × 56 frame, big expressive anime eyes (~⅓ of the face), anime soft per ADR 009; hair in pointed clumps with an "angel ring" shine band; anime emotion marks as FX (sweat drop, anger vein, ^^ / >< eyes); non-human characters as anime mascots. Tougher characters (goth, ronin, coder) use the stern-look face option (ART-BIBLE §11.9: lid line over the iris top, angled visible brows, set mouth, no blush outside petted), never adult proportions, and emotions must break the stern read. Mouth masks follow ART-BIBLE §11.10. Costumes follow ART-BIBLE §12 (layers, one signature piece, material contrast, trims readable at 1×). Adult 56 × 72 (ADR 011) is superseded. Style is not IP — originality (ADR 005) is checked on every review.
 - All art by code, quality maxed (D-11, SPEC §5.2):
   - faces and key details as authored pixel masks (one face layer per emotion); procedural generators only for materials (cloth, metal, stone, fur);
   - 5–7-tone hue-shifted ramps per material; selective outline (coloured, lighter on the lit side); rim light for dark wallpapers; manual AA on curves; dithering only as texture;

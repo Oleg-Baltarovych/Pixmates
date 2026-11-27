@@ -13,8 +13,11 @@ export function captureStageForDev(stage: () => BrowserWindow | undefined, dir: 
     const win = stage();
     if (!win) return;
     void win.webContents.capturePage().then((image) => {
-      const { width, height } = image.getSize();
-      const bgra = image.toBitmap();
+      const page = image.getSize();
+      // The bitmap is in device px (125 % → 1.25× the DIP size): crop and scan in device px, never resample.
+      const scaleFactor = image.getScaleFactors()[0] ?? 1;
+      const bgra = image.toBitmap({ scaleFactor });
+      const height = Math.round(page.height * scaleFactor);
       const w = Math.round(bgra.length / 4 / height);
       let minX = w;
       let minY = height;
@@ -30,7 +33,7 @@ export function captureStageForDev(stage: () => BrowserWindow | undefined, dir: 
         }
       }
       mkdirSync(dir, { recursive: true });
-      const info = { pageDip: { width, height }, bitmapWidth: w, sprite: { minX, minY, maxX, maxY } };
+      const info = { pageDip: page, scaleFactor, bitmap: { width: w, height }, sprite: { minX, minY, maxX, maxY } };
       writeFileSync(join(dir, 'stage-capture.json'), JSON.stringify(info, null, 2));
       if (maxX < 0) return;
       const x0 = Math.max(0, minX - PAD);

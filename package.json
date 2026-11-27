@@ -12,8 +12,9 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "dev": "pnpm sprites && electron-vite dev --",
+    "dev:cycle": "pnpm sprites && electron-vite dev -- --anim-cycle",
+    "build": "pnpm sprites && electron-vite build",
     "dist:dir": "pnpm build && electron-builder --dir --publish never",
     "perf": "node tools/perf.ts",
     "typecheck": "tsc -p tsconfig.core.json && tsc -p tsconfig.main.json && tsc -p tsconfig.preload.json && tsc -p tsconfig.renderer.json && tsc -p tsconfig.tools.json && tsc -p tsconfig.tests.json",
@@ -22,7 +23,14 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "security": "pnpm audit --prod --audit-level high"
+    "check": "pnpm typecheck && pnpm test && pnpm lint && pnpm format:check",
+    "security": "pnpm audit --prod --audit-level high",
+    "sprites": "node tools/build-sprites.ts",
+    "sprites:lock": "node tools/sprites-lock.ts",
+    "sprites:compare": "node tools/sprites-compare.ts",
+    "sprites:sheet": "node tools/sprites-sheet.ts",
+    "sprites:preview": "node tools/sprites-sheet.ts --preview",
+    "showcase": "pnpm sprites && node tools/showcase.ts"
   },
   "dependencies": {
     "i18next": "27.2.2",

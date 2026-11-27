@@ -12,14 +12,14 @@ const api: PixmatesApi = {
     sendInput: (kind) => {
       ipcRenderer.send(CHANNEL.stageInput, { kind });
     },
-    onScale: (listener) => {
+    onCharacters: (listener) => {
       // Only the payload reaches the page, never the IpcRendererEvent (it carries the sender object).
-      const handler = (_event: unknown, payload: { scale: number }): void => {
-        listener({ scale: payload.scale });
+      const handler = (_event: unknown, payload: Parameters<typeof listener>[0]): void => {
+        listener(payload);
       };
-      ipcRenderer.on(CHANNEL.stageScale, handler);
+      ipcRenderer.on(CHANNEL.stageCharacters, handler);
       return () => {
-        ipcRenderer.removeListener(CHANNEL.stageScale, handler);
+        ipcRenderer.removeListener(CHANNEL.stageCharacters, handler);
       };
     },
   },

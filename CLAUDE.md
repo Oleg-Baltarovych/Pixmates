@@ -16,13 +16,16 @@ pure behavior core in `src/core` · Zustand (renderer view state) · zod (IPC, m
 
 ## Commands
 > Keep in sync with `package.json` (`/sync-context`). Planned (not wired yet): `pnpm sprites` (M-ART), `pnpm eval` (M2), `pnpm dist` NSIS + `pnpm e2e` (M6).
-- `pnpm dev` — electron-vite dev (HMR for renderers, main restarts); dev-only switches `--dev-windows`, `--capture-stage`. App flag `--compat-mode` (any build) = software rendering for GPUs that show black instead of transparency
-- `pnpm typecheck && pnpm test && pnpm lint && pnpm format:check` — must be green before reporting a task done (typecheck = 6 TS projects: core, main, preload, renderer, tools, tests)
+- `pnpm dev` — `pnpm sprites` then `electron-vite dev --` (app flags after `pnpm dev --`; quote comma lists in PowerShell) (HMR for renderers, main restarts); dev-only switches `--dev-windows`, `--capture-stage`, `--art-lineup=<ids>` (≤ 4 built-ins side by side). App flag `--compat-mode` (any build) = software rendering for GPUs that show black instead of transparency
+- `pnpm check` — typecheck → test → lint → format:check, stops at the first failure; must be green before reporting a task done (typecheck = 6 TS projects: core, main, preload, renderer, tools, tests)
 - `pnpm test:coverage` — Vitest + v8 coverage (core ≥ 90%)
 - `pnpm format` — Prettier write
 - `pnpm build` — electron-vite production build into `out/` (pages served from `app://renderer/...`)
 - `pnpm dist:dir` — build + `electron-builder --dir` (unpacked app with fuses in `release/win-unpacked/`, no installer, no publish)
-- `pnpm perf` — builds `dist:dir`, launches the packaged app with a temp profile, samples all processes 30 s warm-up + 120 s → `reports/perf/<date>.md`; verdict: CPU < 2 % and private-bytes sum avg ≤ 280 MB (ADR 007, SPEC §1). Run plugged in, with no `pnpm dev` instance open
+- `pnpm perf [-- --character=<id>]` — builds `dist:dir`, launches the packaged app with a temp profile, samples all processes 30 s warm-up + 120 s → `reports/perf/<date>-<character>.md` (unknown or space-separated flags exit 2); verdict: CPU < 2 % and private-bytes sum avg ≤ 280 MB (ADR 007, SPEC §1). Run plugged in, with no `pnpm dev` instance open
+- `pnpm sprites:lock` — rewrite the committed sprite fingerprint `assets-src/sprites.lock.json` after an intended pack change (`pnpm test` fails when a pack drifts from it)
+- `pnpm sprites:compare <id> [--base <git-ref>] [--frames anim[:frame],…]` — before/after review sheets of one pack (base default HEAD, built from a temp git export; working tree untouched) → `reports/sprites/<id>-compare-x1|x4|x10.png`, rows old/new on white then dark
+- `pnpm showcase` — `pnpm sprites`, then the README media from the packs (atlases must match the lock) → `docs/media/` (`cast.png`, `cast-dark.png` ×4, `cast.gif` ×2, `<id>.gif` ×4: idle → walk → happy; own GIF encoder `tools/lib/gif.ts`, deterministic). Rerun and commit after an intended pack change
 - `pnpm security` — `pnpm audit --prod --audit-level high`
 
 ## Non-negotiable rules
@@ -32,7 +35,7 @@ pure behavior core in `src/core` · Zustand (renderer view state) · zod (IPC, m
 - Behaviour numbers (thresholds, cooldowns, weights, durations) live in `src/content/`. No magic numbers in logic.
 - Renderers draw and send input; they never decide behaviour. Every IPC message is a zod contract in `src/shared/ipc.ts`, validated in main.
 - Electron hardening is fixed: `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, `webSecurity: true`, strict CSP, no navigation / `window.open` / `webview`, `shell.openExternal` only for allow-listed https.
-- AI tools are read-only or in-app actions. No shell, no process kill, no file writes. System data, window titles, clipboard, hook payloads and imported packs are untrusted text: they go into prompts only as delimited data with length limits.
+- AI tools: built-in tools are read-only or in-app actions — no shell, no process kill, no file writes. Tools from user-connected MCP servers (ADR 013) are untrusted: off until the user enables each one; a tool runs without confirmation only if the user set it to `auto` and the server marks it read-only; every other call needs a per-call confirmation in the UI showing server, tool and exact arguments. Nothing is auto-approved by default. System data, window titles, clipboard, hook payloads, imported packs and MCP tool descriptions/results are untrusted text: they go into prompts only as delimited data with length limits.
 - Local servers (hooks endpoint, MCP) bind to `127.0.0.1` only, with token auth and `Origin`/`Host` checks.
 - Only original characters in the repo and builds (ADR 005). Never create or edit art, lines or personas of protected characters; never write to `skins-local/`.
 - All user-facing text via i18n keys (`uk` default, `en` second). No string concatenation for plurals.

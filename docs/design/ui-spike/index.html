@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pixmates UI spike</title>
+<meta name="description" content="Три візуальні напрями інтерфейсу Pixmates: бульбашка, MCP-дозвіл, радіальне меню, перший запуск, налаштування.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tiny5&display=swap">
+<style>
+  :root {
+    --page: #f4f2ee; --card: #ffffff; --ink: #1d1b22; --ink-2: #5c5866; --line: rgba(0, 0, 0, .1); --accent: #5146d8; --focus: #5146d8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) { --page: #16151a; --card: #222128; --ink: #f2f1f5; --ink-2: #aaa7b5; --line: rgba(255, 255, 255, .1); --accent: #a29dff; --focus: #a29dff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 16px/1.5 Inter, 'Segoe UI', system-ui, sans-serif; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 40px 16px 56px; }
+  h1 { font-family: Tiny5, Inter, sans-serif; font-weight: 400; font-size: clamp(32px, 5vw, 48px); line-height: 1.05; margin: 0 0 8px; }
+  .lead { color: var(--ink-2); max-width: 760px; margin: 0 0 8px; }
+  .cast { display: flex; gap: 4px; margin: 20px 0 28px; flex-wrap: wrap; }
+  .cast img { width: 48px; height: 56px; image-rendering: pixelated; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 20px; }
+  a.card { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; color: inherit; text-decoration: none; transition: transform .15s, box-shadow .15s; }
+  a.card:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(0, 0, 0, .12); }
+  a.card:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .thumb { position: relative; aspect-ratio: 1280 / 800; overflow: hidden; border-bottom: 1px solid var(--line); background: var(--page); }
+  .thumb iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .body { padding: 16px 18px 20px; display: flex; flex-direction: column; gap: 6px; }
+  .letter { font-family: Tiny5, Inter, sans-serif; font-size: 14px; color: var(--accent); }
+  .name { font-size: 20px; font-weight: 700; }
+  .pitch { color: var(--ink-2); margin: 0; }
+  .screens { margin: 36px 0 0; color: var(--ink-2); font-size: 14px; }
+  .screens b { color: var(--ink); }
+  code { font-family: 'Cascadia Mono', Consolas, monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pixmates — UI spike</h1>
+  <p class="lead">Головний інтерфейс — сам персонаж. Звичайні вікна — лише там, де без них не обійтися. Три візуальні напрями, кожен на тих самих п’яти екранах. Відкрий, поклацай вкладки, перемкни світлу/темну тему — і обери один.</p>
+  <div class="cast" aria-label="Склад v1">
+    <img src="../../media/maid.gif" alt="Покоївка"><img src="../../media/kitsune.gif" alt="Кіцуне"><img src="../../media/goth.gif" alt="Готка"><img src="../../media/witch.gif" alt="Відьма"><img src="../../media/ronin.gif" alt="Ронін"><img src="../../media/coder.gif" alt="Кодер"><img src="../../media/knight.gif" alt="Лицар"><img src="../../media/vampire.gif" alt="Вампір">
+  </div>
+  <div class="grid">
+    <a class="card" href="a-pixel.html">
+      <div class="thumb"><iframe src="a-pixel.html#screen=mcp&amp;static" title="Прев’ю напряму A" tabindex="-1" loading="lazy"></iframe></div>
+      <div class="body"><span class="letter">A</span><span class="name">Pixel-native</span><p class="pitch">Піксельні шрифти, товсті піксельні рамки, палітра з персонажів — інтерфейс як частина гри.</p></div>
+    </a>
+    <a class="card" href="b-clean.html">
+      <div class="thumb"><iframe src="b-clean.html#screen=mcp&amp;static" title="Прев’ю напряму B" tabindex="-1" loading="lazy"></iframe></div>
+      <div class="body"><span class="letter">B</span><span class="name">Clean + pixel accents</span><p class="pitch">Спокійний сучасний десктопний UI; піксель-арт — головний герой, пікселі лише в іконках і заголовках.</p></div>
+    </a>
+    <a class="card" href="c-cozy.html">
+      <div class="thumb"><iframe src="c-cozy.html#screen=mcp&amp;static" title="Прев’ю напряму C" tabindex="-1" loading="lazy"></iframe></div>
+      <div class="body"><span class="letter">C</span><span class="name">Cozy desk</span><p class="pitch">Теплий папір, м’які картки, бульбашки як панелі коміксу — затишний стіл, на якому живе персонаж.</p></div>
+    </a>
+  </div>
+  <p class="screens">Екрани в кожному напрямі: <b>1</b> бульбашка зі стрімінгом, слідом tool-виклику й чипами · <b>2</b> картка MCP-дозволу · <b>3</b> радіальне меню (ПКМ по персонажу) · <b>4</b> перший запуск (знайомство, галерея, провайдер, приватність) · <b>5</b> налаштування (6 розділів).
+  Параметри в адресі: <code>#screen=mcp&amp;theme=dark</code>, <code>&amp;static</code> — без анімації, <code>&amp;step=3</code>, <code>&amp;sec=mcp</code>.</p>
+</div>
+<script>
+  // Scale each 1280×800 preview to its card width.
+  const fit = () => document.querySelectorAll('.thumb').forEach((t) => { t.firstElementChild.style.transform = `scale(${t.clientWidth / 1280})`; });
+  addEventListener('resize', fit);
+  fit();
+</script>
+</body>
+</html>

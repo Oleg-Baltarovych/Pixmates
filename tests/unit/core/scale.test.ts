@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_HEIGHT_FRACTION, MIN_SCALE, SIZE_PRESETS_DIP } from '../../../src/content/stage.ts';
 import { computeScale, maxScale, presetScales, stepScale, type ScaleInput } from '../../../src/core/scale.ts';
 
-const PRESETS = { s: 96, m: 136, l: 176 };
+const PRESETS = SIZE_PRESETS_DIP;
 /** Sprite height in DIP for a scale (frame px × scale ÷ scale factor). */
 const heightDip = (scale: number, frameH: number, scaleFactor: number): number => (frameH * scale) / scaleFactor;
 
@@ -109,5 +110,60 @@ describe('broken display metrics', () => {
     expect(computeScale(input)).toBe(2);
     expect(maxScale(input)).toBeLessThanOrEqual(Number.isNaN(input.targetDip) ? Infinity : 2);
     expect(Object.values(presetScales(PRESETS, input)).every(Number.isInteger)).toBe(true);
+  });
+});
+
+describe('scaleRef sizing with headroom (ADR 009, plan MA-21)', () => {
+  // Frame 48 × 56 (8 rows of headroom), sized by the 48-px standing figure.
+  const headroom = (scaleFactor: number, workAreaHeightDip = 816): Omit<ScaleInput, 'targetDip'> => ({
+    scaleFactor,
+    frameH: 56,
+    refH: 48,
+    workAreaHeightDip,
+    maxFraction: 0.25,
+    minScale: 2,
+  });
+  it('keeps S/M/L at ×3/×4/×5 at 1080p / 125 % although the frame is 56 tall', () => {
+    expect(presetScales(PRESETS, headroom(1.25, 816))).toEqual({ s: 3, m: 4, l: 5 });
+  });
+  it('would shrink M to ×3 without refH (the reason for scaleRef)', () => {
+    expect(computeScale({ ...headroom(1.25), refH: undefined, targetDip: PRESETS.m })).toBe(3);
+  });
+  it('clamps on the visible figure height (headroom rows are transparent)', () => {
+    // 0.25 × 600 = 150 DIP → 150 / 48 = ×3 (the full 56-px frame would give ×2).
+    const input = { ...headroom(1, 600), targetDip: 400 };
+    expect(maxScale(input)).toBe(3);
+    expect(computeScale(input)).toBe(3);
+    expect(maxScale({ ...input, refH: undefined })).toBe(2);
+  });
+  it('treats a broken refH like a missing one', () => {
+    expect(computeScale({ ...headroom(1.25), refH: Number.NaN, targetDip: PRESETS.m })).toBe(3);
+  });
+});
+
+describe('chibi presets (ADR 012: scaleRef 48, frame 48 × 56)', () => {
+  // Work area = screen height in DIP minus a 48-DIP taskbar.
+  const display = (heightPx: number, scaleFactor: number) => ({
+    scaleFactor,
+    frameH: 56,
+    refH: 48,
+    workAreaHeightDip: heightPx / scaleFactor - 48,
+    maxFraction: MAX_HEIGHT_FRACTION,
+    minScale: MIN_SCALE,
+  });
+  it('uses the content numbers S 96 / M 136 / L 176 DIP and a 25 % work-area clamp', () => {
+    expect(SIZE_PRESETS_DIP).toEqual({ s: 96, m: 136, l: 176 });
+    expect(MAX_HEIGHT_FRACTION).toBe(0.25);
+  });
+  it.each([
+    ['1080p / 125 %', 1080, 1.25, { s: 3, m: 4, l: 5 }, 5],
+    ['1080p / 150 %', 1080, 1.5, { s: 3, m: 4, l: 5 }, 5],
+    ['1080p / 100 %', 1080, 1, { s: 2, m: 3, l: 4 }, 5],
+    ['1440p / 100 %', 1440, 1, { s: 2, m: 3, l: 4 }, 7],
+    ['4K / 150 %', 2160, 1.5, { s: 3, m: 4, l: 6 }, 10],
+  ])('%s gives the ADR 012 table', (_name, heightPx, scaleFactor, expected, max) => {
+    const input = display(heightPx, scaleFactor);
+    expect(presetScales(SIZE_PRESETS_DIP, input)).toEqual(expected);
+    expect(maxScale({ ...input, targetDip: SIZE_PRESETS_DIP.l })).toBe(max);
   });
 });

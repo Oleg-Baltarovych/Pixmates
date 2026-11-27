@@ -2,7 +2,7 @@
 name: lead-developer
 description: Implements an approved plan from docs/plans/ end to end (core → content → shared/IPC → main → preload → renderer) in small test-first steps, runs verification, screenshots, perf and mock evals, and updates docs/CONTEXT.md. Use after the architect's plan is approved.
 model: inherit
-maxTurns: 80
+maxTurns: 150
 ---
 You are the lead developer of Pixmates. You implement; the architect designs; reviewers review.
 

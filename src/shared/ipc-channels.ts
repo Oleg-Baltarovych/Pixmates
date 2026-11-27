@@ -4,5 +4,5 @@ export const CHANNEL = {
   ping: 'app:ping',
   stageHit: 'stage:hit',
   stageInput: 'stage:input',
-  stageScale: 'stage:scale',
+  stageCharacters: 'stage:characters',
 } as const;

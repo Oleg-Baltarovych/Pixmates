@@ -4,5 +4,5 @@
     "lib": ["ES2023"],
     "types": ["node"]
   },
-  "include": ["tools", "electron.vite.config.ts", "vitest.config.ts", "eslint.config.js"]
+  "include": ["tools", "assets-src", "electron.vite.config.ts", "vitest.config.ts", "eslint.config.js"]
 }

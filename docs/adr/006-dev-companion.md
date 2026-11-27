@@ -12,7 +12,7 @@ Many AI desktop pets exist; the existing Claude Code pets are single-purpose sta
 - Mapped events: `PermissionRequest`, `Notification`, `Stop`, `StopFailure`, `PostToolUseFailure`, `SubagentStart/Stop`, `SessionStart`.
 - Payloads are validated against fixed zod schemas, and only the needed fields are kept.
 
-**MCP server.** A local server (`@modelcontextprotocol/server` v2) exposes `say`, `emote` and `notify`. Text from `say` is shown as a quote attributed to the agent. It is never the character's own voice and never a prompt instruction.
+**MCP server.** A local server (`@modelcontextprotocol/server` v2) exposes `say`, `emote` and `notify`. Text from `say` is shown as a quote attributed to the agent. It is never the character's own voice and never a prompt instruction. Amendment 2026-11-28 (D-24, SPEC §7): a fourth, read-only tool `get_handoff` returns a task the user explicitly handed off from chat, once; same localhost, token and `Origin`/`Host` rules.
 
 **Shared rules.** Both are off by default:
 - localhost only, token auth;
