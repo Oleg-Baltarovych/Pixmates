@@ -5,7 +5,7 @@
 import 'pixi.js/unsafe-eval'; // first: strict CSP has no 'unsafe-eval'; swaps Pixi's generated shader code for static code
 // Named imports only; `skipExtensionImports` below stops Pixi from loading its browser bundle at init.
 import { Application, BufferImageSource, ImageSource, Rectangle, Sprite, Texture, type TextureSource } from 'pixi.js';
-import { CLICK_SLOP_DIP, DRAG_FPS } from '../../content/stage.ts';
+import { CLICK_SLOP_DIP, DRAG_FPS, STAGE_LAYOUT_DIP } from '../../content/stage.ts';
 import { resolveAnim } from '../../shared/anim.ts';
 import type { PayloadOf } from '../../shared/ipc.ts';
 import { pingMain } from '../shared/ping.ts';
@@ -64,15 +64,20 @@ async function loadAtlas(url: string): Promise<{ bitmap: ImageBitmap; mask: Alph
   const response = await fetch(url);
   if (!response.ok) throw new Error(`atlas ${url}: HTTP ${String(response.status)}`);
   const bitmap = await createImageBitmap(await response.blob(), { premultiplyAlpha: 'none' });
-  // The alpha hit-test reads the atlas once (rules/render.md: hit-test against the current frame).
-  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('2d context unavailable');
-  context.drawImage(bitmap, 0, 0);
-  const rgba = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
-  const alpha = new Uint8Array(bitmap.width * bitmap.height);
-  for (let i = 0; i < alpha.length; i++) alpha[i] = rgba[i * 4 + 3] ?? 0;
-  return { bitmap, mask: { width: bitmap.width, height: bitmap.height, alpha } };
+  try {
+    // The alpha hit-test reads the atlas once (rules/render.md: hit-test against the current frame).
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('2d context unavailable');
+    context.drawImage(bitmap, 0, 0);
+    const rgba = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+    const alpha = new Uint8Array(bitmap.width * bitmap.height);
+    for (let i = 0; i < alpha.length; i++) alpha[i] = rgba[i * 4 + 3] ?? 0;
+    return { bitmap, mask: { width: bitmap.width, height: bitmap.height, alpha } };
+  } catch (error) {
+    bitmap.close();
+    throw error;
+  }
 }
 
 async function start(): Promise<void> {
@@ -141,21 +146,44 @@ async function start(): Promise<void> {
     }, 1000 / anim.fps);
   };
 
+  const destroyGpu = (textures: ReadonlyMap<string, readonly Texture[]>, sources: readonly TextureSource[]): void => {
+    for (const list of textures.values()) for (const t of list) t.destroy();
+    for (const source of sources) source.destroy();
+  };
+
   const destroyActors = (): void => {
     for (const actor of actors) {
       clearTimeout(actor.timer);
       actor.sprite.destroy();
       actor.label?.destroy();
-      for (const list of actor.textures.values()) for (const t of list) t.destroy();
-      for (const source of actor.sources) source.destroy();
+      destroyGpu(actor.textures, actor.sources);
     }
     actors = [];
   };
 
   const entryActor = async (entry: Entry): Promise<Actor> => {
     const { bitmap, mask } = await loadAtlas(entry.atlasUrl);
-    const source = new ImageSource({ resource: bitmap, scaleMode: 'nearest', autoGenerateMipmaps: false });
     const textures = new Map<string, Texture[]>();
+    const sources: TextureSource[] = [];
+    try {
+      return buildActor(entry, bitmap, mask, textures, sources);
+    } catch (error) {
+      // Partial build: free whatever was created before the throw, and the atlas bitmap.
+      destroyGpu(textures, sources);
+      bitmap.close();
+      throw error;
+    }
+  };
+
+  const buildActor = (
+    entry: Entry,
+    bitmap: ImageBitmap,
+    mask: AlphaMask,
+    textures: Map<string, Texture[]>,
+    sources: TextureSource[],
+  ): Actor => {
+    const source = new ImageSource({ resource: bitmap, scaleMode: 'nearest', autoGenerateMipmaps: false });
+    sources.push(source);
     for (const [name, anim] of Object.entries(entry.animations)) {
       const list: Texture[] = [];
       for (let f = 0; f < anim.frames; f++) {
@@ -169,7 +197,6 @@ async function start(): Promise<void> {
       }
       textures.set(name, list);
     }
-    const sources: TextureSource[] = [source];
     let label: Sprite | undefined;
     if (entry.label !== undefined) {
       const glyph = labelGlyph(entry.label);
@@ -206,15 +233,14 @@ async function start(): Promise<void> {
 
   let placed = false;
   const layout = (): void => {
-    const gap = 40;
     if (!placed) {
       // First placement: standing on the taskbar edge, right-aligned, A…D left to right.
-      let x = app.screen.width - 64;
+      let x = app.screen.width - STAGE_LAYOUT_DIP.rightMargin;
       for (const actor of [...actors].reverse()) {
         actor.sprite.scale.set(pixelDip(actor));
         x -= actor.sprite.width;
         actor.sprite.position.set(snap(x), snap(app.screen.height - actor.sprite.height));
-        x -= gap;
+        x -= STAGE_LAYOUT_DIP.lineupGap;
       }
       placed = actors.length > 0;
     }
@@ -231,7 +257,7 @@ async function start(): Promise<void> {
         actor.label.scale.set(Math.max(1, Math.round(actor.scale / 2)) / window.devicePixelRatio);
         actor.label.position.set(
           snap(actor.sprite.x + (actor.sprite.width - actor.label.width) / 2),
-          snap(Math.max(0, actor.sprite.y - actor.label.height - 8)),
+          snap(Math.max(0, actor.sprite.y - actor.label.height - STAGE_LAYOUT_DIP.labelGap)),
         );
       }
     }
@@ -244,15 +270,18 @@ async function start(): Promise<void> {
       app.renderer.resolution = window.devicePixelRatio;
       const payload = latest;
       const signature = payload.entries.map((e) => `${e.key}|${e.atlasUrl}`).join(';');
-      // Rebuild on a new set of packs, or retry a set whose atlas failed to load (no fallback art: nothing drawn).
-      if (signature !== builtFor || (actors.length === 0 && payload.entries.length > 0)) {
+      // Rebuild only when the set of packs changes: a failed atlas is not retried on every nudge or display event.
+      // No fallback art: a failed entry is just not drawn (logged), the others still are.
+      if (signature !== builtFor) {
         destroyActors();
-        try {
-          actors = await Promise.all(payload.entries.map(entryActor));
-        } catch (error) {
-          console.error(`[stage] ${error instanceof Error ? error.message : String(error)}`);
-          actors = [];
-        }
+        const settled = await Promise.allSettled(payload.entries.map(entryActor));
+        actors = settled.flatMap((result, i) => {
+          if (result.status === 'fulfilled') return [result.value];
+          const reason: unknown = result.reason;
+          const name = payload.entries[i]?.key ?? '?';
+          console.error(`[stage] ${name}: ${reason instanceof Error ? reason.message : String(reason)}`);
+          return [];
+        });
         builtFor = signature;
         placed = false;
         for (const actor of actors) {
@@ -261,9 +290,9 @@ async function start(): Promise<void> {
           tick(actor);
         }
       } else {
-        actors.forEach((actor, i) => {
-          actor.scale = payload.entries[i]?.scale ?? actor.scale;
-        });
+        for (const actor of actors) {
+          actor.scale = payload.entries.find((e) => e.key === actor.id)?.scale ?? actor.scale;
+        }
       }
       layout();
       document.body.dataset['ready'] = 'true';
@@ -340,7 +369,7 @@ async function start(): Promise<void> {
       if (label)
         label.position.set(
           snap(drag.actor.sprite.x + (drag.actor.sprite.width - label.width) / 2),
-          snap(Math.max(0, drag.actor.sprite.y - label.height - 8)),
+          snap(Math.max(0, drag.actor.sprite.y - label.height - STAGE_LAYOUT_DIP.labelGap)),
         );
     }
   });

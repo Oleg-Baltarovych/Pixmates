@@ -21,6 +21,9 @@ export const CLICK_SLOP_DIP = 4;
 /** Stage ticker cap while dragging; otherwise the ticker is stopped and frames render on demand. */
 export const DRAG_FPS = 60;
 
+/** Stage placement in DIP: first spot from the overlay's right edge, gap between lineup actors, label above the head. */
+export const STAGE_LAYOUT_DIP = { rightMargin: 64, lineupGap: 40, labelGap: 8 } as const;
+
 /** The character shown when none is chosen (`--character=pixmates.<id>` picks another, MA-30). */
 export const DEFAULT_CHARACTER = 'pixmates.maid' satisfies `${typeof BUILTIN_PREFIX}${string}`;
 
