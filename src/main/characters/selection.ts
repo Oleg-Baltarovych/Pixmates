@@ -2,7 +2,7 @@
 // the default; no valid pack → an error and an empty stage. Dev art lineup (MA-31): `--art-lineup=<ids>` puts up to 4
 // built-ins side by side, labelled A–D in the given order (unpackaged builds only).
 import { DEFAULT_CHARACTER } from '../../content/stage.ts';
-import { BUILTIN_PREFIX, isBuiltinPackId } from '../../shared/pack.ts';
+import { toBuiltinId } from '../../shared/pack.ts';
 import type { CharacterPack } from './registry.ts';
 
 export interface StageCharacter {
@@ -96,8 +96,8 @@ export function parseArtLineup(
   const ids: string[] = [];
   for (const entry of raw) {
     if (entry === '') return fail(`empty id in the list (${usage})`);
-    const id = isBuiltinPackId(entry) ? entry : `${BUILTIN_PREFIX}${entry}`;
-    if (!isBuiltinPackId(id) || !packs.has(id)) {
+    const id = toBuiltinId(entry);
+    if (id === undefined || !packs.has(id)) {
       const shown = JSON.stringify(printable(entry.slice(0, LOG_ID_MAX)));
       return fail(`${shown} is not a built-in character (known: ${[...packs.keys()].join(', ')})`);
     }

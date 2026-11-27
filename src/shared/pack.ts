@@ -42,6 +42,12 @@ export function builtinPackId(rosterId: string): string {
 export const isBuiltinPackId = (id: string): boolean =>
   id.startsWith(BUILTIN_PREFIX) && ROSTER_ID.test(id.slice(BUILTIN_PREFIX.length));
 
+/** A roster id (`maid`) or built-in pack id (`pixmates.maid`) → the pack id; anything else → undefined. */
+export function toBuiltinId(value: string): string | undefined {
+  if (isBuiltinPackId(value)) return value;
+  return ROSTER_ID.test(value) ? `${BUILTIN_PREFIX}${value}` : undefined;
+}
+
 export const unitPoint = z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }).strict();
 
 const point = z.object({
