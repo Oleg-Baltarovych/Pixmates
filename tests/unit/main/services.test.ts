@@ -152,7 +152,13 @@ describe('StageController', () => {
     const display = () => ({ workArea: { x: 0, y: 0, width: 1536, height: 816 }, scaleFactor: 1.25 });
     // A built-in-shaped pack (48 × 56, scaleRef 48); the controller reads only the sizing fields.
     const manifest = { frameSize: { w: 48, h: 56 }, scaleRef: 48, animations: {} } as unknown as Manifest; // test stub
-    const pack: CharacterPack = { id: 'pixmates.maid', dir: '', manifest, atlas: 'sprites/atlas.png' };
+    const pack: CharacterPack = {
+      id: 'pixmates.maid',
+      dir: '',
+      manifest,
+      atlas: 'sprites/atlas.png',
+      atlasSize: { width: 48, height: 56 },
+    };
     const controller = new StageController({
       stage: () => undefined,
       display,

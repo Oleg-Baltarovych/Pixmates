@@ -16,6 +16,8 @@ export interface CharacterPack {
   readonly manifest: Manifest;
   /** The one atlas every animation of a built-in pack lives in (relative, `sprites/…`). */
   readonly atlas: string;
+  /** Atlas size from its PNG header, checked against the strips at load (the tray re-checks its decode against it). */
+  readonly atlasSize: { readonly width: number; readonly height: number };
 }
 
 export interface RegistryResult {
@@ -81,7 +83,7 @@ function loadPack(root: string, id: string): CharacterPack {
   if (!size) throw new Error(`${atlas} is not a PNG`);
   const problems = checkStrips(manifest, new Map([[atlas, size]]), BUILTIN_ATLAS_MAX);
   if (problems.length > 0) throw new Error(problems.join('; '));
-  return { id, dir, manifest, atlas };
+  return { id, dir, manifest, atlas, atlasSize: size };
 }
 
 export function loadRegistry(root: string, options: RegistryOptions): RegistryResult {

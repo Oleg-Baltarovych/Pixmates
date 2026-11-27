@@ -168,6 +168,7 @@ function main(): void {
           },
         },
         onStage[0]?.pack,
+        charactersRoot,
       );
       hotkeys.bind(TOGGLE_ACCELERATOR, toggleStage);
       refreshTray();

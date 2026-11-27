@@ -6,7 +6,7 @@ import type { Manifest } from '../../../src/shared/pack.ts';
 /** A built-in-shaped pack: 48 × 56 frame with headroom, sized by `scaleRef` 48 (ADR 012). */
 const chibi = (): CharacterPack => {
   const manifest = { frameSize: { w: 48, h: 56 }, scaleRef: 48, animations: {} } as unknown as Manifest; // test stub: the controller reads only the sizing fields
-  return { id: 'pixmates.maid', dir: '', manifest, atlas: 'sprites/atlas.png' };
+  return { id: 'pixmates.maid', dir: '', manifest, atlas: 'sprites/atlas.png', atlasSize: { width: 48, height: 56 } };
 };
 
 const controllerOn = (
