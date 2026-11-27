@@ -140,7 +140,8 @@ ADR 009, restored by ADR 012 (D-20, 2026-11-25).
 
 ## 11. Anime style (D-13, SPEC §5.2 v1.7)
 Every built-in character is pixel anime. The style is a technique, not IP: originality (§9, ADR 005) is checked on
-every review. Numbers below are the spike `maid`'s (`assets-src/spike/maid-{48,64}/rig.ts`); ADR 009 fixes one size.
+every review. Numbers below are the spike `maid`'s (MA-07, deleted in MA-31; the 48 head/face masks survive in
+`assets-src/rig/preview-masks.ts`); ADR 009 fixes one size.
 
 ### 11.0 D-19 — adult rules — HISTORY (superseded by D-20 / ADR 012, 2026-11-25; do not apply)
 > Kept only as a record of what was tried. §11.1–11.3 (chibi) are the rules again; toughness comes from §11.9.

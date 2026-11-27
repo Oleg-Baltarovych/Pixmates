@@ -16,13 +16,13 @@ pure behavior core in `src/core` · Zustand (renderer view state) · zod (IPC, m
 
 ## Commands
 > Keep in sync with `package.json` (`/sync-context`). Planned (not wired yet): `pnpm sprites` (M-ART), `pnpm eval` (M2), `pnpm dist` NSIS + `pnpm e2e` (M6).
-- `pnpm dev` — electron-vite dev (HMR for renderers, main restarts); dev-only switches `--dev-windows`, `--capture-stage`. App flag `--compat-mode` (any build) = software rendering for GPUs that show black instead of transparency
+- `pnpm dev` — electron-vite dev (HMR for renderers, main restarts); dev-only switches `--dev-windows`, `--capture-stage`, `--art-lineup=<ids>` (≤ 4 built-ins side by side). App flag `--compat-mode` (any build) = software rendering for GPUs that show black instead of transparency
 - `pnpm check` — typecheck → test → lint → format:check, stops at the first failure; must be green before reporting a task done (typecheck = 6 TS projects: core, main, preload, renderer, tools, tests)
 - `pnpm test:coverage` — Vitest + v8 coverage (core ≥ 90%)
 - `pnpm format` — Prettier write
 - `pnpm build` — electron-vite production build into `out/` (pages served from `app://renderer/...`)
 - `pnpm dist:dir` — build + `electron-builder --dir` (unpacked app with fuses in `release/win-unpacked/`, no installer, no publish)
-- `pnpm perf` — builds `dist:dir`, launches the packaged app with a temp profile, samples all processes 30 s warm-up + 120 s → `reports/perf/<date>.md`; verdict: CPU < 2 % and private-bytes sum avg ≤ 280 MB (ADR 007, SPEC §1). Run plugged in, with no `pnpm dev` instance open
+- `pnpm perf [-- --character=<id>]` — builds `dist:dir`, launches the packaged app with a temp profile, samples all processes 30 s warm-up + 120 s → `reports/perf/<date>.md`; verdict: CPU < 2 % and private-bytes sum avg ≤ 280 MB (ADR 007, SPEC §1). Run plugged in, with no `pnpm dev` instance open
 - `pnpm sprites:lock` — rewrite the committed sprite fingerprint `assets-src/sprites.lock.json` after an intended pack change (`pnpm test` fails when a pack drifts from it)
 - `pnpm sprites:compare <id> [--base <git-ref>] [--frames anim[:frame],…]` — before/after review sheets of one pack (base default HEAD, built from a temp git export; working tree untouched) → `reports/sprites/<id>-compare-x1|x4|x10.png`, rows old/new on white then dark
 - `pnpm security` — `pnpm audit --prod --audit-level high`
