@@ -177,6 +177,11 @@ describe('--art-lineup=<ids> (dev, MA-31)', () => {
     expect(errorOf(lineup('maid,goth', true))).toMatch(/dev-only/);
     expect(errorOf(parseArtLineup(['--art-lineup'], packs, true))).toMatch(/dev-only/);
   });
+  it('rejects a repeated flag instead of silently taking one of them', () => {
+    const argv = ['--art-lineup=maid', '--art-lineup=goth'];
+    expect(errorOf(parseArtLineup(argv, packs, false))).toMatch(/once/);
+    expect(errorOf(parseArtLineup(['--art-lineup=maid', '--art-lineup'], packs, false))).toMatch(/once/);
+  });
   it('echoes untrusted ids as short printable ASCII only', () => {
     const message = errorOf(lineup(`maid,a\nb\u001b[31m\u202e${'x'.repeat(200)}`));
     expect(message).toMatch(/not a built-in/);

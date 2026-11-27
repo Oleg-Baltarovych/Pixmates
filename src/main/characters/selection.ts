@@ -82,10 +82,12 @@ export function parseArtLineup(
   packs: ReadonlyMap<string, CharacterPack>,
   packaged: boolean,
 ): ArtLineup {
-  const arg = argv.find((a) => a === LINEUP_FLAG || a.startsWith(`${LINEUP_FLAG}=`));
+  const args = argv.filter((a) => a === LINEUP_FLAG || a.startsWith(`${LINEUP_FLAG}=`));
+  const [arg] = args;
   if (arg === undefined) return { kind: 'none' };
   const fail = (why: string): ArtLineup => ({ kind: 'error', error: `${LINEUP_FLAG}: ${why}; no lineup` });
   if (packaged) return fail('dev-only, ignored in a packaged build');
+  if (args.length > 1) return fail('may be given once');
   const value = arg.slice(LINEUP_FLAG.length + 1);
   const usage = `needs 1–${String(LINEUP_LABELS.length)} built-in ids, e.g. ${LINEUP_FLAG}=maid,goth,kitsune,witch`;
   if (value === '') return fail(usage);
