@@ -62,6 +62,9 @@ steel trapezoid body with a rose tabard stripe, short faulds, chunky sabatons an
 - **New `fur_cream`** ("biscuit"): 0.40/0.035/320 · 0.50/0.035/340 · 0.61/0.036/10 · 0.71/0.038/50 · 0.80/0.040/75 ·
   0.88/0.035/85 · 0.95/0.028/92. Mauve shadows, buttery lights, C ≤ 0.04 (never ginger); ≥ 0.05 L or ≥ 20° h from
   `skin` at matching steps (or the face reads as a human boy in a helmet).
+- As built (MA-67, `tests/unit/art/knight-palette.test.ts`): the L/h rule fails at steps 3, 4, 6 (the lights
+  converge on ivory), so the fur/skin gate is Oklab Δab ≥ 0.035 on steps 0–4 (skin is ≈ 2× as saturated); steel
+  steps 0–3 sit ≥ 0.07 L under kitsune `fur_ash` (same hue family, split by value).
 - Reuse: `cloth_rose` (tabard, nose, inner ear, blush), `cloth_teal` (eyes, teal-cyan), `cloth_ochre` (brass belt),
   `horn` (wooden sword), `cloth_cream` (sclera, highlights, paw emblem), `ink`.
 
