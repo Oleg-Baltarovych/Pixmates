@@ -145,3 +145,21 @@ describe('stern eyes (art-director MA-66 round 1: dark, hooded, "unimpressed")',
     }
   });
 });
+
+describe('crown (art-director MA-66 round 1: originality, never spiky-up)', () => {
+  /** Head-mask col of the head joint (the axis); both views share the crown. */
+  const AXIS = 15;
+  const hairCols = (row: string): number[] => row.split('').flatMap((c, x) => (LEGEND[c]?.[0] === 'hair' ? [x] : []));
+  it.each([
+    ['front', HEAD],
+    ['q34', HEAD_Q34],
+  ])('%s: the cowlick is not the highest point — a crown tuft left of the axis matches its height', (_, head) => {
+    const top = head.findIndex((r) => hairCols(r).length > 0);
+    const cols = hairCols(head[top] ?? '');
+    expect(Math.min(...cols), 'crown tuft on the top row').toBeLessThan(AXIS - 2);
+    // The cowlick (top-row hair right of the axis) lies sideways from 2 px right of it, at most 3 px long.
+    const right = cols.filter((x) => x >= AXIS);
+    expect(Math.min(...right)).toBeGreaterThanOrEqual(AXIS + 2);
+    expect(right.length).toBeLessThanOrEqual(3);
+  });
+});

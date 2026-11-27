@@ -11,19 +11,20 @@ import type { Mask } from '../../lib/mask.ts';
 const BLANK = '.'.repeat(30);
 
 /**
- * Crown (rows 2–8, shared by both views): a flat messy top (row 4 already 14 px wide), the cowlick hook on rows 2–3
- * right of the axis (cols 15–18: a stem, a 3-px top, the tip curling down), a top tuft lying screen-left on row 3, a
- * left tuft out-and-down on rows 5–6, a right tuft out-and-down on rows 6–7; the angel ring on rows 7–8, one segment
- * per clump, warm lit left.
+ * Crown (rows 3–8, shared by both views; art-director round 1): a flat messy top — a 6-px tuft lying screen-left and
+ * the 3-px cowlick lying sideways 2 px right of the axis (cols 17–19, its tip running down the crown's right slope)
+ * share row 3, so the cowlick is never the highest point (never spiky-up, no lone ahoge); a left tuft out-and-down on
+ * rows 5–6, a right tuft out-and-down on rows 6–7; a 1-px hair-5 rim inside the top-left crown and left tufts (dark
+ * IDEs), met by the angel ring (rows 7–8, one segment per clump, warm lit left).
  */
 const CROWN: Mask = [
-  '.'.repeat(15) + 'yHh' + '.'.repeat(12),
-  '..........jhH..H..j...........',
-  '........jyHHHHHHHHHhhj........',
-  '.....jhyHHHHHHHHHHHhhhj.......',
-  '....j.jyHHHHHHHHHHHhhhhhhj....',
-  '.....jyHHyYYyHHHHHHHhhhhjj....',
-  '....jyYyHHHHHHHhhhyyhhhhj.....',
+  '..............................',
+  '.........jYHHHh..yHh..........',
+  '........jYHHHHHHHHHHhj........',
+  '.....jhYHHHHHHHHHHHhhhj.......',
+  '....j.jYHHHHHHHHHHHhhhhhhj....',
+  '.....jYyyYYyHHHHHHHhhhhhjj....',
+  '....jYYyHHHHHHHhhhyyhhhhj.....',
 ];
 
 /** 30 × 26, top-left at head joint − (15, 14). Face anchor at mask (5, 12); brows rows 13–14, lid rows 16–17. */

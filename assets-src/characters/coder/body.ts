@@ -70,8 +70,11 @@ export const CODER: Body = {
   // Sleeves one step over the body (arm over torso), a darker ribbed cuff, hands fully visible (no sweater paws).
   sleeve: { ramp: 'cloth_mustard', shade: 3 },
   cuff: { ramp: 'cloth_mustard', shade: 2 },
-  // Mustard lights on a white window: a darker mustard outline.
-  silhouetteOutline: [{ ramp: 'cloth_mustard', lit: 2, shade: 1 }],
+  // Mustard lights on a white window: a darker mustard outline. Hair: a cocoa-2 lit side for dark IDEs, shade side dark.
+  silhouetteOutline: [
+    { ramp: 'cloth_mustard', lit: 2, shade: 1 },
+    { ramp: 'hair_cocoa', lit: 2, shade: 1 },
+  ],
   head: { mask: HEAD, at: [-15, -14], band: BAND },
   face: CODER_FACE,
   masks: {
