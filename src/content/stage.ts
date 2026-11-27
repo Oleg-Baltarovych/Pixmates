@@ -1,5 +1,5 @@
 // Stage numbers (SPEC v1.4 §3.3, owner decision D-10). Tuned by the owner by eye; logic never hard-codes them.
-import { builtinPackId } from '../shared/pack.ts';
+import type { BUILTIN_PREFIX } from '../shared/pack.ts';
 
 /**
  * Size presets as target on-screen height in DIP (M ≈ 3 cm on a 15.6" 1080p laptop at 125 %). ADR 012: with
@@ -22,7 +22,7 @@ export const CLICK_SLOP_DIP = 4;
 export const DRAG_FPS = 60;
 
 /** The character shown when none is chosen (`--character=pixmates.<id>` picks another, MA-30). */
-export const DEFAULT_CHARACTER = builtinPackId('maid');
+export const DEFAULT_CHARACTER = 'pixmates.maid' satisfies `${typeof BUILTIN_PREFIX}${string}`;
 
 /**
  * M1 travel speed, matched to the q34 `walk` so the planted foot never skates (art round MA-27c-1, ADR 010): the stance
@@ -32,8 +32,7 @@ export const DEFAULT_CHARACTER = builtinPackId('maid');
 export const WALK_TRAVEL = { pxPerFrame: 2, fps: 10, pxPerSecond: 20 } as const;
 
 /** Animations the M0 core asks for until M1 behaviour (names from the built-in set, ADR 010). */
-export const CORE_ANIMATIONS = ['idle_a', 'drag', 'happy', 'wave'] as const;
-export type CoreAnimation = (typeof CORE_ANIMATIONS)[number];
+export type CoreAnimation = 'idle_a' | 'drag' | 'happy' | 'wave';
 
 /** A click picks one of these, uniformly, from the seeded RNG. */
 export const CLICK_REACTIONS = ['happy', 'wave'] as const satisfies readonly CoreAnimation[];
