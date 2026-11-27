@@ -1,6 +1,6 @@
 # 014. Desktop window sensing: own Win32 calls over koffi FFI, not `get-windows`
 
-- Status: Proposed (M1 plan `docs/plans/2026-11-28-m1.md`, step M1-02 spike S4 decides; owner approves)
+- Status: Accepted (owner, 2026-11-28); spike S4 (M1-02) confirms hook vs polling and the koffi cost — a failed spike reopens this ADR
 - Date: 2026-11-28
 
 ## Context

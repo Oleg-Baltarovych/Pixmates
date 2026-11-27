@@ -1,6 +1,6 @@
 # 015. Radial menu: a lazy transparent React window, not Pixi on the stage
 
-- Status: Proposed (M1 plan `docs/plans/2026-11-28-m1.md`; owner approves)
+- Status: Accepted (owner, 2026-11-28)
 - Date: 2026-11-28
 
 ## Context
