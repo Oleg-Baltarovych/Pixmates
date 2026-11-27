@@ -271,10 +271,13 @@ letters, so each body keeps its eye ramp); a body may override a part but the va
 ## 12. Costume richness (D-20; applies to every character not yet signed off)
 Owner: "standard costumes read boring". Each spec (`docs/art/<id>.md` §«Richness») names:
 1. **Layers** — at least 2 visible garment layers (under + over: kosode under dō, dress under corset, tee under hoodie).
-2. **One signature piece** — the thing you'd draw from memory (ronin menpō, goth moth + corset, coder lanyard badge,
+2. **One signature piece** — the thing you'd draw from memory (ronin menpō, goth moth + corset, coder hood + badge,
    knight paw tabard, vampire collar).
 3. **Material contrast** — ≥ 3 materials from lacquer, metal, cloth, leather/cord, fur, each with its own ramp and
    specular rule (lacquer = hard 1-px streak, metal = hard step, leather = soft 1-px sheen, cloth = folds).
 4. **Trims at 1×** — every trim/accessory ≥ 2 px in one direction and ≥ 1 ramp step off its ground; drop it if it
    becomes noise at 1×. Silhouette still reads first (§5).
 maid, kitsune, witch stay as signed off (richness ideas are a later owner call).
+5. **Unique across the cast** (owner D-21, 2026-11-27) — every character has its own style and resembles no other cast
+   member: each new or redrawn character is checked against the whole lineup (`pnpm sprites:sheet --lineup`) for
+   silhouette, hair or headwear, colour and face detail, not only against protected characters (§9).
