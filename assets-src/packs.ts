@@ -4,6 +4,7 @@
 import { createCoderPack } from './characters/coder/body.ts';
 import { createGothPack } from './characters/goth/body.ts';
 import { createKitsunePack } from './characters/kitsune/body.ts';
+import { createKnightPack } from './characters/knight/body.ts';
 import { createMaidPack } from './characters/maid/body.ts';
 import { createRoninPack } from './characters/ronin/body.ts';
 import { createWitchPack } from './characters/witch/body.ts';
@@ -19,6 +20,7 @@ export const PACKS: readonly PackDef[] = [
   createWitchPack(),
   createRoninPack(),
   createCoderPack(),
+  createKnightPack(),
   createSpikePack(RIG_48),
   createSpikePack(RIG_64),
 ];
