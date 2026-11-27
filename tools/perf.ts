@@ -3,10 +3,12 @@
 // Windows only. No dependencies: one long-running PowerShell sampler (Win32_Process tree + Get-Process counters).
 // Not via Playwright: the EnableNodeCliInspectArguments fuse is off, so `_electron` cannot drive the build.
 import { execFileSync, spawn } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
+import { runCli } from './lib/cli.ts';
+import { checkShipped, perfCharacter } from './lib/perf-args.ts';
 
 // Memory is checked on the private-bytes sum (avg) for now; working set is reported alongside. The final metric is
 // decided in ADR 007.
@@ -24,10 +26,10 @@ function arg(name: string, fallback: number): number {
 const warmupS = arg('warmup', 30);
 const durationS = arg('duration', 120);
 const skipBuild = process.argv.includes('--skip-build');
-// M-ART phase 1: `--character=spike-maid-64soft` measures one art-spike pack. Spike packs are never shipped
-// (electron-builder excludes them), so the harness copies that one pack next to the unpacked build and launches
-// with `--perf-spike`, the only switch that lets a packaged build list spike packs.
-const character = process.argv.find((a) => /^--character=spike-[a-z0-9-]{1,48}$/.test(a))?.slice('--character='.length);
+// `--character=<id>` (MA-31; `maid` or `pixmates.maid`) measures that built-in; default = the app's default character.
+// Built-ins ship in the unpacked build, so the id is passed through as the app's own `--character`.
+const USAGE = 'Usage: pnpm perf [-- --character=<id>] [--skip-build] [--warmup=<s>] [--duration=<s>]';
+const shippedRoot = path.join(root, 'release', 'win-unpacked', 'resources', 'characters');
 
 interface Proc {
   readonly pid: number;
@@ -89,20 +91,24 @@ const avg = (values: readonly number[]): number => values.reduce((a, b) => a + b
 
 async function main(): Promise<void> {
   if (process.platform !== 'win32') throw new Error('pnpm perf measures the Windows build only');
+  const character = perfCharacter(process.argv.slice(2));
   if (!skipBuild)
     execFileSync('pnpm dist:dir', { cwd: root, stdio: 'inherit', shell: 'cmd.exe', timeout: TIMEOUT_MS.build }); // fixed command, no arguments interpolated
 
+  if (character !== undefined) {
+    checkShipped(
+      character,
+      readdirSync(shippedRoot, { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name),
+    );
+  }
   const env = { ...process.env };
   delete env['ELECTRON_RUN_AS_NODE']; // ignored by the RunAsNode fuse anyway; keep the launch clean
   // Own temp profile: a running `pnpm dev` or installed instance holds the single-instance lock of the default
   // userData, which would make the measured launch quit at once; it also keeps perf runs off real user data.
   const userData = mkdtempSync(path.join(os.tmpdir(), 'pixmates-perf-'));
-  const extra: string[] = [];
-  // The spike pack copied into the unpacked build (removed again in `finally`, so it never lingers in release/).
-  const spikeTarget =
-    character === undefined
-      ? undefined
-      : path.join(root, 'release', 'win-unpacked', 'resources', 'characters', character);
+  const extra = character === undefined ? [] : [`--character=${character}`];
   const samples: Sample[] = [];
   const totalS = warmupS + durationS;
   let app: ReturnType<typeof spawn> | undefined;
@@ -118,8 +124,6 @@ async function main(): Promise<void> {
       }
     }
     rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
-    if (spikeTarget !== undefined)
-      rmSync(spikeTarget, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
   };
   const onSigint = (): void => {
     cleanup();
@@ -127,12 +131,7 @@ async function main(): Promise<void> {
   };
   process.once('SIGINT', onSigint);
   try {
-    // Copy and spawn inside `try`, so a failed copy/spawn still removes the spike pack and the temp profile.
-    if (character !== undefined && spikeTarget !== undefined) {
-      rmSync(spikeTarget, { recursive: true, force: true });
-      cpSync(path.join(root, 'resources', 'characters', character), spikeTarget, { recursive: true });
-      extra.push(`--character=${character}`, '--perf-spike');
-    }
+    // Spawn inside `try`, so a failed spawn still removes the temp profile.
     const started = spawn(exe, ['--perf-seed=1', `--user-data-dir=${userData}`, ...extra], {
       cwd: root,
       env,
@@ -237,4 +236,4 @@ async function main(): Promise<void> {
   if (verdict !== 'within budget') process.exitCode = 1;
 }
 
-await main();
+await runCli(USAGE, main);
