@@ -24,8 +24,8 @@ blue-black + old gold, never vermilion (ronin.md §2).
 - Alucard (Castlevania SotN / Netflix) — **highest risk for black + gold**: no long platinum hair, no gold eyes; gold
   only as a flat satin lining — no gold filigree edge trim, shoulder plates or belt chains; cloak midnight blue, never
   true black.
-- Dracula (Castlevania, Lugosi, Hotel Transylvania): the archetype (stand collar, cape, cravat) is allowed; not allowed —
-  widow's peak, a medallion on a ribbon or sash, a red cape lining, beard, long hair, red cravat. Vlad (HT): no beard,
+- Dracula (Castlevania, Lugosi, Hotel Transylvania): the archetype (stand collar, cape, cravat) is allowed (the widow's
+  peak too, owner D-23); not allowed — a medallion on a ribbon or sash, a red cape lining, beard, long hair, red cravat. Vlad (HT): no beard,
   not elderly.
 - Count von Count: no monocle, medallion, purple/grey skin, lightning FX, counting gags (persona note). Count Chocula: no
   brown skin, no medallion.
@@ -53,7 +53,7 @@ The widest point at shoulder level is collar + shoulders (≈ 27 px); the head s
 a straight column reads male and tall.
 - **Hair** (`hair_black`, reused): short, slicked back, side part toward facing; crown widths as maid; fine 1-px `j`
   strand lines sweep back from the part; two pointed forelock clumps on the part side (tips 4 and 6 rows, 2–3 px wide,
-  1-px points) covering ≈ ⅓ of the forehead — forehead and **both brows show**. No widow's peak, centre part or S-curl.
+  1-px points) covering ≈ ⅓ of the forehead — forehead and **both brows show**. ~~No widow's peak~~ (reversed by the owner, D-23 — see «As built»); no centre part or S-curl.
   Sideburns authored in the head mask (`sideLocks: false`): 2 px wide, tapering to a 1-px point at eye-bottom level, no
   ear bulge. No visible ears. `hairBack: 'short'`, `hairBackStretch` ≈ 0.2: a slick nape with 1 pointed flick each
   side, 1 px under the jaw. Angel ring one segment per sweep clump on the skull arc, warm lit left, ≥ 1-px breaks.
@@ -173,3 +173,26 @@ his slicked tuft and red eyes).
 - **Q2 Eyes**: crimson (recommended) or wine-violet (new ramp, h ≈ 330; softer). Gold rejected (Edward Cullen,
   Castlevania).
 - **Q3 Fangs**: paired 1-px fangs in neutral (recommended) or only on open mouths (talk, happy, hiss).
+
+## 9. As built (MA-68, owner pick 2026-11-27: variant A + C's fan collar + a widow's peak, D-23)
+Files: `assets-src/characters/vampire/{body,face,masks}.ts`; tests `tests/unit/art/vampire.test.ts`,
+`vampire-palette.test.ts`; rig `COLLAR_MAX` (R-V2) in `rig/validate.ts`, `Cloak.lining.inset` in `rig/cloak.ts`.
+- **Hair (D-23, reverses §1 «no widow's peak»):** slicked straight back, no forelocks. The hairline recedes at both
+  temples from head row 9 (3 skin rows of open forehead above the brows) and the centre wedge narrows 10 → 6 → 2 px to
+  a V tip on the face axis (front cols 14–15, q34 cols 16–17, row 11), one skin row above the brows. 2-px sideburns.
+- **Fan collar (C, inside R-V2):** 25 × 9 px from the neck joint − (12, 1): tips at x 12 / 36 at rest (the idle_b
+  sway reaches 11 / 37; C's 31-px span would sit in the raised-hand zone), top 1 row over A's (2 rows would put the tip
+  at eye level on the walk / happy / sleep head bob). Outer face midnight 1 + 5, 2-px old-gold inner face.
+- **Values:** sleeves midnight 3 (cloak 2, waistcoat 4) — at 2 the arms vanished into the cloak on land / petted; the
+  collar's outer face avoids the sleeve's 2–4 so a sleeve over a wing keeps the arm-over-torso step.
+- **Gold:** `cloth_ochre` 3–4 (no new ramp: reads old gold on midnight, clear of coder's greener mustard); collar
+  face, 2 buttons, brooch rim, buckle, cloak corners. Corners `inset: 1` (a midnight edge on the side and hem); q34
+  buckle 1 px back from the toe edge. Tested: no gold px on the silhouette edge, no straight run > 4 px, ≤ 8 % of the
+  figure (max 4.7 %).
+- **Face:** normal chibi; crimson (`fx_red` 1–4) only in the eye band; neutral = closed 4-px line + 1-px cream fangs
+  at x 22 / 25; screen-right brow 1 row higher; blush only on happy and petted.
+- **q34:** facing contour holds col 25 to the mouth, then steps in 1 px per row to a 1-px chin (the spike's jaw stepped
+  2 px); head steady against the hip on walk / turn.
+- **Deferred to M1** (with his reactions): the cloak-hide pose, the bow, the light-theme recoil (§5). Not built.
+- Open for art-director round 1: the brocade waistcoat dither and cuff frill (§«D-20») are not in; witch also uses
+  `cloth_ochre` (broad stockings vs his small accents).
