@@ -80,8 +80,11 @@ jobs:
                          'release/win-unpacked/resources/characters/pixmates.maid/sprites/atlas.png') {
             if (-not (Test-Path $p)) { Write-Error "missing $p"; exit 1 }
           }
-          # MA-30: only the reserved pixmates.* built-ins ship.
-          $foreign = Get-ChildItem 'release/win-unpacked/resources/characters' | Where-Object { $_.Name -notlike 'pixmates.*' }
+          # MA-30: only the reserved pixmates.* built-ins ship, as plain folders (-Force lists hidden/system entries too).
+          $entries = Get-ChildItem -Force 'release/win-unpacked/resources/characters'
+          $notDirs = $entries | Where-Object { -not $_.PSIsContainer }
+          if ($notDirs) { Write-Error "unexpected files: $($notDirs.Name -join ', ')"; exit 1 }
+          $foreign = $entries | Where-Object { $_.Name -notlike 'pixmates.*' }
           if ($foreign) { Write-Error "unexpected packs: $($foreign.Name -join ', ')"; exit 1 }
 
   secrets:
