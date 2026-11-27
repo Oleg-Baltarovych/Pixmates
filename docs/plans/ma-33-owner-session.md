@@ -41,24 +41,27 @@ left ×2 → `happy` (≈ 7 s per loop). Characters can be dragged; the default 
 ## Verdicts
 | # | ✅ / ❌ | Notes (character, animation, what to change) |
 |---|---|---|
-| 1 |  |  |
-| 2 |  |  |
-| 3 |  |  |
-| 4 |  |  |
-| 5 |  |  |
-| 6 |  |  |
+| 1 | ✅ | |
+| 2 | ✅ | |
+| 3 | ✅ | |
+| 4 | ✅ | |
+| 5 | ✅ | |
+| 6 | ✅ | |
 
 Per character (sign-off on the real overlay):
 
 | Character | ✅ / ❌ | Notes |
 |---|---|---|
-| maid |  |  |
-| goth |  |  |
-| kitsune |  |  |
-| witch |  |  |
-| ronin |  |  |
-| knight |  |  |
-| coder |  |  |
-| vampire |  |  |
+| maid | ✅ | |
+| goth | ✅ | |
+| kitsune | ✅ | |
+| witch | ✅ | |
+| ronin | ✅ after fix (292a735) | lower-face mask covers only part of the face; on walk the face seems to stick out past it → menpo spans the full head width |
+| knight | ✅ after fix (c011e68) | too much mail (camail) under the helmet → camail 7 rows, calm texture |
+| coder | ✅ | |
+| vampire | ✅ after fix (b2a33d0 + d3f12c1) | cheeks "glitter" while walking → steady jaw outline; s6 rim kept only at the cheekbone |
 
-Overall MA-33 owner verdict: ______ (date: ______)
+Overall MA-33 owner verdict: ✅ all 8 signed off on the real overlay (date: 2026-11-27)
+
+Owner decisions during the session:
+- Ronin `happy` shows the bare face (menpo off for joy) by design; no "always masked" rule (2026-11-27).
