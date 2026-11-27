@@ -10,37 +10,39 @@ import type { Mask } from '../../lib/mask.ts';
 
 /**
  * 30 × 26, top-left at head joint − (15, 14). Face anchor at mask (5, 12); brows rows 13–14, lid rows 16–17.
- * The hood (rows 3–25): a round dome lit top-left (`w`/`D`, shade side `v`/`V`), its edge a 1-px mustard rim (`r` lit,
- * `T` shade) from the crown to the jaw on both sides; inside it a 1-row hair shadow (`j`) and the 5-clump cocoa fringe.
- * Glasses (`n`, metal 2): outer posts cols 5 / 24 and inner posts 12 / 17 on the eye rows 16–21, the bridge on row 17,
- * one lower rim on row 21 (it takes the old eye-bag row); the lash and lid are the top of each frame.
+ * The hood (rows 3–25): a round dome lit top-left (a 4-px onyx-4 `w` sheen arc inside the lit outline), its shade-side
+ * edge px onyx 2 `d` (the rig's rim light lifts it to onyx 4, so the hood holds on dark wallpapers) over onyx 0–1 `v`/`V`.
+ * Its face edge is a 1-px mustard rim (`r` lit, `T` shade): top row cols 7–22, each top corner bevelled in 2 diagonal
+ * steps, the sides cols 4 / 25 from row 11, the last px bent 1 col in toward the jaw (soft, never a TV frame or visor);
+ * inside it a 1-row hair shadow (`j`) and the 5-clump cocoa fringe. Glasses: posts (cols 5 / 12 / 17 / 24) and the bridge
+ * (row 17) metal 1 `N`, the lower rim (row 21, the old eye-bag row) metal 2 `n`; the lash and lid are the top of each frame.
  */
 export const HEAD: Mask = [
   '..............................',
   '..............................',
   '..............................',
-  '...........wDdddddv...........',
-  '........wDDddddddddddv........',
-  '......wDdddddddddddddddv......',
-  '.....Ddddddddddddddddddvv.....',
-  '....Dddddddddddddddddddvvv....',
-  '...DddrrrrrrrrrTTTTTTTTTdvv...',
-  '..DddrjjjjjjjjjjjjjjjjjjTvvV..',
-  '..DdrHHhSHhSHHHHhhShhShhhTvV..',
-  '..DdrHhSSSSSSHHHhSSSSSShhTvV..',
-  '..DdrhSSSSSSSHHhSSSSSSSShTvV..',
-  '..DdrSSSSSSSSSHhSSSSSSSssTvV..',
-  '..DdrVSSSSSSSShSSSSSSSSsVTvV..',
-  '..DdrVSSSSSSSSSSSSSSSSSsVTvV..',
-  '..DdrnSSSSSSnSSSSnSSSSSsnTvV..',
-  '..DdrnSSSSSSnnnnnnSSSSSsnTvV..',
-  '...DrnSSSSSSnSSSSnSSSSSsnTv...',
-  '...DrnSSSSSSnSSSSnSSSSSsnTv...',
-  '...DrnSSSSSSnSSSSnSSSSSsnTv...',
-  '...DrnnnnnnnnSSSSnnnnnnnnTv...',
-  '...DrVSSSSSSSSSSSSSSSSSsVTv...',
-  '...drVSSSSSSSSSSSSSSSSSsVTv...',
-  '...drVVSSSSSSSSSSSSSSssVVTv...',
+  '...........DDddddvd...........',
+  '........wwDdddddddddvd........',
+  '......wwddddddddddddddvd......',
+  '.....Ddddddddddddddddddvd.....',
+  '....Dddddddddddddddddddvvd....',
+  '...DdddrrrrrrrrTTTTTTTTdvVd...',
+  '..DdddrjjjjjjjjjjjjjjjjTvvVd..',
+  '..DddrHhSHhSHHHHhhShhShhTvVd..',
+  '..DdrHhSSSSSSHHHhSSSSSShhTVd..',
+  '..DdrhSSSSSSSHHhSSSSSSSShTVd..',
+  '..DdrSSSSSSSSSHhSSSSSSSssTVd..',
+  '..DdrVSSSSSSSShSSSSSSSSsVTVd..',
+  '..DdrVSSSSSSSSSSSSSSSSSsVTVd..',
+  '..DdrNSSSSSSNSSSSNSSSSSsNTVd..',
+  '..DdrNSSSSSSNNNNNNSSSSSsNTVd..',
+  '...DrNSSSSSSNSSSSNSSSSSsNTd...',
+  '...DrNSSSSSSNSSSSNSSSSSsNTd...',
+  '...DrNSSSSSSNSSSSNSSSSSsNTd...',
+  '...DrnnnnnnnnSSSSnnnnnnnnTd...',
+  '...DrVSSSSSSSSSSSSSSSSSsVTd...',
+  '...drVSSSSSSSSSSSSSSSSSsVTd...',
+  '...ddrVSSSSSSSSSSSSSSssVTvd...',
   '....DVVVVVssssssssssVVVVVD....',
 ];
 /** Last head row the forehead hair-shadow band (`withBand`) may use. */
@@ -50,31 +52,32 @@ export const BAND = 12;
 // The hood wraps the back of the head (cols 2–7, screen-left) and ends at the brow on the facing side, so the face
 // is open below the eye row; the facing-side contour is vertical at col 25 from the lid row to the mouth row, then
 // 1 px in per row to the chin (ronin's signed-off q34 skull: monotonic, no cheek bump). Glasses: near lens posts 7 /
-// 14, far lens 19 / 25 (the far temple on the contour), lower rim row 21.
+// 14, far lens 19 / 25 (the far temple on the contour), lower rim row 21. The facing-side rim corner bevels like the
+// front (top row to col 24, one mustard-3 diagonal px, the side from row 10).
 
 /** 30 × 27, top-left at head joint − (15, 14). q34 face anchor at mask (7, 12); brows rows 13–14. */
 export const HEAD_Q34: Mask = [
   '..............................',
   '..............................',
   '..............................',
-  '.........wDdddddddddv.........',
-  '.......wDDdddddddddddvv.......',
-  '.....wDdddddddddddddddv.......',
-  '....Dddddddddddddddddddv......',
-  '...Ddddddddddddddddddddddv....',
-  '...DdddddrrrrrrrrrTTTTTTTTT...',
-  '..DdddddrjjjjjjjjjjjjjjjjjT...',
+  '.........DDddddddddvd.........',
+  '.......wwDdddddddddddvd.......',
+  '.....wwddddddddddddddvd.......',
+  '....Ddddddddddddddddddvd......',
+  '...Dddddddddddddddddddddvd....',
+  '...DdddddrrrrrrrrrTTTTTTTd....',
+  '..DdddddrjjjjjjjjjjjjjjjjT....',
   '..DddddrHhSHhSSHHHhShhSShhT...',
   '..DddddrHhSSSSSHHhSSSSSShsT...',
   '..DddddrhSSSSSSHhSSSSSSSSsT...',
   '..DddddrVSSSSSSShSSSSSSSSsT...',
   '..DddddrVSSSSSSSSSSSSSSSSsT...',
   '..DddddrVSSSSSSSSSSSSSSSSsT...',
-  '..DddddnVSSSSSnSSSSnSSSSSn....',
-  '..DddddnVSSSSSnnnnnnSSSSSn....',
-  '..DddddnVSSSSSnSSSSnSSSSSn....',
-  '..DddddnVSSSSSnSSSSnSSSSSn....',
-  '..DddddnVSSSSSnSSSSnSSSSSn....',
+  '..DddddNVSSSSSNSSSSNSSSSSN....',
+  '..DddddNVSSSSSNNNNNNSSSSSN....',
+  '..DddddNVSSSSSNSSSSNSSSSSN....',
+  '..DddddNVSSSSSNSSSSNSSSSSN....',
+  '..DddddNVSSSSSNSSSSNSSSSSN....',
   '..DddddnnnnnnnnSSSSnnnnnnn....',
   '..DddddrVSSSSSSSSSSSSSSSSs....',
   '...DdddrVSSSSSSSSSSSSSSSSs....',
@@ -88,26 +91,28 @@ export const HEAD_Q34: Mask = [
 
 /**
  * Hoodie front (`Body.torsoMask`, from the chest joint + (−6, 0): x 18–29, frame rows 34–45). Flat black knit (body
- * onyx 2 `d`, folds onyx 1 `v`, onyx 3 `D` lit collar) so the 12-px chest never turns into dither noise at 1×:
+ * onyx 2 `d`, folds onyx 1 `v`, onyx 3 `D` lit collar, a lit px on each shoulder and one 3-px fold from the near armpit
+ * toward the pocket) so the 12-px chest never turns into dither noise at 1×:
  * - rows 0–2: the collar and a 2-px steel zipper pull (`u`/`o`) on col 6;
- * - rows 1–4: two mustard drawstrings (`T`, a lit `r` tip) either side of the pull, the screen-left one 1 px longer;
+ * - rows 1–4: two mustard drawstrings (`T`, a lit tip: mustard 5 `R` on the lit screen-left one, `r` on the other)
+ *   either side of the pull, the screen-left one 1 px longer;
  * - rows 3–5: a 1-px steel chain from the collar's right side down to a steel-5 clip;
- * - rows 6–8: a blank 3 × 3 cream badge with a mustard `>` and `_` (2 px), hung under the clip on the right chest;
+ * - rows 6–9: a blank 3 × 4 cream badge with a mustard `>` and `_` (2 px), hung under the clip on the right chest;
  * - row 7: the pocket line, 8 px of onyx 0;
  * - rows 9–11: the rib waistband with a tick every 4 px; 3 broken cream px of the tee hem peek out lit-left.
  * Three chest reads at 1×: drawstrings, chain + badge, pocket line.
  */
 export const CHEST: Mask = [
   'vdDDDDDddddv',
-  'VvdvTvuTvvvV',
+  'DvdvTvuTvvvD',
   'dVVvTVoTVVVd',
   'ddddTddrddod',
-  'ddddrddddodd',
-  'dddddddddudd',
-  'ddddddddpPpV',
+  'dDddRddddodd',
+  'ddDddddddudd',
+  'dddDddddpPpV',
   'VVVVVVVVtppV',
   'vVvvvvVvptpV',
-  'vvvVvvvVVVVV',
+  'vvvVvvvVppaV',
   'vvvVvvvVvvvV',
   'PaVaVVVVVVVV',
 ];
@@ -120,12 +125,12 @@ export const CHEST_Q34: Mask = [
   'VvvdvTuTvvvV',
   '.VVvvToTVVVd',
   '..ddvTdrddod',
-  '..ddvrddddod',
-  '...ddddddudd',
-  '...dddddpPpV',
+  '..dDvRddddod',
+  '...dDddddudd',
+  '...ddDddpPpV',
   '...VVVVVtppV',
   '...vVvvVptpV',
-  '...vVvvvVVVV',
+  '...vVvvvppaV',
   '...vVvvvvvvv',
   '...aaVVVVVVV',
 ];

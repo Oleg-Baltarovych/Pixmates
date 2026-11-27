@@ -81,8 +81,11 @@ export const CODER_FACE = sternFace({
     stern: part(STERN, 0, 4),
     side: part(SIDE, 0, 4),
     half: part(['.XXXXXX......XXXXXX.', '..XXXXX......XXXXX..', '...cXXx......xXXc...', '...CccC......CccC...'], 0, 5),
-    /** Blink, petted, sleep: flat closed lines on the lid row above the glasses' lower rim. */
-    closed: part(['..XXXXX......XXXXX..'], 0, 7),
+    /**
+     * Blink, petted, sleep: flat closed lines in the lower lens, the row right above the glasses' lower rim (3 rows
+     * under the bridge, so bridge, lid and rim never stack into «≡»; art-director round 2).
+     */
+    closed: part(['..XXXXX......XXXXX..'], 0, 8),
     happy: part(HAPPY, 0, 3),
     wince: part(WINCE, 0, 4),
     worried: part(WORRIED, 0, 3),
@@ -130,7 +133,7 @@ export const CODER_FACE_Q34: ViewFaceLibrary = {
   style: 'stern',
   eyes: {
     stern: part(STERN_Q34, 0, 4),
-    closed: part(['..XXXXX......XXXX...'], 0, 7),
+    closed: part(['..XXXXX......XXXX...'], 0, 8),
   },
   brows: { set: part(['...JJJ........JJ....', '......J......J......'], 0, 1) },
   mouths: { set: part(['..........XXX.......'], 0, 11) },

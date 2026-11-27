@@ -108,6 +108,166 @@ describe('glasses (owner 2026-11-27: rectangular steel frames, no tint, no glow)
   });
 });
 
+describe('glasses tones and the closed eyes (art-director MA-66 round 2)', () => {
+  const shadeOf = (ch: string): number | undefined => {
+    const e = LEGEND[ch];
+    return e?.[0] === 'horn' ? CODER.outfit.horn.tones[e[1]] : undefined;
+  };
+  it.each(VIEWS)('%s: posts and bridge are metal 1, only the lower rim is metal 2', (_, _lib, head) => {
+    const steel = head.flatMap((r, y) => r.split('').flatMap((c, x) => (slotOf(c) === 'horn' ? [{ c, x, y }] : [])));
+    const rimRow = Math.max(...steel.map((p) => p.y));
+    for (const p of steel) {
+      expect(shadeOf(p.c), `${String(p.x)},${String(p.y)}`).toBe(p.y === rimRow ? 2 : 1);
+    }
+  });
+  it.each(VIEWS)(
+    '%s: the closed eyes sit in the lower lens, ≥ 3 rows under the bridge (no bridge / lid / rim «≡»)',
+    (_, lib, head, faceAt) => {
+      const closed = lib.eyes['closed'];
+      if (!closed) throw new Error('closed eyes');
+      const rows = new Set(closed.mask.flatMap((r, y) => (/X/.test(r) ? [faceAt[1] + closed.at[1] + y] : [])));
+      expect(rows.size).toBe(1);
+      const lidRow = [...rows][0] ?? -1;
+      const horn = (y: number): number => (head[y] ?? '').split('').filter((c) => slotOf(c) === 'horn').length;
+      const rimRow = head.findIndex((_r, y) => horn(y) >= 12);
+      // The bridge: the steel row with the most px above the rim.
+      const bridgeRow = head
+        .map((_r, y) => y)
+        .filter((y) => y < rimRow)
+        .reduce((a, b) => (horn(b) > horn(a) ? b : a));
+      expect(lidRow).toBe(rimRow - 1);
+      expect(lidRow - bridgeRow).toBeGreaterThanOrEqual(3);
+    },
+  );
+});
+
+describe('hood rim (art-director MA-66 round 2: soft corners, never a TV frame or visor)', () => {
+  const rim = (head: Mask): { x: number; y: number; c: string }[] =>
+    head.flatMap((r, y) => r.split('').flatMap((c, x) => (slotOf(c) === 'trim' ? [{ c, x, y }] : [])));
+  const trimTone = (c: string): number | undefined => LEGEND[c]?.[1];
+
+  it('front: both top corners bevel in 2 diagonal steps — corner px empty of mustard, lit 4 / shade 3', () => {
+    const px = rim(HEAD);
+    const has = (x: number, y: number): boolean => px.some((p) => p.x === x && p.y === y);
+    const top = Math.min(...px.map((p) => p.y));
+    const [xl, xr] = [Math.min(...px.map((p) => p.x)), Math.max(...px.map((p) => p.x))];
+    for (const [side, edge] of [
+      [1, xl],
+      [-1, xr],
+    ] as const) {
+      // In the 4 × 4 corner box the rim is exactly: top row from 3 cols in, two diagonal px, the side from 3 rows down.
+      const diag = [
+        [edge + side * 2, top + 1],
+        [edge + side, top + 2],
+      ] as const;
+      for (let dy = 0; dy < 4; dy++) {
+        for (let k = 0; k < 4; k++) {
+          const x = edge + side * k;
+          const y = top + dy;
+          const want =
+            (dy === 0 && k === 3) || (k === 0 && dy === 3) || diag.some(([dx, dyy]) => dx === x && dyy === y);
+          expect(has(x, y), `corner ${String(x)},${String(y)}`).toBe(want);
+        }
+      }
+      for (const [x, y] of diag) {
+        expect(trimTone(HEAD[y]?.charAt(x) ?? '.'), `diagonal ${String(x)},${String(y)}`).toBe(side > 0 ? 4 : 3);
+      }
+    }
+  });
+  it('front: the last rim px of each side bends 1 col in toward the jaw', () => {
+    const px = rim(HEAD);
+    const bottom = Math.max(...px.map((p) => p.y));
+    const [xl, xr] = [Math.min(...px.map((p) => p.x)), Math.max(...px.map((p) => p.x))];
+    expect(px.filter((p) => p.y === bottom).map((p) => p.x)).toEqual([xl + 1, xr - 1]);
+    expect(px.filter((p) => p.y === bottom - 1).map((p) => p.x)).toEqual([xl, xr]);
+  });
+  it('q34: the facing-side top corner bevels — one mustard-3 diagonal px, no corner px', () => {
+    const px = rim(HEAD_Q34);
+    const has = (x: number, y: number): boolean => px.some((p) => p.x === x && p.y === y);
+    const top = Math.min(...px.map((p) => p.y));
+    const xr = Math.max(...px.map((p) => p.x));
+    expect(has(xr, top)).toBe(false);
+    expect(has(xr, top + 1)).toBe(false);
+    expect(has(xr - 1, top)).toBe(false);
+    expect(has(xr - 2, top)).toBe(true);
+    expect(has(xr - 1, top + 1)).toBe(true);
+    expect(trimTone(HEAD_Q34[top + 1]?.charAt(xr - 1) ?? '.')).toBe(3);
+    expect(has(xr, top + 2)).toBe(true);
+  });
+});
+
+describe('hood edge on dark wallpapers (art-director MA-66 round 2, rendered)', () => {
+  const palette = loadMasterPalette();
+  const ctx = renderContext(palette);
+  const renderer = createRigRenderer(CODER);
+  const onyx = palette.ramps.get('cloth_onyx') ?? [];
+  const step = (c: number | undefined): number => (c === undefined ? -1 : onyx.indexOf(c));
+  const idle = ANIMS.find((a) => a.name === 'idle_a');
+  if (!idle) throw new Error('idle_a');
+  const { image } = renderer.renderLabeled(idle, 0, ctx);
+  const w = image.width;
+  const rgb = (x: number, y: number): number | undefined => {
+    const i = (y * w + x) * 4;
+    if (x < 0 || x >= w || !image.data[i + 3]) return undefined;
+    return ((image.data[i] ?? 0) << 16) | ((image.data[i + 1] ?? 0) << 8) | (image.data[i + 2] ?? 0);
+  };
+  const MUSTARD = new Set(palette.ramps.get('cloth_mustard') ?? []);
+  const rows = Array.from({ length: image.height }, (_, y) => y);
+  /** The hood: from its first row down to the last row that still has a mustard rim px. */
+  const top = rows.find((y) => Array.from({ length: w }, (_, x) => rgb(x, y)).some((c) => c !== undefined)) ?? 0;
+  const rimRows = rows.filter((y) => Array.from({ length: w }, (_, x) => rgb(x, y)).some((c) => MUSTARD.has(c ?? -1)));
+  const firstRim = Math.min(...rimRows);
+  // The hood rim's own rows: the first unbroken run (the drawstrings and badge mark below are mustard too).
+  let lastRim = firstRim;
+  while (rimRows.includes(lastRim + 1)) lastRim++;
+  /** The shade-side outline px of a row: the rightmost px that is not a top-facing lit (onyx 5) outline step. */
+  const right = (y: number): number => {
+    for (let x = w - 1; x >= 0; x--) if (rgb(x, y) !== undefined && step(rgb(x, y)) !== 5) return x;
+    return -1;
+  };
+
+  it('shade side: an onyx-4 edge just inside the outline from the crown down to the jaw', () => {
+    for (let y = top + 1; y <= lastRim; y++) expect(step(rgb(right(y) - 1, y)), `row ${String(y)}`).toBe(4);
+  });
+  it('dome shade side: onyx 0–1 just inside that edge (the dark edge still reads on white)', () => {
+    for (let y = top + 2; y < firstRim + 2; y++) {
+      const s = step(rgb(right(y) - 2, y));
+      expect(s >= 0 && s <= 1, `row ${String(y)}`).toBe(true);
+    }
+  });
+  it('lit top-left: an unbroken onyx-5 outline arc ≥ 6 px and a 3–4 px onyx-4 sheen right inside it', () => {
+    const cx = Math.round(renderer.joints(idle, 0).head[0]);
+    const arc: [number, number][] = [];
+    const sheen: [number, number][] = [];
+    for (let y = top; y < firstRim; y++) {
+      for (let x = 0; x <= cx; x++) {
+        const s = step(rgb(x, y));
+        const outer = rgb(x - 1, y) === undefined || rgb(x, y - 1) === undefined;
+        if (outer && s === 5) arc.push([x, y]);
+        const inner = [rgb(x - 1, y), rgb(x, y - 1)].some((c) => step(c) === 5);
+        if (!outer && inner && s === 4) sheen.push([x, y]);
+      }
+    }
+    expect(arc.length).toBeGreaterThanOrEqual(6);
+    // Unbroken: every arc px has an 8-neighbour on the arc.
+    for (const [x, y] of arc) {
+      expect(
+        arc.some(([u, v]) => (u !== x || v !== y) && Math.abs(u - x) <= 1 && Math.abs(v - y) <= 1),
+        `arc ${String(x)},${String(y)}`,
+      ).toBe(true);
+    }
+    expect(sheen.length).toBeGreaterThanOrEqual(3);
+    expect(sheen.length).toBeLessThanOrEqual(4);
+    // One arc, not scattered stair-corner lights: every sheen px touches another (8-neighbour).
+    for (const [x, y] of sheen) {
+      expect(
+        sheen.some(([u, v]) => (u !== x || v !== y) && Math.abs(u - x) <= 1 && Math.abs(v - y) <= 1),
+        `sheen ${String(x)},${String(y)}`,
+      ).toBe(true);
+    }
+  });
+});
+
 describe('q34 head (owner rules, RIG.md) — on the head outline, so the glasses never skew it', () => {
   const outline = (row: string): [number, number] | undefined => {
     const xs = row.split('').flatMap((c, x) => (c === '.' ? [] : [x]));

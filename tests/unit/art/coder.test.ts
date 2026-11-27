@@ -168,8 +168,30 @@ describe('chest reads (owner 2026-11-27: drawstrings, chain + badge, pocket line
       });
       expect(Math.min(...lens)).toBeGreaterThanOrEqual(3);
       expect(lens[0]).not.toBe(lens[1]);
+      // Art-director round 2: a 1-px mustard-5 tip on the lit-side (screen-left) string only.
+      const five = strings.filter(([x, y]) => shadeAt(m, x, y)?.[1] === 5);
+      const litTip = Math.max(...strings.filter(([x]) => x === l).map(([, y]) => y));
+      expect(five).toEqual([[l, litTip]]);
     },
   );
+  it('front: one 3-px onyx-3 fold from the near armpit down toward the pocket and a lit onyx-3 px on each shoulder', () => {
+    const lit = px(CHEST, ([r, s]) => r === 'cloth_onyx' && s === 3).filter(([, y]) => y >= 1);
+    const pocketRow = 7;
+    const fold = lit.filter(([, y]) => y > 1 && y < pocketRow);
+    expect(fold).toHaveLength(3);
+    fold.slice(1).forEach(([x, y], k) => {
+      const [x0 = 0, y0 = 0] = fold[k] ?? [];
+      expect([x - x0, y - y0], 'diagonal down toward the axis').toEqual([1, 1]);
+    });
+    expect(Math.max(...fold.map(([x]) => x))).toBeLessThan(6);
+    expect(fold.at(-1)?.[1]).toBe(pocketRow - 1);
+    // Shoulders: the torso's top corners under the collar row, one lit px each, nothing else lit on row 1.
+    const last = (CHEST[1] ?? '').length - 1;
+    expect(lit.filter(([, y]) => y === 1)).toEqual([
+      [0, 1],
+      [last, 1],
+    ]);
+  });
   it.each(VIEWS)(
     '%s: a steel chain (8-connected, below the collar) ends in a steel-5 clip right over the cream badge with a mustard-2 `>_`',
     (_, m) => {
@@ -182,10 +204,12 @@ describe('chest reads (owner 2026-11-27: drawstrings, chain + badge, pocket line
       const [cx = 0, cy = 0] = chain.at(-1) ?? [];
       expect(shadeAt(m, cx, cy)).toEqual(['metal', 5]);
       expect(shadeAt(m, cx, cy + 1)?.[0]).toBe('cloth_cream');
-      // The badge: the 3 × 3 under the clip is cream except a 2-px mustard-2 mark, nothing else.
-      const badge = [-1, 0, 1].flatMap((dx) => [1, 2, 3].map((dy) => shadeAt(m, cx + dx, cy + dy)));
+      // The badge (art-director round 2: 3 × 4): the 3 × 4 under the clip is cream except a 2-px mustard-2 mark,
+      // nothing else, and the row under it is no longer badge.
+      const badge = [-1, 0, 1].flatMap((dx) => [1, 2, 3, 4].map((dy) => shadeAt(m, cx + dx, cy + dy)));
       expect(badge.filter((s) => s?.[0] === 'cloth_mustard' && s[1] === 2)).toHaveLength(2);
-      expect(badge.filter((s) => s?.[0] === 'cloth_cream')).toHaveLength(7);
+      expect(badge.filter((s) => s?.[0] === 'cloth_cream')).toHaveLength(10);
+      expect([-1, 0, 1].some((dx) => shadeAt(m, cx + dx, cy + 5)?.[0] === 'cloth_cream')).toBe(false);
     },
   );
   it.each(VIEWS)('%s: one continuous onyx-0 pocket line of 5–10 px under the badge clip row', (_, m) => {
