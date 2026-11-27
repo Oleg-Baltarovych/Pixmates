@@ -357,7 +357,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     frame: number,
     p: PoseFrame,
     locked: Locked,
-  ): { tieAt: Point | undefined; hairFarPx: readonly number[] } => {
+  ): { tieAt: Point | undefined; hairFarPx: readonly number[]; headPx: ReadonlySet<number> } => {
     const j = joints(anim, frame);
     const bv = bodyViewOf(anim, frame);
     const q = bv === 'q34';
@@ -499,7 +499,18 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     if (headAcc && accMask && accFirst) {
       stamp(accMask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.4, MAT.hair);
     }
-    stamp(headParts.headMask, j.head[0] + headParts.head.at[0], j.head[1] + headParts.head.at[1], 3.5, MAT.skin);
+    const headPx = new Set(
+      stampMask(
+        buf,
+        body,
+        headParts.headMask,
+        Math.round(j.head[0] + headParts.head.at[0]),
+        Math.round(j.head[1] + headParts.head.at[1]),
+        3.5,
+        MAT.skin,
+        locked,
+      ),
+    );
     if (headAcc && accMask && !accFirst) {
       stamp(accMask, j.acc[0] + headAcc.at[0], j.acc[1] + headAcc.at[1], 3.6, MAT.trim);
     }
@@ -565,7 +576,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     } else {
       for (const foot of [j.footL, j.footR]) stamp(shoe, foot[0] - 2, foot[1] - 0.6, 0.9, MAT.shoe);
     }
-    return { tieAt, hairFarPx };
+    return { tieAt, hairFarPx, headPx };
   };
 
   const renderLabeled = (anim: RigAnim, frame: number, ctx: RenderContext): LabeledFrame => {
@@ -598,7 +609,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     handShadows(buf, hands);
     // 3. Authored masks, then the opt-in locked tone passes over legs.
     const locked: Locked = new Map();
-    const { tieAt, hairFarPx } = stampAuthored(buf, anim, frame, p, locked);
+    const { tieAt, hairFarPx, headPx } = stampAuthored(buf, anim, frame, p, locked);
     if (body.gauntlets) {
       const g = body.gauntlets.ramp;
       const ramp = { id: ctx.palette.rampNames.indexOf(g), steps: ctx.palette.ramps.get(g)?.length ?? 1 };
@@ -696,7 +707,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     if (body.hornOutline) recolorHornOutline(buf, map, body.hornOutline);
     selectiveOutline(buf, map, { lit: 'lighter' });
     if (style.aa) antiAlias(buf, map);
-    if (body.silhouetteOutline) silhouetteOutline(buf, map, body.silhouetteOutline);
+    if (body.silhouetteOutline) silhouetteOutline(buf, map, body.silhouetteOutline, headPx);
     for (const [i, [ramp, shade]] of locked) {
       buf.ramp[i] = ramp;
       buf.shade[i] = shade;

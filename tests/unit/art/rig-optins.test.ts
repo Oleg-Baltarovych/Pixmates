@@ -420,6 +420,40 @@ describe('rig opt-in: silhouetteOutline per ramp', () => {
   });
 });
 
+describe('rig opt-in: silhouetteOutline head tones (MA-69)', () => {
+  it('outer-outline px around head-mask px take the head tones; the rest of the ramp keeps its own', () => {
+    const buf = createIndexBuffer(5, 5, palette);
+    buf.set(1, 2, { ramp: 'cloth_indigo', shade: 3, material: MAT.cloth, depth: 1 });
+    buf.set(3, 2, { ramp: 'cloth_indigo', shade: 3, material: MAT.cloth, depth: 1 });
+    const map = outline(buf, ctx.rampSize, { drop: 2 });
+    const head = new Set([2 * 5 + 3]);
+    silhouetteOutline(buf, map, [{ ramp: 'cloth_indigo', lit: 5, shade: 3, head: { shade: 4 } }], head);
+    // Head px (3, 2): shade side (right, bottom) 4, lit side (top) keeps 5; the other px keeps shade 3.
+    expect([buf.shade[2 * 5 + 4], buf.shade[3 * 5 + 3], buf.shade[1 * 5 + 3]]).toEqual([4, 4, 5]);
+    expect([buf.shade[2 * 5 + 0], buf.shade[3 * 5 + 1], buf.shade[1 * 5 + 1]]).toEqual([5, 3, 5]);
+  });
+
+  it('retones only head-outline px of the ramp on a rendered body, and validates shades', () => {
+    const ramp = DUMMY_A.outfit.hair.ramp;
+    const base: Body = { ...DUMMY_A, silhouetteOutline: [{ ramp, lit: 5, shade: 1 }] };
+    const headed: Body = { ...DUMMY_A, silhouetteOutline: [{ ramp, lit: 5, shade: 1, head: { shade: 4 } }] };
+    const a = render(base);
+    const b = render(headed);
+    expect(same(a, b)).toBe(false);
+    const target = palette.ramps.get(ramp)?.[4];
+    for (let y = 0; y < a.height; y++) {
+      for (let x = 0; x < a.width; x++) {
+        if (rgb(a, x, y) !== rgb(b, x, y)) expect(rgb(b, x, y), `${String(x)},${String(y)}`).toBe(target);
+      }
+    }
+    // The back-hair mass (not the head mask) keeps the ramp's own shade-side tone on its outline.
+    expect(pxOn(b, ramp).length).toBe(pxOn(a, ramp).length);
+    expect(() =>
+      createRigPack({ ...DUMMY_A, silhouetteOutline: [{ ramp, lit: 5, shade: 1, head: { shade: 9 } }] }, ANIMS),
+    ).toThrow('silhouetteOutline');
+  });
+});
+
 describe('rig opt-in: sleeveRim', () => {
   /** Labelled px of `label` and the colour count of `tone` among them. */
   const toneIn = (

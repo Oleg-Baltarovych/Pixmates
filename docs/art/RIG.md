@@ -44,6 +44,11 @@ New opt-ins (D-20, unset = byte-identical):
   rows; `Body.torsoMask` (= coder R-C3 `Body.front`: authored torso overlay on the chest/hip joints, part 7, for dō
   plates + lacing); `Body.tassets` (authored hip mask over the hem per view + seated variant, dangle ±1 px on hip lag).
 
+MA-69 polish opt-ins (unset = byte-identical, tests in `rig-optins.test.ts`):
+- **`SilhouetteOutline.head` {lit?, shade?}** — outer-outline px whose inner neighbour is a head-mask px (still
+  unlabelled: no arm / torso drew over it) take these tones instead of the ramp's `lit` / `shade`. coder: onyx hood
+  shade side 4 (body-wide 4 would fail the arm-over-torso gate).
+
 ## Part ids (`rig/part-ids.ts`, written per px by compose and `stampMask`)
 | id | part | id | part |
 |---|---|---|---|

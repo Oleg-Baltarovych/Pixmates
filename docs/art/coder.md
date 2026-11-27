@@ -62,6 +62,8 @@ stern, dark-clad cast members.
     edge px are onyx 2, which the rig's rim light lifts to **onyx 4**, from the crown to the jaw, over onyx 0–1 on the dome:
     outline O3 | O4 | O0–1. The lit top-left outline arc is onyx 5 and unbroken, with a 4-px onyx-4 sheen arc just inside
     it (the old stair-corner lights went into it). Rendered tests cover all three.
+  - **MA-69:** the hood's outermost shade-side px is now onyx 4 too (`silhouetteOutline` `head: { shade: 4 }`, the rest
+    of the body keeps onyx 3): outline O4 | O4 | O0–1 from the crown to the jaw.
   - **Glasses:** posts and bridge metal 1 (`N`), lower rim metal 2. Brows untouched (hair 0, skin row above).
   - **Chest:** badge 3 × 4 cream; mustard-5 tip on the lit (screen-left) drawstring only; one 3-px onyx-3 fold from
     the near armpit toward the pocket (front + q34); one onyx-3 lit px on each shoulder. The shoulders are rig sleeves

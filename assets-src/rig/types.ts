@@ -360,6 +360,11 @@ export interface SilhouetteOutline {
   readonly ramp: RampName;
   readonly lit: number;
   readonly shade: number;
+  /**
+   * Opt-in (MA-69): tones for the outer-outline px whose inner neighbour is an authored head-mask px (e.g. a hood's
+   * shade-side edge), in place of `lit` / `shade` there (each defaults to the ramp's own).
+   */
+  readonly head?: { readonly lit?: number; readonly shade?: number };
 }
 
 /**

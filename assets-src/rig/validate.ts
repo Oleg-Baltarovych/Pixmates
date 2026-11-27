@@ -126,6 +126,8 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
     ...outlines.flatMap((o) => [
       { name: `silhouetteOutline.${o.ramp}.lit`, s: o.lit, ramp: o.ramp, int: true as const },
       { name: `silhouetteOutline.${o.ramp}.shade`, s: o.shade, ramp: o.ramp, int: true as const },
+      { name: `silhouetteOutline.${o.ramp}.head.lit`, s: o.head?.lit, ramp: o.ramp, int: true as const },
+      { name: `silhouetteOutline.${o.ramp}.head.shade`, s: o.head?.shade, ramp: o.ramp, int: true as const },
     ]),
   ];
   for (const { name, s, ramp, int } of shades) {

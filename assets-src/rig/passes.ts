@@ -332,6 +332,7 @@ export function silhouetteOutline(
   buf: IndexBuffer,
   map: ReturnType<typeof outline>,
   outlines: readonly SilhouetteOutline[],
+  headPx: ReadonlySet<number> = new Set(),
 ): void {
   const byRamp = new Map<string, SilhouetteOutline>(outlines.map((o) => [o.ramp, o]));
   for (let i = 0; i < map.kind.length; i++) {
@@ -339,8 +340,13 @@ export function silhouetteOutline(
     const ramp = buf.get(i % buf.width, Math.floor(i / buf.width)).ramp;
     const o = ramp === null ? undefined : byRamp.get(ramp);
     if (!o) continue;
-    const facing = -((map.ox[i] ?? 0) + (map.oy[i] ?? 0));
-    buf.shade[i] = facing > 0 ? o.lit : o.shade;
+    const ox = map.ox[i] ?? 0;
+    const oy = map.oy[i] ?? 0;
+    const facing = -(ox + oy);
+    // `head`: the inner neighbour is a head-mask px (still unlabelled, so no arm or torso drew over it).
+    const inner = i - ox - oy * buf.width;
+    const h = o.head && headPx.has(inner) && buf.partId[inner] === PART_ID.none ? o.head : undefined;
+    buf.shade[i] = facing > 0 ? (h?.lit ?? o.lit) : (h?.shade ?? o.shade);
   }
 }
 

@@ -226,6 +226,9 @@ describe('hood edge on dark wallpapers (art-director MA-66 round 2, rendered)', 
     return -1;
   };
 
+  it('shade side: the outermost px (silhouetteOutline head tone, MA-69) is onyx 4 from the crown down to the jaw', () => {
+    for (let y = top + 1; y <= lastRim; y++) expect(step(rgb(right(y), y)), `row ${String(y)}`).toBe(4);
+  });
   it('shade side: an onyx-4 edge just inside the outline from the crown down to the jaw', () => {
     for (let y = top + 1; y <= lastRim; y++) expect(step(rgb(right(y) - 1, y)), `row ${String(y)}`).toBe(4);
   });

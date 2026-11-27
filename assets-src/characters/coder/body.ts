@@ -74,7 +74,7 @@ export const CODER: Body = {
   cuff: { ramp: 'cloth_onyx', shade: 1 },
   // Black on a dark IDE: a lit onyx-5 outline (lit side) and onyx 3 (shade side). Hair: a cocoa-2 lit side.
   silhouetteOutline: [
-    { ramp: 'cloth_onyx', lit: 5, shade: 3 },
+    { ramp: 'cloth_onyx', lit: 5, shade: 3, head: { shade: 4 } },
     { ramp: 'hair_cocoa', lit: 2, shade: 1 },
   ],
   head: { mask: HEAD, at: [-15, -14], band: BAND },
