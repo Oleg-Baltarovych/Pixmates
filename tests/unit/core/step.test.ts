@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLICK_REACTIONS } from '../../../src/content/placeholder.ts';
+import { CLICK_REACTIONS } from '../../../src/content/stage.ts';
 import { initialState, step } from '../../../src/core/step.ts';
 import type { CoreEvent, CoreState, Effect, PointerInput } from '../../../src/core/types.ts';
 
@@ -99,9 +99,9 @@ describe('drag', () => {
     const dragging = step(makeCoreState(), input({ kind: 'drag-start' }), 0).state;
     const result = step(dragging, input({ kind: 'drag-end' }), 300);
     expect(result.state.drag).toEqual({ kind: 'idle' });
-    expect(result.state.animation).toBe('idle');
+    expect(result.state.animation).toBe('idle_a');
     expect(result.state.hitThrough).toBe(false);
-    expect(result.effects).toEqual([{ type: 'PlayAnimation', name: 'idle' }]);
+    expect(result.effects).toEqual([{ type: 'PlayAnimation', name: 'idle_a' }]);
   });
 
   it('ignores clicks and a second drag-start while dragging', () => {

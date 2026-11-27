@@ -83,7 +83,10 @@ function main(): void {
     !app.isPackaged && process.argv.includes('--art-lineup') && spikeIds.length > 0
       ? lineupOrder(join(process.cwd(), 'reports', 'art-spike', 'key.txt'), spikeIds, (max) => randomInt(0, max))
       : undefined;
-  const onStage = selectCharacters({ packs: registry.packs, requested: argValue('character'), lineup });
+  const selection = selectCharacters({ packs: registry.packs, requested: argValue('character'), lineup });
+  if (selection.warning !== undefined) console.warn(`[characters] ${selection.warning}`);
+  if (selection.error !== undefined) console.error(`[characters] ${selection.error}`);
+  const onStage = selection.characters;
 
   const displayForStage = () => screen.getPrimaryDisplay();
   const windows = new WindowManager(paths, () => stageWindowOptions(displayForStage()));
@@ -139,29 +142,33 @@ function main(): void {
       screen.on('display-added', onDisplayChanged);
       screen.on('display-removed', onDisplayChanged);
 
-      tray = new TrayService(t, {
-        toggleStage,
-        showChat: () => {
-          windows.showChat();
+      tray = new TrayService(
+        t,
+        {
+          toggleStage,
+          showChat: () => {
+            windows.showChat();
+          },
+          showSettings: () => {
+            windows.showSettings();
+          },
+          setLayer: (layer) => {
+            stage.setLayer(layer);
+            refreshTray();
+          },
+          setPreset: (preset) => {
+            stage.setPreset(preset);
+            refreshTray();
+          },
+          nudge: (delta) => {
+            stage.nudge(delta);
+          },
+          quit: () => {
+            app.quit();
+          },
         },
-        showSettings: () => {
-          windows.showSettings();
-        },
-        setLayer: (layer) => {
-          stage.setLayer(layer);
-          refreshTray();
-        },
-        setPreset: (preset) => {
-          stage.setPreset(preset);
-          refreshTray();
-        },
-        nudge: (delta) => {
-          stage.nudge(delta);
-        },
-        quit: () => {
-          app.quit();
-        },
-      });
+        onStage[0]?.pack,
+      );
       hotkeys.bind(TOGGLE_ACCELERATOR, toggleStage);
       refreshTray();
 

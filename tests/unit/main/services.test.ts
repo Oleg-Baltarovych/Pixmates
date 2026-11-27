@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import type { MenuItemConstructorOptions } from 'electron';
 import { HotkeyService, type ShortcutApi } from '../../../src/main/services/hotkeys.ts';
 import { trayTemplate, type TrayState } from '../../../src/main/services/tray-menu.ts';
+import type { CharacterPack } from '../../../src/main/characters/registry.ts';
 import { StageController } from '../../../src/main/stage/controller.ts';
+import type { Manifest } from '../../../src/shared/pack.ts';
 import { createTranslator } from '../../../src/main/i18n.ts';
 import en from '../../../src/i18n/locales/en.json';
 import uk from '../../../src/i18n/locales/uk.json';
@@ -148,14 +150,23 @@ describe('StageController', () => {
 
   it('steps the scale within the clamp and returns to the preset scale on a preset change', () => {
     const display = () => ({ workArea: { x: 0, y: 0, width: 1536, height: 816 }, scaleFactor: 1.25 });
-    const controller = new StageController({ stage: () => undefined, display, now: () => 0, seed: 1 });
+    // A built-in-shaped pack (48 × 56, scaleRef 48); the controller reads only the sizing fields.
+    const manifest = { frameSize: { w: 48, h: 56 }, scaleRef: 48, animations: {} } as unknown as Manifest; // test stub
+    const pack: CharacterPack = { id: 'pixmates.maid', dir: '', manifest, atlas: 'sprites/atlas.png' };
+    const controller = new StageController({
+      stage: () => undefined,
+      display,
+      now: () => 0,
+      seed: 1,
+      characters: () => [{ key: pack.id, pack }],
+    });
     controller.setPreset('m');
-    expect(controller.scale).toBe(5);
-    controller.nudge(1);
-    controller.nudge(1);
-    controller.nudge(1);
-    expect(controller.scale).toBe(7); // clamp: 25 % of 816 DIP at 125 %
-    controller.setPreset('s');
     expect(controller.scale).toBe(4);
+    controller.nudge(1);
+    controller.nudge(1);
+    controller.nudge(1);
+    expect(controller.scale).toBe(5); // clamp: 25 % of 816 DIP at 125 % over scaleRef 48
+    controller.setPreset('s');
+    expect(controller.scale).toBe(3);
   });
 });

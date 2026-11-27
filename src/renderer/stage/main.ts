@@ -1,16 +1,15 @@
 // Stage renderer (plan M0-06 variant A, M-ART MA-11): a transparent overlay on the work area. Main pushes the
 // character(s) to draw (`stage:characters`); the stage fetches each atlas from app://characters, cuts frame textures
 // (nearest filtering), plays animations on a frame timer and renders only when a frame or position changes — the
-// Pixi ticker runs only while dragging (rules/render.md, SPEC §3.3). Empty entries → the M0 placeholder.
+// Pixi ticker runs only while dragging (rules/render.md, SPEC §3.3). Empty entries (no valid pack) → nothing drawn.
 import 'pixi.js/unsafe-eval'; // first: strict CSP has no 'unsafe-eval'; swaps Pixi's generated shader code for static code
 // Named imports only; `skipExtensionImports` below stops Pixi from loading its browser bundle at init.
 import { Application, BufferImageSource, ImageSource, Rectangle, Sprite, Texture, type TextureSource } from 'pixi.js';
-import { CLICK_SLOP_DIP, DRAG_FPS, MIN_SCALE } from '../../content/stage.ts';
+import { CLICK_SLOP_DIP, DRAG_FPS } from '../../content/stage.ts';
 import { resolveAnim } from '../../shared/anim.ts';
 import type { PayloadOf } from '../../shared/ipc.ts';
-import { placeholderFrame, type AlphaMask } from '../../shared/placeholder-art.ts';
 import { pingMain } from '../shared/ping.ts';
-import { isOpaqueInFrame, type FrameRect } from './hit-test.ts';
+import { isOpaqueInFrame, type AlphaMask, type FrameRect } from './hit-test.ts';
 import { labelGlyph } from './label.ts';
 
 type Payload = PayloadOf<'stage:characters'>;
@@ -21,7 +20,7 @@ if (!stageApi) throw new Error('stage preload API missing');
 const api = stageApi;
 
 // Subscribe before any await: main pushes on did-finish-load, which can fire while Pixi initialises.
-let latest: Payload = { entries: [], placeholderScale: MIN_SCALE, animCycle: false };
+let latest: Payload = { entries: [], animCycle: false };
 let onPayload = (): void => undefined;
 api.onCharacters((payload) => {
   latest = payload;
@@ -46,7 +45,7 @@ const CYCLE: readonly (readonly [string, number])[] = [
 
 interface Actor {
   readonly id: string;
-  readonly entry: Entry | undefined;
+  readonly entry: Entry;
   readonly sprite: Sprite;
   readonly label: Sprite | undefined;
   readonly mask: AlphaMask;
@@ -108,7 +107,7 @@ async function start(): Promise<void> {
   const showFrame = (actor: Actor): void => {
     const list = actor.textures.get(actor.anim);
     const texture = list?.[actor.frame % list.length];
-    if (!texture || !actor.entry) return;
+    if (!texture) return;
     actor.sprite.texture = texture;
     const origin = actor.entry.animations[actor.anim]?.origin ?? { x: 0, y: 0 };
     const { w, h } = actor.entry.frameSize;
@@ -116,7 +115,6 @@ async function start(): Promise<void> {
   };
 
   const play = (actor: Actor, wanted: string): void => {
-    if (!actor.entry) return;
     actor.anim = resolveAnim(wanted, actor.entry) ?? actor.anim;
     actor.frame = 0;
     actor.loops = 0;
@@ -124,9 +122,7 @@ async function start(): Promise<void> {
   };
 
   const tick = (actor: Actor): void => {
-    const entry = actor.entry;
-    if (!entry) return;
-    const anim = entry.animations[actor.anim];
+    const anim = actor.entry.animations[actor.anim];
     if (!anim) return;
     actor.timer = setTimeout(() => {
       actor.frame++;
@@ -154,35 +150,6 @@ async function start(): Promise<void> {
       for (const source of actor.sources) source.destroy();
     }
     actors = [];
-  };
-
-  const placeholderActor = (scale: number): Actor => {
-    const frame = placeholderFrame();
-    const source = new BufferImageSource({
-      resource: frame.rgba,
-      width: frame.width,
-      height: frame.height,
-      format: 'rgba8unorm',
-      scaleMode: 'nearest',
-      autoGenerateMipmaps: false,
-    });
-    const texture = new Texture({ source });
-    return {
-      id: 'placeholder',
-      entry: undefined,
-      sprite: new Sprite(texture),
-      label: undefined,
-      mask: frame,
-      textures: new Map([['idle', [texture]]]),
-      sources: [source],
-      scale,
-      anim: 'idle',
-      frame: 0,
-      loops: 0,
-      cycleStep: 0,
-      timer: undefined,
-      rect: { x: 0, y: 0, w: frame.width, h: frame.height },
-    };
   };
 
   const entryActor = async (entry: Entry): Promise<Actor> => {
@@ -277,16 +244,14 @@ async function start(): Promise<void> {
       app.renderer.resolution = window.devicePixelRatio;
       const payload = latest;
       const signature = payload.entries.map((e) => `${e.key}|${e.atlasUrl}`).join(';');
-      if (signature !== builtFor || actors.length === 0) {
+      // Rebuild on a new set of packs, or retry a set whose atlas failed to load (no fallback art: nothing drawn).
+      if (signature !== builtFor || (actors.length === 0 && payload.entries.length > 0)) {
         destroyActors();
         try {
-          actors =
-            payload.entries.length === 0
-              ? [placeholderActor(payload.placeholderScale)]
-              : await Promise.all(payload.entries.map(entryActor));
+          actors = await Promise.all(payload.entries.map(entryActor));
         } catch (error) {
           console.error(`[stage] ${error instanceof Error ? error.message : String(error)}`);
-          actors = [placeholderActor(payload.placeholderScale)];
+          actors = [];
         }
         builtFor = signature;
         placed = false;
@@ -297,7 +262,7 @@ async function start(): Promise<void> {
         }
       } else {
         actors.forEach((actor, i) => {
-          actor.scale = payload.entries[i]?.scale ?? payload.placeholderScale;
+          actor.scale = payload.entries[i]?.scale ?? actor.scale;
         });
       }
       layout();

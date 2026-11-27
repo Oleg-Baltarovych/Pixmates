@@ -14,7 +14,7 @@ export const LIMITS = {
   pingNonceMax: 64,
   versionMax: 32,
   /** Upper bound for the integer sprite scale: a sanity cap far above any real clamp (main limits the sprite to
-   * MAX_HEIGHT_FRACTION of the work area for whatever FRAME_HEIGHT_PX the art uses). */
+   * MAX_HEIGHT_FRACTION of the work area for whatever frame height the pack uses). */
   scaleMax: 32,
   /** Characters on stage: 1 in product (D-8), up to 4 in the dev art lineup. */
   stageCharactersMax: 4,
@@ -107,13 +107,12 @@ export const IPC = {
   },
   /** What to draw (replaces M0 `stage:scale`): the active character(s) with atlas URL and integer scale.
    * Re-pushed on load, size change and display change. No PNG bytes cross IPC; the stage fetches `atlasUrl`.
-   * Empty `entries` = no pack built yet: the placeholder at `placeholderScale`. */
+   * Empty `entries` = no valid pack (main has logged an error): the stage draws nothing. */
   [CHANNEL.stageCharacters]: {
     kind: 'event',
     payload: z
       .object({
         entries: z.array(stageCharacter).max(LIMITS.stageCharactersMax),
-        placeholderScale: z.int().min(1).max(LIMITS.scaleMax),
         /** Dev: cycle idle ×3 → walk ×2 → happy ×1 (art lineup / --anim-cycle). */
         animCycle: z.boolean(),
       })

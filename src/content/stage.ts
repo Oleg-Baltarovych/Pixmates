@@ -1,9 +1,6 @@
 // Stage numbers (SPEC v1.4 §3.3, owner decision D-10). Tuned by the owner by eye; logic never hard-codes them.
 import { builtinPackId } from '../shared/pack.ts';
 
-/** Height of the placeholder frame in art pixels; real packs bring their own `frameSize` in the manifest. */
-export const FRAME_HEIGHT_PX = 32;
-
 /**
  * Size presets as target on-screen height in DIP (M ≈ 3 cm on a 15.6" 1080p laptop at 125 %). ADR 012: with
  * `scaleRef` 48, S ×3 / M ×4 / L ×5 at 1080p / 125 % and ×2 / ×3 / ×4 at 100 %.
@@ -24,7 +21,7 @@ export const CLICK_SLOP_DIP = 4;
 /** Stage ticker cap while dragging; otherwise the ticker is stopped and frames render on demand. */
 export const DRAG_FPS = 60;
 
-/** The character shown when none is chosen (M-ART: `maid`; until phase 2 builds it, the placeholder stays). */
+/** The character shown when none is chosen (`--character=pixmates.<id>` picks another, MA-30). */
 export const DEFAULT_CHARACTER = builtinPackId('maid');
 
 /**
@@ -33,3 +30,10 @@ export const DEFAULT_CHARACTER = builtinPackId('maid');
  * integer sprite scale on screen).
  */
 export const WALK_TRAVEL = { pxPerFrame: 2, fps: 10, pxPerSecond: 20 } as const;
+
+/** Animations the M0 core asks for until M1 behaviour (names from the built-in set, ADR 010). */
+export const CORE_ANIMATIONS = ['idle_a', 'drag', 'happy', 'wave'] as const;
+export type CoreAnimation = (typeof CORE_ANIMATIONS)[number];
+
+/** A click picks one of these, uniformly, from the seeded RNG. */
+export const CLICK_REACTIONS = ['happy', 'wave'] as const satisfies readonly CoreAnimation[];

@@ -75,9 +75,14 @@ jobs:
       - name: Check the packaged layout
         shell: pwsh
         run: |
-          foreach ($p in 'release/win-unpacked/Pixmates.exe', 'release/win-unpacked/resources/app.asar') {
+          foreach ($p in 'release/win-unpacked/Pixmates.exe', 'release/win-unpacked/resources/app.asar',
+                         'release/win-unpacked/resources/characters/pixmates.maid/manifest.json',
+                         'release/win-unpacked/resources/characters/pixmates.maid/sprites/atlas.png') {
             if (-not (Test-Path $p)) { Write-Error "missing $p"; exit 1 }
           }
+          # MA-30: only the reserved pixmates.* built-ins ship.
+          $foreign = Get-ChildItem 'release/win-unpacked/resources/characters' | Where-Object { $_.Name -notlike 'pixmates.*' }
+          if ($foreign) { Write-Error "unexpected packs: $($foreign.Name -join ', ')"; exit 1 }
 
   secrets:
     name: Secret scan (gitleaks)

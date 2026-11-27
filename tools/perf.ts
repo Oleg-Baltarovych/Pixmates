@@ -205,7 +205,7 @@ async function main(): Promise<void> {
   const verdict = cpuAvg < BUDGET.cpuPercent && priv.avg <= BUDGET.memoryMb ? 'within budget' : 'OVER BUDGET';
   const date = new Date().toISOString().slice(0, 10);
   const report = [
-    `# Perf — ${date} — idle placeholder`,
+    `# Perf — ${date} — idle ${character ?? 'default character'}`,
     '',
     `- Build: release/win-unpacked (electron-builder --dir, fuses on), \`--perf-seed=1\``,
     `- Machine: ${os.cpus()[0]?.model ?? 'unknown CPU'}, ${String(cores)} logical cores, ${String(Math.round(mb(os.totalmem())))} MB RAM, Windows ${os.release()}`,

@@ -12,9 +12,9 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "electron-vite dev",
-    "dev:lineup": "electron-vite dev -- --art-lineup",
-    "dev:cycle": "electron-vite dev -- --anim-cycle",
+    "dev": "pnpm sprites && electron-vite dev",
+    "dev:lineup": "pnpm sprites && electron-vite dev -- --art-lineup",
+    "dev:cycle": "pnpm sprites && electron-vite dev -- --anim-cycle",
     "build": "pnpm sprites && electron-vite build",
     "dist:dir": "pnpm build && electron-builder --dir --publish never",
     "perf": "node tools/perf.ts",

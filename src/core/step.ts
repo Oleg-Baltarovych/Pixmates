@@ -1,13 +1,13 @@
 // The core step (ADR 002, plan M0-05): (state, event, now) → { state, effects }. Pure and deterministic.
-// M0 decides only the drag state, click-through and the placeholder animation; main interprets the effects.
-import { CLICK_REACTIONS } from '../content/placeholder.ts';
+// M0 decides only the drag state, click-through and a click reaction; main interprets the effects.
+import { CLICK_REACTIONS } from '../content/stage.ts';
 import { nextInt, seedRng } from './rng.ts';
 import type { CoreEvent, CoreState, Effect, PointerInput, StepResult } from './types.ts';
 
 const NOTHING: readonly Effect[] = [];
 
 export function initialState(seed: number): CoreState {
-  return { rng: seedRng(seed), drag: { kind: 'idle' }, animation: 'idle', hitThrough: true };
+  return { rng: seedRng(seed), drag: { kind: 'idle' }, animation: 'idle_a', hitThrough: true };
 }
 
 export function step(state: CoreState, event: CoreEvent, now: number): StepResult {
@@ -42,13 +42,13 @@ function onInput(state: CoreState, input: PointerInput, now: number): StepResult
     case 'drag-end':
       if (!dragging) return { state, effects: NOTHING };
       return {
-        state: { ...state, drag: { kind: 'idle' }, animation: 'idle' },
-        effects: [{ type: 'PlayAnimation', name: 'idle' }],
+        state: { ...state, drag: { kind: 'idle' }, animation: 'idle_a' },
+        effects: [{ type: 'PlayAnimation', name: 'idle_a' }],
       };
     case 'click': {
       if (dragging) return { state, effects: NOTHING };
       const draw = nextInt(state.rng, CLICK_REACTIONS.length);
-      const name = CLICK_REACTIONS[draw.value] ?? 'idle';
+      const name = CLICK_REACTIONS[draw.value] ?? 'idle_a';
       return { state: { ...state, rng: draw.state, animation: name }, effects: [{ type: 'PlayAnimation', name }] };
     }
   }

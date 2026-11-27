@@ -101,12 +101,29 @@ describe('character registry (MA-10)', () => {
   });
   it('selects the requested pack, else the default, and labels the lineup A–D', () => {
     const { packs } = loadRegistry(root, { includeSpike: true });
-    expect(selectCharacters({ packs, requested: 'spike-test' }).map((c) => c.key)).toEqual(['spike-test']);
-    expect(selectCharacters({ packs, requested: 'nope' }).map((c) => c.key)).toEqual(['pixmates.maid']);
-    expect(selectCharacters({ packs, lineup: ['spike-test', 'pixmates.maid'] }).map((c) => c.label)).toEqual([
-      'A',
-      'B',
-    ]);
+    const keys = (s: ReturnType<typeof selectCharacters>) => s.characters.map((c) => c.key);
+    const requested = selectCharacters({ packs, requested: 'spike-test' });
+    expect(keys(requested)).toEqual(['spike-test']);
+    expect(requested.warning ?? requested.error).toBeUndefined();
+    expect(keys(selectCharacters({ packs }))).toEqual(['pixmates.maid']);
+    const lineup = selectCharacters({ packs, lineup: ['spike-test', 'pixmates.maid'] });
+    expect(lineup.characters.map((c) => c.label)).toEqual(['A', 'B']);
+  });
+  it('falls back to the default with a warning when --character names no valid pack (MA-30)', () => {
+    const { packs } = loadRegistry(root, { includeSpike: true });
+    const unknown = selectCharacters({ packs, requested: 'pixmates.nope' });
+    expect(unknown.characters.map((c) => c.pack.id)).toEqual(['pixmates.maid']);
+    expect(unknown.warning).toMatch(/pixmates\.nope.*pixmates\.maid/);
+    expect(unknown.error).toBeUndefined();
+  });
+  it('reports an error and puts nobody on stage when no valid pack is left (MA-30)', () => {
+    const none = selectCharacters({ packs: new Map() });
+    expect(none.characters).toEqual([]);
+    expect(none.error).toMatch(/no valid character pack/);
+    const { packs } = loadRegistry(root, { includeSpike: true });
+    const onlySpike = new Map([...packs].filter(([id]) => id !== 'pixmates.maid'));
+    expect(selectCharacters({ packs: onlySpike, requested: 'pixmates.nope' }).error).toMatch(/pixmates\.maid/);
+    expect(selectCharacters({ packs, lineup: ['spike-none'] }).error).toMatch(/no valid character pack/);
   });
 });
 
@@ -169,21 +186,15 @@ describe('stage:characters contract (MA-11)', () => {
     scale: 4,
   };
   it('accepts up to four entries from app://characters', () => {
-    expect(schema.safeParse({ entries: [entry], placeholderScale: 4, animCycle: true }).success).toBe(true);
+    expect(schema.safeParse({ entries: [entry], animCycle: true }).success).toBe(true);
     const seat = (anchor: unknown) => ({
       ...entry,
       animations: { ...entry.animations, sit_edge: { frames: 6, fps: 6, loop: true, origin: { x: 0, y: 56 }, anchor } },
     });
-    expect(
-      schema.safeParse({ entries: [seat({ x: 0.5, y: 0.8 })], placeholderScale: 4, animCycle: false }).success,
-    ).toBe(true);
-    expect(
-      schema.safeParse({ entries: [seat({ x: 0.5, y: 1.1 })], placeholderScale: 4, animCycle: false }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({ entries: [seat({ x: -0.1, y: 0.5 })], placeholderScale: 4, animCycle: false }).success,
-    ).toBe(false);
-    expect(schema.safeParse({ entries: [], placeholderScale: 4, animCycle: false }).success).toBe(true);
+    expect(schema.safeParse({ entries: [seat({ x: 0.5, y: 0.8 })], animCycle: false }).success).toBe(true);
+    expect(schema.safeParse({ entries: [seat({ x: 0.5, y: 1.1 })], animCycle: false }).success).toBe(false);
+    expect(schema.safeParse({ entries: [seat({ x: -0.1, y: 0.5 })], animCycle: false }).success).toBe(false);
+    expect(schema.safeParse({ entries: [], animCycle: false }).success).toBe(true);
   });
   it('carries the manifest facing from main to the renderer and rejects unknown facings (MA-27a)', () => {
     const manifest = manifestSchema.parse(
@@ -194,23 +205,22 @@ describe('stage:characters contract (MA-11)', () => {
     );
     expect(animations.walk?.facing).toBe('right');
     expect(animations.idle_a && 'facing' in animations.idle_a).toBe(false);
-    const parsed = schema.parse({ entries: [{ ...entry, animations }], placeholderScale: 4, animCycle: false });
+    const parsed = schema.parse({ entries: [{ ...entry, animations }], animCycle: false });
     expect(parsed.entries[0]?.animations.walk?.facing).toBe('right');
     const bad = { ...entry, animations: { walk: { ...entry.animations.idle_a, facing: 'up' } } };
-    expect(schema.safeParse({ entries: [bad], placeholderScale: 4, animCycle: false }).success).toBe(false);
+    expect(schema.safeParse({ entries: [bad], animCycle: false }).success).toBe(false);
   });
   it('rejects foreign atlas URLs, five entries, bad scale and extra fields', () => {
-    const bad = (e: object) =>
-      schema.safeParse({ entries: [{ ...entry, ...e }], placeholderScale: 4, animCycle: false });
+    const bad = (e: object) => schema.safeParse({ entries: [{ ...entry, ...e }], animCycle: false });
     expect(bad({ atlasUrl: 'https://evil.example/a.png' }).success).toBe(false);
     expect(bad({ atlasUrl: 'app://renderer/stage/a.png' }).success).toBe(false);
     expect(bad({ atlasUrl: 'app://characters/../x/sprites/a.png' }).success).toBe(false);
     expect(bad({ scale: 0 }).success).toBe(false);
     expect(bad({ label: 'E' }).success).toBe(false);
     expect(bad({ extra: 1 }).success).toBe(false);
-    expect(schema.safeParse({ entries: Array(5).fill(entry), placeholderScale: 4, animCycle: false }).success).toBe(
-      false,
-    );
+    // MA-30: the M0 placeholder field is gone from the contract.
+    expect(schema.safeParse({ entries: [], placeholderScale: 4, animCycle: false }).success).toBe(false);
+    expect(schema.safeParse({ entries: Array(5).fill(entry), animCycle: false }).success).toBe(false);
   });
 });
 

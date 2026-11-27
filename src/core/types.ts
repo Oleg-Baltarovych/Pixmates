@@ -1,7 +1,7 @@
 // Core data shapes (ADR 002, plan M0-05). Plain, serialisable data: no classes, no functions, no platform types.
-import type { PlaceholderAnimation } from '../content/placeholder.ts';
+import type { CoreAnimation } from '../content/stage.ts';
 
-export type AnimationName = PlaceholderAnimation;
+export type AnimationName = CoreAnimation;
 
 /** Seeded RNG state (uint32). Lives in CoreState so a replay with the same seed is identical. */
 export type RngState = number;

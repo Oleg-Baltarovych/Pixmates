@@ -3,7 +3,6 @@
 import type { BrowserWindow, BrowserWindowConstructorOptions, Display } from 'electron';
 import {
   DEFAULT_SIZE_PRESET,
-  FRAME_HEIGHT_PX,
   MAX_HEIGHT_FRACTION,
   MIN_SCALE,
   SIZE_PRESETS_DIP,
@@ -32,6 +31,11 @@ export function stageAnimation(a: Manifest['animations'][string]): StageAnimatio
 
 export type LayerMode = 'on-top' | 'desktop';
 
+interface Sizing {
+  readonly frameH: number;
+  readonly refH: number | undefined;
+}
+
 /** Overlay window on the display's work area (SPEC §3.1 variant A). */
 export function stageWindowOptions(
   display: Pick<Display, 'workArea'>,
@@ -59,7 +63,7 @@ export interface StageControllerDeps {
   readonly display: () => Pick<Display, 'workArea' | 'scaleFactor'>;
   readonly now: () => number;
   readonly seed: number;
-  /** Packs on stage (1 in product; ≤ 4 in the dev lineup). Empty = placeholder. */
+  /** Packs on stage (1 in product; ≤ 4 in the dev lineup). Empty = no valid pack: nothing to draw or size. */
   readonly characters?: () => readonly StageCharacter[];
   /** Dev: cycle idle → walk → happy. */
   readonly animCycle?: boolean;
@@ -115,7 +119,9 @@ export class StageController {
 
   /** «Більше» / «Менше»: one integer step within [MIN_SCALE, clamp]. */
   nudge(delta: 1 | -1): void {
-    this.#scale = stepScale(this.#scale, delta, MIN_SCALE, maxScale(this.#scaleInput(0, this.#frameH(), this.#refH())));
+    const sizing = this.#sizing();
+    if (!sizing) return;
+    this.#scale = stepScale(this.#scale, delta, MIN_SCALE, maxScale(this.#scaleInput(0, sizing)));
     this.#pushCharacters();
   }
 
@@ -137,17 +143,13 @@ export class StageController {
     return this.#deps.characters?.() ?? [];
   }
 
-  /** Frame height of the primary character (the placeholder's when no pack is on stage). */
-  #frameH(): number {
-    return this.#characters()[0]?.pack.manifest.frameSize.h ?? FRAME_HEIGHT_PX;
+  /** Sizing of the primary character (frame height + manifest `scaleRef`, ADR 009); undefined = nothing on stage. */
+  #sizing(): Sizing | undefined {
+    const manifest = this.#characters()[0]?.pack.manifest;
+    return manifest && { frameH: manifest.frameSize.h, refH: manifest.scaleRef };
   }
 
-  /** Sizing height of the primary character (manifest `scaleRef`, ADR 009); undefined = its frame height. */
-  #refH(): number | undefined {
-    return this.#characters()[0]?.pack.manifest.scaleRef;
-  }
-
-  #scaleInput(targetDip: number, frameH: number, refH?: number): ScaleInput {
+  #scaleInput(targetDip: number, { frameH, refH }: Sizing): ScaleInput {
     const display = this.#deps.display();
     return {
       targetDip,
@@ -160,8 +162,9 @@ export class StageController {
     };
   }
 
-  #presetScale(preset: SizePreset, frameH = this.#frameH(), refH = this.#refH()): number {
-    return presetScales(SIZE_PRESETS_DIP, this.#scaleInput(0, frameH, refH))[preset];
+  /** Preset scale for `sizing` (default: the primary character); MIN_SCALE when no pack is on stage. */
+  #presetScale(preset: SizePreset, sizing = this.#sizing()): number {
+    return sizing ? presetScales(SIZE_PRESETS_DIP, this.#scaleInput(0, sizing))[preset] : MIN_SCALE;
   }
 
   #pushCharacters(): void {
@@ -181,10 +184,13 @@ export class StageController {
         fallbacks: manifest.fallbacks,
         atlasUrl: `app://characters/${pack.id}/${pack.atlas}`,
         // The primary character follows the fine steps; lineup entries use the preset for their own frame size.
-        scale: index === 0 ? this.#scale : this.#presetScale(this.#preset, manifest.frameSize.h, manifest.scaleRef),
+        scale:
+          index === 0
+            ? this.#scale
+            : this.#presetScale(this.#preset, { frameH: manifest.frameSize.h, refH: manifest.scaleRef }),
       };
     });
-    const payload = { entries, placeholderScale: this.#scale, animCycle: this.#deps.animCycle ?? false };
+    const payload = { entries, animCycle: this.#deps.animCycle ?? false };
     if (!sendEvent(win.webContents, CHANNEL.stageCharacters, payload)) {
       console.error('[stage] stage:characters payload failed its contract');
     }
@@ -208,7 +214,7 @@ export class StageController {
         this.#deps.stage()?.setIgnoreMouseEvents(effect.ignore, { forward: true });
         return;
       case 'PlayAnimation':
-        // M0 has one placeholder frame; animations reach the renderer with the rig (M1).
+        // The stage plays only idle until M1 behaviour sends animations to the renderer.
         return;
     }
   }
