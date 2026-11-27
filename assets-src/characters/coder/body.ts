@@ -1,10 +1,10 @@
 // pixmates.coder — D-20 night-shift coder boy (MA-66, docs/art/coder.md; ART-BIBLE §11.9 stern look, §12 richness).
 // A stylized archetype, not a portrait: an unimpressed senior dev in a boxy mustard half-zip hoodie (hood down and
-// bunched behind the neck, steel zipper pull, indigo `{ }` chest print, kangaroo pocket, ribbed waistband) over a
-// cream tee hem, a cream lanyard with a blank badge (the signature piece), straight rolled denim jeans and chunky
-// cream sneakers; cool cocoa bedhead with one cowlick, grey-blue half-lidded eyes with eye bags. Layers: tee → hoodie
-// → lanyard; materials: knit cloth, denim, rubber soles, steel, cord. Frame 48 × 56, shared rig poses only (the mug
-// is an M1 signature prop, owner Q2 a).
+// bunched behind the neck, steel zipper pull, kangaroo pocket, ribbed waistband) over a cream tee hem, an indigo
+// lanyard with a blank cream badge (the signature piece), straight rolled denim jeans and chunky cream sneakers;
+// cool cocoa bedhead with one cowlick, grey-blue hooded eyes with eye bags. Layers: tee → hoodie → lanyard;
+// materials: knit cloth, denim, rubber soles, steel, cord. Frame 48 × 56, shared rig poses only (the mug is an M1
+// signature prop, owner Q2 a).
 import type { Outfit } from '../../lib/mask.ts';
 import type { PackDef } from '../../lib/types.ts';
 import { ANIMS } from '../../rig/anims/index.ts';
@@ -19,15 +19,15 @@ const T6UP = [1, 2, 3, 4, 5, 6] as const;
 const OUTFIT: Outfit = {
   skin: { ramp: 'skin', tones: T6UP },
   hair: { ramp: 'hair_cocoa', tones: T6 },
-  // Steel: the zipper pull.
+  // Steel: the zipper pull and the badge clip.
   horn: { ramp: 'metal', tones: T6UP },
   // Mustard knit: hood, collar, pocket edges, rib ticks.
   dress: { ramp: 'cloth_mustard', tones: T6UP },
-  // Cream: tee hem, lanyard cord and badge, sneakers, sclera and highlights.
+  // Cream: tee hem, lanyard badge, sneakers, sclera and highlights.
   apron: { ramp: 'cloth_cream', tones: T6 },
   // Amber: the badge's `>_` mark.
   trim: { ramp: 'cloth_ochre', tones: T6 },
-  // Indigo: the `{ }` chest print.
+  // Indigo: the lanyard cord.
   shoe: { ramp: 'cloth_indigo', tones: T6UP },
   // Cool grey-blue "monitor glow" iris: C = ash 0, c 1 (the dark stern iris), i 2, I 3, k 4, K 5.
   eye: { ramp: 'hair_ash', tones: [0, 1, 2, 3, 4, 5] },

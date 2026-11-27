@@ -2,11 +2,10 @@
 // originality gate PASS 2026-11-24, D-20 re-check 2026-11-26). A stylized archetype, not a portrait: a night-shift
 // coder boy — cool cocoa bedhead (flat messy top, 3 sideways tufts, one cowlick hook right of the axis, 5 uneven
 // fringe clumps with two short ones over the brows), short squared sideburns, human ears; a mustard half-zip hoodie
-// with the hood bunched behind the neck, a steel zipper pull, an indigo `{ }` print on the lit-left chest, a cream
-// lanyard with a blank badge (amber `>_`), a kangaroo pocket, a ribbed waistband over a cream tee hem; straight
-// rolled jeans; chunky cream sneakers. Slots: `dress` = cloth_mustard, `apron` = cloth_cream (tee, cord, badge,
-// sneakers, sclera), `trim` = cloth_ochre (the amber mark), `horn` = metal (zipper pull), `shoe` = cloth_indigo
-// (print). Legend: assets-src/lib/mask.ts.
+// with the hood bunched behind the neck, a steel zipper pull, an indigo lanyard with a blank cream badge (amber
+// `>_`), a kangaroo pocket, a ribbed waistband over a cream tee hem; straight rolled jeans; chunky cream sneakers.
+// Slots: `dress` = cloth_mustard, `apron` = cloth_cream (tee, badge, sneakers, sclera), `trim` = cloth_ochre (the
+// amber mark), `horn` = metal (zipper pull, badge clip), `shoe` = cloth_indigo (cord). Legend: assets-src/lib/mask.ts.
 import type { Mask } from '../../lib/mask.ts';
 
 const BLANK = '.'.repeat(30);
@@ -117,44 +116,45 @@ export const HAIR_FAR_Q34: Mask = ['..H', '..H', '..H'];
  * flat (body `D`, folds `d`) so the 12-px chest never turns into dither noise at 1×:
  * - rows 0–2: the hood bunched round the neck as a thick lit-left roll + the half-zip collar, a 2-px steel pull (`u`/`o`)
  *   on the axis;
- * - rows 3–5: the indigo `{ }` print on the lit-left chest (two 3-row braces, a 2-px gap);
- * - the lanyard: a 1-px cream cord from the collar to a 3 × 4 blank badge on the screen-right chest (cream, an amber
- *   `>` and `_`, a darker bottom edge) — the signature piece;
- * - rows 6–8: the kangaroo pocket (top edge one step darker, side openings mustard 1 diagonals);
- * - rows 9–10: the rib waistband with a mustard-1 tick every 3 px;
- * - row 11: the cream tee hem under the rib (the under layer).
+ * - rows 3–5: the lanyard (the signature piece) — a dark 1-px indigo-2 cord V from the collar to a 1-px steel clip;
+ * - rows 6–9: a blank 3 × 3 cream badge with an amber `>` and `_` (2 px) and a mustard-1 right + bottom edge, hung
+ *   over the rib on the screen-right chest;
+ * - rows 7–8: the kangaroo pocket — a continuous 8-px mustard-2 top edge, mustard-1 side openings;
+ * - rows 9–11: the rib waistband with a tick every 4 px; 3 broken cream px of the tee hem peek out lit-left.
+ * Three chest reads at 1× (art-director round 1): cord V, badge, pocket line. The round-0 `{ }` print is gone: 2-px
+ * braces ≥ 4 rows tall did not fit beside the V and badge with 2 px of hoodie between them.
  */
 export const CHEST: Mask = [
   'dwWWWWWwwwDd',
   'vdwwWwuwwdDv',
   'DvvddvovddvD',
-  'DDbDDbDDDpDD',
-  'DbDDDDbDpppD',
-  'DDbDDbDDtPpD',
-  'DvvvvvvvPptD',
-  'DvDDDDDDqqqD',
-  'DDvDDDDDDvDD',
-  'dvddvddvddvd',
-  'dvddvddvddvd',
-  'qaaaaaaaaaaq',
+  'DDDDDDDmDDDm',
+  'DDDDDDDDmDmD',
+  'DDDDDDDDDuDD',
+  'DDDDDDDDpPpV',
+  'vvvvvvvvtppV',
+  'DVDDDDVDptpV',
+  'dddvdddvVVVV',
+  'dddvdddvdddv',
+  'PaVaVVVVVVVV',
 ];
 /**
  * q34 hoodie (from the chest joint + (−8, 0)): the hood lump trails behind the nape (cols 0–2, screen-left), the
- * collar and zip 1 px toward the facing, the print on the near chest, the badge toward the facing edge.
+ * collar and zip 1 px toward the facing, the cord V and badge toward the facing edge, a 5-px pocket edge.
  */
 export const CHEST_Q34: Mask = [
   'vDdwWWWWwwDd',
   'vDddwwWuwdDv',
   '.vvDvvdovdvD',
-  '..DbDDbDDpDD',
-  '..bDDDDbpppD',
-  '..DbDDbDtPpD',
-  '...vvvvvPptD',
-  '...vDDDDqqqD',
-  '....vDDDDDvD',
-  '...vddvddvdd',
-  '...vddvddvdd',
-  '...aaaaaaaaq',
+  '..DDDDDmDDDm',
+  '..DDDDDDmDmD',
+  '...DDDDDDuDD',
+  '...DDDDDpPpV',
+  '...vvvvvtppV',
+  '...VDDDVptpV',
+  '...dvdddVVVV',
+  '...dvdddvddd',
+  '...aaVVVVVVV',
 ];
 
 /** Chunky cream sneakers (front, 5 × 3): upper cream 4, a lace px, a lit toe, a 1-row sole with its shade line. */

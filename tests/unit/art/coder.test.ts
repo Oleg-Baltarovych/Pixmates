@@ -1,8 +1,10 @@
 // M-ART MA-66 (D-20, docs/art/coder.md): `pixmates.coder` — pack build, headroom with the cowlick, the costume layers
-// on every frame (mustard hoodie, cream tee hem / lanyard, denim, indigo print), the arm-over-torso gate, the q34 walk
+// on every frame (mustard hoodie, cream tee hem / lanyard, denim, indigo cord), the arm-over-torso gate, the q34 walk
 // head rules. Faces and head masks: coder-face.test.ts; ramp gates: coder-palette.test.ts.
 import { describe, expect, it } from 'vitest';
 import { CODER, createCoderPack } from '../../../assets-src/characters/coder/body.ts';
+import { CHEST, CHEST_Q34 } from '../../../assets-src/characters/coder/masks.ts';
+import { LEGEND, type Mask } from '../../../assets-src/lib/mask.ts';
 import { ANIMS } from '../../../assets-src/rig/anims/index.ts';
 import { armTorsoContrast, armTorsoProblems } from '../../../assets-src/rig/checks.ts';
 import { ARM_LABEL, bodyViewOf, createRigRenderer } from '../../../assets-src/rig/compose.ts';
@@ -67,7 +69,7 @@ describe('costume (coder.md «D-20», ART-BIBLE §12)', () => {
   it.each([
     ['cloth_mustard', 'hoodie'],
     ['cloth_cream', 'tee hem, lanyard, sneakers'],
-    ['cloth_indigo', 'jeans + print'],
+    ['cloth_indigo', 'jeans + cord'],
     ['hair_cocoa', 'hair'],
   ])('shows %s (%s) on every frame', (ramp) => {
     for (const a of ANIMS)
@@ -115,5 +117,75 @@ describe('q34 walk owner rules (coder.md §6.8, RIG.md)', () => {
     });
     // Steady head: no sideways rocking against the hip over the cycle.
     expect(headDx.size).toBe(1);
+  });
+});
+
+describe('chest reads (art-director MA-66 round 1: cord V, badge, pocket line)', () => {
+  const slotAt = (m: Mask, x: number, y: number): readonly [string, number] | undefined =>
+    LEGEND[m[y]?.charAt(x) ?? '.'];
+  const shadeAt = (m: Mask, x: number, y: number): [string, number] | undefined => {
+    const e = slotAt(m, x, y);
+    if (!e) return undefined;
+    const sw = CODER.outfit[e[0] as keyof typeof CODER.outfit];
+    return [sw.ramp, sw.tones[e[1]] ?? -1];
+  };
+  const clipOf = (m: Mask): [number, number] => {
+    for (let y = 3; y < m.length; y++) {
+      const x = (m[y] ?? '').split('').findIndex((_, c) => slotAt(m, c, y)?.[0] === 'horn');
+      if (x >= 0) return [x, y];
+    }
+    throw new Error('no badge clip');
+  };
+  it.each([
+    ['front', CHEST],
+    ['q34', CHEST_Q34],
+  ])('%s: an indigo-2 cord V from the collar to a 1-px steel-5 clip, the badge hung below it', (_, m) => {
+    const [cx, cy] = clipOf(m);
+    expect(shadeAt(m, cx, cy)).toEqual(['metal', 5]);
+    for (const dx of [-1, 1]) expect(shadeAt(m, cx + dx, cy - 1), `arm ${String(dx)}`).toEqual(['cloth_indigo', 2]);
+    for (const dx of [-2, 2]) expect(shadeAt(m, cx + dx, cy - 2), `arm ${String(dx)}`).toEqual(['cloth_indigo', 2]);
+    // The blank cream badge starts right under the clip, with an amber `>_` (2 px) and a mustard-1 bottom edge.
+    const badge = m.slice(cy + 1).flatMap((r, y) => r.split('').map((_, x) => shadeAt(m, x, cy + 1 + y)));
+    expect(shadeAt(m, cx, cy + 1)?.[0]).toBe('cloth_cream');
+    expect(badge.filter((s) => s?.[0] === 'cloth_ochre')).toHaveLength(2);
+    expect(cy, 'hung 1–2 rows lower than round 0 (clip on row 5)').toBeGreaterThanOrEqual(5);
+  });
+  it.each([
+    ['front', CHEST],
+    ['q34', CHEST_Q34],
+  ])('%s: a continuous mustard-2 pocket edge of 8–10 px, no `{ }` print left on the chest', (_, m) => {
+    const runs = m.map((r, y) => {
+      let best = 0;
+      let run = 0;
+      for (let x = 0; x < r.length; x++) {
+        const s = shadeAt(m, x, y);
+        run = s?.[0] === 'cloth_mustard' && s[1] === 2 ? run + 1 : 0;
+        best = Math.max(best, run);
+      }
+      return best;
+    });
+    const edge = Math.max(...runs.slice(3));
+    expect(edge).toBeGreaterThanOrEqual(m === CHEST ? 8 : 5);
+    expect(edge).toBeLessThanOrEqual(10);
+    const [cx, cy] = clipOf(m);
+    const indigo = m.flatMap((r, y) =>
+      r.split('').flatMap((_, x) => (shadeAt(m, x, y)?.[0] === 'cloth_indigo' ? [[x, y] as const] : [])),
+    );
+    // Indigo only on the cord (the 2 rows above the clip).
+    for (const [x, y] of indigo)
+      expect(y >= cy - 2 && y < cy && Math.abs(x - cx) <= 2, `${String(x)},${String(y)}`).toBe(true);
+  });
+  it('front: the tee hem is 2–3 broken cream px on the lit-left side only', () => {
+    const last = CHEST.length - 1;
+    const cream = (CHEST[last] ?? '')
+      .split('')
+      .flatMap((_, x) => (shadeAt(CHEST, x, last)?.[0] === 'cloth_cream' ? [x] : []));
+    expect(cream.length).toBeGreaterThanOrEqual(2);
+    expect(cream.length).toBeLessThanOrEqual(3);
+    expect(Math.max(...cream)).toBeLessThan(6);
+    expect(
+      cream.some((x, k) => k > 0 && x - (cream[k - 1] ?? x) > 1),
+      'broken',
+    ).toBe(true);
   });
 });
