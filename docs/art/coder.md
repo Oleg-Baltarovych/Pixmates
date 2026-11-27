@@ -41,7 +41,7 @@ stern, dark-clad cast members.
 - **Layers / materials** (ART-BIBLE §12): tee → hoodie → chain + badge; knit, denim, rubber soles, steel
   (glasses, pull, chain).
 
-### As built (MA-66 round 2 candidate, 2026-11-27)
+### As built (MA-66, art-director round 2 notes applied, 2026-11-27)
 - Started from the owner-approved spike patch (variant A); changes on top of it:
   - **Sleeves onyx 4** (spike: 3). Onyx 3 equalled the shade-side silhouette outline (onyx 3) where the raised
     forearm meets the torso edge on `petted/2` and `petted/6` → arm-over-torso p10 ΔL 0. Onyx 4 gives ΔL ≥ 0.06 on every
@@ -52,6 +52,22 @@ stern, dark-clad cast members.
     the lid to break). **Blush** (`ff`) moved 1 row down, under the rim.
   - `cloth_phosphor` (variant B) dropped from the palette; dead code removed (`CROWN`, `HAIR_BACK_Q34`,
     `HAIR_FAR_Q34`, `hairBackStretch`, the kit-eye helper).
+- **Art-director round 2 (APPROVE WITH NOTES, 2026-11-27), applied:**
+  - **Rim (MUST):** front top row cols 7–22, each top corner bevelled in 2 diagonal steps (lit `r` mustard 4, shade
+    `T` mustard 3), sides from row 11, the last rim px bent 1 col in toward the jaw; q34 facing-side corner: top row to
+    col 24, one mustard-3 diagonal px, side from row 10. Tests pin the corner boxes (a refilled corner px fails).
+  - **Hood on dark wallpapers (MUST), adjusted:** the outermost px is the rig's silhouette outline and its tones are per
+    ramp for the whole body (`silhouetteOutline` lit 5 / shade 3). Shade 4 body-wide fails the arm-over-torso gate on
+    `petted/2`, `/6` (ΔL 0 against the onyx-4 sleeves), and the shared rig is out of scope. So the hood's own shade-side
+    edge px are onyx 2, which the rig's rim light lifts to **onyx 4**, from the crown to the jaw, over onyx 0–1 on the dome:
+    outline O3 | O4 | O0–1. The lit top-left outline arc is onyx 5 and unbroken, with a 4-px onyx-4 sheen arc just inside
+    it (the old stair-corner lights went into it). Rendered tests cover all three.
+  - **Glasses:** posts and bridge metal 1 (`N`), lower rim metal 2. Brows untouched (hair 0, skin row above).
+  - **Chest:** badge 3 × 4 cream; mustard-5 tip on the lit (screen-left) drawstring only; one 3-px onyx-3 fold from
+    the near armpit toward the pocket (front + q34); one onyx-3 lit px on each shoulder. The shoulders are rig sleeves
+    outside the torso mask, so the px sit on the torso's top corners under the collar (front only).
+  - **Closed eyes:** 1 row lower, on the row right above the lower rim and 3 rows under the bridge, so there is no
+    bridge / lid / rim «≡». At 1× the lid sits on the rim like a heavy lower lid.
 - Stern look (ART-BIBLE §11.9) kept: a hooded 2-row lid over the top of the iris with the brow–lid wedge, dark ash
   iris, one 1 × 1 highlight, no lower highlight on neutral/talk; brows hair 0 through the fringe gaps with one skin row
   above the lash; flat 3-px mouth; blush only on happy and petted. Happy lifts the lid off a 5-row iris.
