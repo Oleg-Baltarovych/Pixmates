@@ -2,10 +2,10 @@
 
 > Current state only; update it in the commit that changes structure, systems, commands or decisions.
 > Finished narratives go to `docs/CONTEXT-HISTORY.md`.
-> Last updated: 2026-11-28 (README showcase: `pnpm showcase`, `docs/media/`).
+> Last updated: 2026-11-28 (README showcase: `pnpm showcase`, `docs/media/`; D-24 MCP client / ADR 013 proposed, D-25 provider presets, SPEC v1.17).
 
 ## 1. Status
-- **M0 ✅** (spikes S1–S3 on unmerged `spike/*` branches). **M-ART ✅ accepted by qa-lead 2026-11-28** (with follow-ups: packaged smoke look, perf re-run before M1) on `feat/m-art` (draft PR #4), plan `docs/plans/2026-11-23-m-art.md`. SPEC v1.16, ART-BIBLE v1. MVP for the portfolio = M0 + M-ART + M1 + M2.
+- **M0 ✅** (spikes S1–S3 on unmerged `spike/*` branches). **M-ART ✅ accepted by qa-lead 2026-11-28** (with follow-ups: packaged smoke look, perf re-run before M1) on `feat/m-art` (draft PR #4), plan `docs/plans/2026-11-23-m-art.md`. SPEC v1.17, ART-BIBLE v1. MVP for the portfolio = M0 + M-ART + M1 + M2.
 - **Art direction (D-20, ADR 012; supersedes D-19 / ADR 011):** chibi, frame **48 × 56** with headroom, «anime soft» (ADR 009), `scaleRef` 48, clamp 0.25 + L 176 DIP (S/M/L ×3/×4/×5 at 1080p/125 %, ×2/×3/×4 at 100 %). Views `front` + `q34` (ADR 010).
 - **Roster v1 = 8 (D-18):** signed off — `maid`, `kitsune` (fox-girl ninja; originality re-check MA-28r PASS), `witch`, `goth` (stern face, MA-64), `ronin` (armoured samurai, red menpō with a black dragon, MA-65), `coder` (stern, black `cloth_onyx` hoodie with the hood always up, steel glasses, mustard hood edge + drawstrings + badge `>_`, badge on a steel chain, D-21, MA-66; open polish: hood shade edge on dark needs a per-part outline opt-in → MA-69), `knight` (D-22, MA-67), `vampire` (MA-68, D-23: variant A + C's fan collar + a widow's peak; only user of `back: 'cloak'` + `neckAcc: 'collar'` + `jawOverNeckAcc` (MA-33 walk cheek shimmer fix; q34 cheek rim softened to skin 5 in his own mask); `cloth_midnight`; as built `docs/art/vampire.md` §9; tests `vampire.test.ts`, `vampire-palette.test.ts`). Costume richness passes for maid/kitsune/witch after M1 (Q-D20-2).
 - **MA-67 knight ✅ (owner sign-off 2026-11-27 after AD round 1, D-22):** variant B (owner pick 2026-11-27) — human chibi in full `metal_silver` plate, great bascinet with a hounskull visor lowered per animation (`VISOR_DOWN_IN`, `Body.visor`, `Body.gauntlets`; rule `docs/art/knight.md` §1), mail camail + mail hem, `cloth_emerald` sash (baldric + panel) and eyes, sword at the hip; normal face. Owner fix 2026-11-27: calm camail (5 rows, ≤ 28 px, sparse rings, clean silver-1 hem; tested). As built: `docs/art/knight.md` §7; tests `knight.test.ts`, `knight-palette.test.ts`.
@@ -16,7 +16,8 @@
 - **MA-33 ✅ (owner, real overlay, 2026-11-27):** all 8 signed off, all 6 checks ✅ (`docs/plans/ma-33-owner-session.md`). Owner fixes: ronin menpō full head width (292a735), knight calm camail (c011e68), vampire steady jaw outline + softer q34 cheek rim (b2a33d0, d3f12c1). Ronin `happy` bare face by design. Dev cycle (`--art-lineup` / `--anim-cycle`) = `DEV_ANIM_CYCLE` in `content/stage.ts`; the stage mirrors a sided animation about the foot pivot (`renderer/stage/facing.ts`). Docs closed: ART-BIBLE v1 (§13 cast-build rules), SPEC v1.16 §5.2 (cast as built) / §12.
 - **README showcase ✅ (2026-11-28):** portfolio `README.md` (cast, art as code, architecture, practice); media in `docs/media/` from `pnpm showcase` (`tools/showcase.ts`, `tools/lib/{showcase,gif}.ts`, tests `tests/unit/tools/{showcase,gif}.test.ts`, test-only decoder `tests/fixtures/gif-decode.ts`).
 - **Next:** PR #4 merge prep, then M1. Art gates for any later change: other packs unchanged (`assets-src/sprites.lock.json`), ≤ 2 art-director rounds, owner sees round 1; every character checked against the whole lineup (ART-BIBLE §12 p. 5).
-- Owner decisions D-1…D-23 (`docs/SPEC-REVIEW.md`): Windows 11 only; Dev companion in v1 (M4); one active character, switchable; layer on-top / desktop-only, hotkey `Ctrl+Alt+P`, appId `io.github.oleg-baltarovych.pixmates`; default ≈ 136 DIP, integer physical scale; all art by code. Post-v1 backlog: `golem`, `corsair`, `salamander`, `robot`, `glitch`.
+- **D-24 (ADR 013 proposed):** MCP client for user-connected servers. Milestone order M1 → M2 → M4 → M-MCP → M3 → M5 → M6. M2 builds the tool registry with `source` + core `decideToolCall`. The CLAUDE.md tool-rule wording waits for owner approval. **D-25:** provider presets Ollama / Haiku 5.5 / Opus 5.5 with cost hints as dated `src/content/` data, plus an M2 cost meter.
+- Owner decisions D-1…D-25 (`docs/SPEC-REVIEW.md`): Windows 11 only; Dev companion in v1 (M4); one active character, switchable; layer on-top / desktop-only, hotkey `Ctrl+Alt+P`, appId `io.github.oleg-baltarovych.pixmates`; default ≈ 136 DIP, integer physical scale; all art by code. Post-v1 backlog: `golem`, `corsair`, `salamander`, `robot`, `glitch`.
 - Repo: public `github.com/Oleg-Baltarovych/pixmates`; commits from the GitHub noreply address (repo-local `user.email`); LF via `.gitattributes`.
 
 ## 2. Repo map (SPEC §11; ✅ = exists)
@@ -46,7 +47,7 @@ skins-local/   owner's personal packs — git-ignored, agents never write here
 | scaffold, typed IPC, hardening, CI, `pnpm perf`, spikes S1–S3 | M0 | ✅ `src/main/windows/`, `src/shared/ipc.ts`, `src/core/`, `tools/perf.ts`, ADR 007/008 |
 | palette, rig, 8 characters, FX, pack pipeline, stage loads packs | M-ART | ✅ final, qa-lead accepted 2026-11-28: 8/8 signed off on the real overlay (MA-33), stage loads packs (MA-30), spike removed (MA-31), integrity + perf ×8 (MA-32); `assets-src/`, `tools/build-sprites.ts`, `src/shared/pack.ts`, `src/main/characters/`, `stage:characters` IPC, `docs/art/` |
 
-Not started (scope in SPEC §12): M1 core behaviour, physics, surfaces, switch, tray · M2 AI service, tools, memory, evals · M3 sensors, quiet mode, reactions, Pomodoro · M4 Dev companion (hooks, MCP, git/CI) · M5 pack import, settings, uk/en · M6 NSIS, auto-update, e2e, release.
+Not started (scope in SPEC §12; order D-24): M1 core behaviour, physics, surfaces, switch, tray · M2 AI service, tools, memory, evals, cost meter · M4 Dev companion (hooks, MCP server, git/CI) · M-MCP MCP client (ADR 013) · M3 sensors, quiet mode, reactions, Pomodoro · M5 pack import, settings, uk/en · M6 NSIS, auto-update, e2e, release.
 
 ## 4. Key decisions (`docs/adr/README.md`)
 - 001 Electron, Windows-only v1, platform code behind interfaces. 002 pure deterministic core, effects interpreted by main.
@@ -55,6 +56,7 @@ Not started (scope in SPEC §12): M1 core behaviour, physics, surfaces, switch, 
 - 006 Dev companion: localhost hooks + MCP, off by default, token + Origin checks.
 - 007 overlay on the work area; RAM = private-bytes sum avg ≤ 280 MB. 008 `node:sqlite` behind `storage/db.ts` (better-sqlite3 fallback).
 - 009 frame 48 + headroom, anime soft. 010 views `front` + `q34` (facing right, left = runtime mirror; q34 for `walk`, `turn`, M1 `run`, `climb`); manifest per-anim `facing`. 011 adult proportions — superseded by 012 (chibi 48 × 56, stern face option, mouth-mask slot, costume richness).
+- 013 (proposed) MCP client: `@modelcontextprotocol/client`, stdio + Streamable HTTP, every server untrusted, tools `off`/`ask`/`auto`, per-call confirmation with exact args, taint rule, fingerprints, ≤ 6 steps with MCP.
 
 ## 5. Gotchas
 **Electron / app**
@@ -93,4 +95,4 @@ Not started (scope in SPEC §12): M1 core behaviour, physics, surfaces, switch, 
 
 ## 6. SPEC section index (`docs/SPEC.md`)
 §0 principles · §1 goals/non-goals, budgets · §2 stack · §3 architecture (3.1 windows, 3.2 IPC, 3.3 render budget) · §4 behavior (4.1 state machine + priorities + anti-spam, 4.2 physics/surfaces, 4.3 activities + cursor, 4.4 character switch, 4.5 mood) ·
-§5 characters (5.1 pack format, 5.2 rig, 5.3 roster) · §6 AI (6.1 UX, 6.2 text + body, 6.3 providers, 6.4 tools, 6.5 prompt/memory/security, 6.7 evals) · §7 Dev companion · §8 non-AI features · §9 settings · §10 privacy & security · §11 structure · §12 milestones · §13 risks · §14 v1 acceptance.
+§5 characters (5.1 pack format, 5.2 rig, 5.3 roster) · §6 AI (6.1 UX, 6.2 text + body, 6.3 providers, 6.4 built-in tools, 6.5 prompt/memory/security, 6.7 evals, 6.8 MCP client) · §7 Dev companion · §8 non-AI features · §9 settings · §10 privacy & security · §11 structure · §12 milestones · §13 risks · §14 v1 acceptance.
