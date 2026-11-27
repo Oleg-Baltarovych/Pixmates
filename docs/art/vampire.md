@@ -180,19 +180,32 @@ Files: `assets-src/characters/vampire/{body,face,masks}.ts`; tests `tests/unit/a
 - **Hair (D-23, reverses §1 «no widow's peak»):** slicked straight back, no forelocks. The hairline recedes at both
   temples from head row 9 (3 skin rows of open forehead above the brows) and the centre wedge narrows 10 → 6 → 2 px to
   a V tip on the face axis (front cols 14–15, q34 cols 16–17, row 11), one skin row above the brows. 2-px sideburns.
+  AD round 1: no procedural back-hair mass in either view (empty `masks.hairBack`; it read as a bob) — the front side
+  mass ends at the sideburn tip on the eye-bottom row; q34 back contour tapers 1 px per row from the ear row with 2
+  `j` strands, ending in a 1-px nape flick at jaw − 1. Crown shine = 3 angel-ring segments (2–3 px, 1-px breaks) on
+  the skull arc, lit top-left.
 - **Fan collar (C, inside R-V2):** 25 × 9 px from the neck joint − (12, 1): tips at x 12 / 36 at rest (the idle_b
   sway reaches 11 / 37; C's 31-px span would sit in the raised-hand zone), top 1 row over A's (2 rows would put the tip
-  at eye level on the walk / happy / sleep head bob). Outer face midnight 1 + 5, 2-px old-gold inner face.
+  at eye level on the walk / happy / sleep head bob). AD round 1 (read as epaulettes): the lit midnight-5 outer face
+  is a 1-px stepped rim rising to the tip, 1 row over the gold; the gold inner face is a stepped wedge 2 px → 1 px at
+  the neck; 1 px midnight 1 where the wing meets the shoulder; no gold in the q34 facing sliver. Eye 1 row shorter →
+  R-V2 now allows 1 more row up; the collar keeps its height.
 - **Values:** sleeves midnight 3 (cloak 2, waistcoat 4) — at 2 the arms vanished into the cloak on land / petted; the
   collar's outer face avoids the sleeve's 2–4 so a sleeve over a wing keeps the arm-over-torso step.
 - **Gold:** `cloth_ochre` 3–4 (no new ramp: reads old gold on midnight, clear of coder's greener mustard); collar
   face, 2 buttons, brooch rim, buckle, cloak corners. Corners `inset: 1` (a midnight edge on the side and hem); q34
   buckle 1 px back from the toe edge. Tested: no gold px on the silhouette edge, no straight run > 4 px, ≤ 8 % of the
-  figure (max 4.7 %).
-- **Face:** normal chibi; crimson (`fx_red` 1–4) only in the eye band; neutral = closed 4-px line + 1-px cream fangs
-  at x 22 / 25; screen-right brow 1 row higher; blush only on happy and petted.
+  figure (max 3.7 % after round 1).
+- **Face:** normal chibi; crimson (`fx_red` 1–3, never 4: no glow) only in the eye band, never on a skin row (the
+  lower highlight is 1 px of `fx_red` 3 in the bottom iris row; tested); neutral = closed 4-px line + 1-px cream fangs
+  at x 22 / 25; brows flat (inner end 1 row lower over 1 px), the screen-right brow 2 rows higher with a 1-px centre
+  arch; happy keeps its round-1 brows (`brows.happy`); blush only on happy and petted, petted blush 1 row lower and
+  1 px out so a skin row separates it from the eye (tested).
+- **Torso (AD round 1):** tonal midnight 4/5 checker brocade inside the waistcoat (off the outline, folds and gold);
+  a flat 1-px cream-4 cuff band at each wrist via the existing `kote` opt-in (both arms, no studs).
 - **q34:** facing contour holds col 25 to the mouth, then steps in 1 px per row to a 1-px chin (the spike's jaw stepped
   2 px); head steady against the hip on walk / turn.
 - **Deferred to M1** (with his reactions): the cloak-hide pose, the bow, the light-theme recoil (§5). Not built.
-- Open for art-director round 1: the brocade waistcoat dither and cuff frill (§«D-20») are not in; witch also uses
-  `cloth_ochre` (broad stockings vs his small accents).
+- Not done from AD round 1: note 7 (taper the cloak front edge 1 px over the bottom third, hem width kept) needs a new
+  `widths` shape in the shared `rig/cloak.ts` (`column` and `bell` cannot narrow only the bottom third) — out of the
+  pack's scope. `cloth_ochre` stays (note 8; witch also uses it on broad stockings vs his small accents).
