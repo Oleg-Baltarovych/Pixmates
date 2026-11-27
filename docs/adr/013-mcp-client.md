@@ -140,6 +140,8 @@ The order becomes **M1 → M2 → M4 → M-MCP → M3 → M5 → M6**:
 
 ## Candidate "wow" features (not scope; owner picks)
 Ranked by value/effort. Each fits §0 and §10: read tools, in-app actions, everything opt-in.
+
+> Owner picks, 2026-11-28 (D-24, SPEC v1.18): 1 → M2 (§6.1); 3 → M-MCP (§6.8); 5 → M4 via `gh run view --log-failed`, no GitHub MCP needed (§7); 6 → M4 (§7). Candidate 2 is already M4 scope. 4 and 7 are post-v1, as is 8 (voice).
 1. **"Explain this error" from the clipboard.** Already a §6.1 chip (M2). The character points at the chat and answers in character with code. Low effort.
 2. **Live Claude Code session.** M4: `needs_you` wave, a cheer on `Stop`, a slump on a failure, subagents as "helpers". Medium effort, the strongest demo.
 3. **Daily brief** (calendar + GitHub through M-MCP). On the first unlock of the day: a template greeting, then an opt-in LLM summary that uses `auto` read tools only, never write tools, and never raises unprompted confirmations. Low effort after M-MCP.
