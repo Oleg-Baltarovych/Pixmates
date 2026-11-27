@@ -268,11 +268,19 @@ letters, so each body keeps its eye ramp); a body may override a part but the va
 - Mask up = no mouth: `talk_a/b/c` must differ in eye/brow px (validator), so talk reads through the eyes; the speech
   bubble carries the words.
 
+### 11.11 Visor (D-22; per-body rig option `Body.visor` — knight's helmet)
+- A movable face cover whose state follows the **animation**, not the expression: `downIn` lists the animations (or
+  frames) that show it lowered. Raised = the full chibi face shows under the lifted visor (normal face rules apply).
+- Lowered = no face part: the visor covers every skin px of the head; the emotion moves to the **eye slit** (per
+  expression glints: calm 2-px pairs, startle 1 × 2 wide pinpoints, worried inner-high pairs, wince one eye) and the
+  body language of the shared pose. No glowing eyes (cream glints, never an emissive colour).
+- Shapes: never a cross (no vertical keel through a horizontal slit), never a T-visor.
+
 ## 12. Costume richness (D-20; applies to every character not yet signed off)
 Owner: "standard costumes read boring". Each spec (`docs/art/<id>.md` §«Richness») names:
 1. **Layers** — at least 2 visible garment layers (under + over: kosode under dō, dress under corset, tee under hoodie).
 2. **One signature piece** — the thing you'd draw from memory (ronin menpō, goth moth + corset, coder hood + badge,
-   knight paw tabard, vampire collar).
+   knight visor, vampire collar).
 3. **Material contrast** — ≥ 3 materials from lacquer, metal, cloth, leather/cord, fur, each with its own ramp and
    specular rule (lacquer = hard 1-px streak, metal = hard step, leather = soft 1-px sheen, cloth = folds).
 4. **Trims at 1×** — every trim/accessory ≥ 2 px in one direction and ≥ 1 ramp step off its ground; drop it if it

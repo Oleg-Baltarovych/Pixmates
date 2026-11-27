@@ -2,15 +2,15 @@
 
 > Current state only; update it in the commit that changes structure, systems, commands or decisions.
 > Finished narratives go to `docs/CONTEXT-HISTORY.md`.
-> Last updated: 2026-11-27 (MA-66 coder owner-signed; MA-67 knight concept spike awaiting the owner pick).
+> Last updated: 2026-11-27 (D-22: knight = human in full silver plate with a movable visor; MA-67 concept spike A/B/C awaiting the owner pick).
 
 ## 1. Status
 - **M0 ✅** (spikes S1–S3 on unmerged `spike/*` branches). **M-ART 🚧** on `feat/m-art` (draft PR #4), plan `docs/plans/2026-11-23-m-art.md`. SPEC v1.15. MVP for the portfolio = M0 + M-ART + M1 + M2.
 - **Art direction (D-20, ADR 012; supersedes D-19 / ADR 011):** chibi, frame **48 × 56** with headroom, «anime soft» (ADR 009), `scaleRef` 48, clamp 0.25 + L 176 DIP (S/M/L ×3/×4/×5 at 1080p/125 %, ×2/×3/×4 at 100 %). Views `front` + `q34` (ADR 010).
 - **Roster v1 = 8 (D-18):** signed off — `maid`, `kitsune` (fox-girl ninja; originality re-check MA-28r pending), `witch`, `goth` (stern face, MA-64), `ronin` (armoured samurai, red menpō with a black dragon, MA-65), `coder` (stern, black `cloth_onyx` hoodie with the hood always up, steel glasses, mustard hood edge + drawstrings + badge `>_`, badge on a steel chain, D-21, MA-66; open polish: hood shade edge on dark needs a per-part outline opt-in → MA-69). To do — `knight`, `vampire` (normal chibi; cloak reuses ronin's `back: 'cloak'`). Costume richness (ART-BIBLE §12) for all unsigned; for the signed-off maid/kitsune/witch after M1 (Q-D20-2).
-- **MA-67 knight (in progress):** ramps `metal_steel` + `fur_cream` committed; concept spike A (knight.md dome + visor + cheek guards, rose tabard) / B (skullcap + nasal on a cat head with cheek ruff, raspberry quilted gambeson) / C (flat-top pot helm, plum surcoat) as uncommitted patches `reports/sprites/knight-spike-{A,B,C}.patch` (git apply on HEAD: knight files, pack registration, lock) — owner picks, then the full build.
+- **MA-67 knight (in progress, D-22):** human chibi in full silver plate, visor lowered per animation (`Body.visor`, `Body.gauntlets`; rule in `docs/art/knight.md` §1); ramp `metal_silver` (replaces `metal_steel`; `fur_cream` removed). Concept spike A (close helm + cobalt plume) / B (hounskull bascinet + mail camail, emerald baldric) / C (sallet + bevor, cobalt crest + star tabard) as uncommitted patches `reports/sprites/knight-spike-{A,B,C}.patch` (git apply on the D-22 groundwork: knight files, accent ramps, pack registration, lock) — owner picks, then the full build.
 - **Next:** MA-67 knight → MA-68 vampire → MA-28r → MA-69 opt-in cleanup → MA-30…33 (stage loads `maid`, placeholder + spike removed, perf ×3). Art gates: other packs unchanged (`assets-src/sprites.lock.json`), ≤ 2 art-director rounds, owner sees round 1; every character checked against the whole lineup for look-alikes (D-21, ART-BIBLE §12 p. 5).
-- Owner decisions D-1…D-21 (`docs/SPEC-REVIEW.md`): Windows 11 only; Dev companion in v1 (M4); one active character, switchable; layer on-top / desktop-only, hotkey `Ctrl+Alt+P`, appId `io.github.oleg-baltarovych.pixmates`; default ≈ 136 DIP, integer physical scale; all art by code. Post-v1 backlog: `golem`, `corsair`, `salamander`, `robot`, `glitch`.
+- Owner decisions D-1…D-22 (`docs/SPEC-REVIEW.md`): Windows 11 only; Dev companion in v1 (M4); one active character, switchable; layer on-top / desktop-only, hotkey `Ctrl+Alt+P`, appId `io.github.oleg-baltarovych.pixmates`; default ≈ 136 DIP, integer physical scale; all art by code. Post-v1 backlog: `golem`, `corsair`, `salamander`, `robot`, `glitch`.
 - Repo: public `github.com/Oleg-Baltarovych/pixmates`; commits from the GitHub noreply address (repo-local `user.email`); LF via `.gitattributes`.
 
 ## 2. Repo map (SPEC §11; ✅ = exists)
@@ -79,6 +79,7 @@ Not started (scope in SPEC §12): M1 core behaviour, physics, surfaces, switch, 
 - Hood / no back hair: an empty authored `masks.hairBack` (`{ mask: [], at: [0, 0] }`) suppresses the procedural back-hair mass (coder, both views).
 - The outermost px of a figure is the rig outline: `silhouetteOutline` tones apply per ramp to the whole body, so a mask cannot retone it locally. Rim light runs after the locked tones and lifts the inner px on right-facing edges by +2. To get a lighter shade-side edge on one part (the coder hood), author that px 2 steps under the target.
 - `Body.torsoMask` stamps on every non-arm px (empty ones too): a flat authored chest (coder) beats cloth dither on a 12-px torso; frame row = figure row + 8. Mouth mask (`Body.mask`): `mouthMaskProblems`; review bodies `rig-dummy-stern`, `rig-dummy-masked`.
+- Visor (`Body.visor`, D-22): state per animation frame (`downIn`), not per expression; lowered = no face parts, the down mask must cover every head skin px, slit glints per expression. Author visor masks in head-mask coordinates (`at` = the head's `at`). Never with `Body.mask`.
 - Open: `legRim` px are not locked (outline/AA retone 418 witch px; locking = visible witch change).
 
 ## 6. SPEC section index (`docs/SPEC.md`)
