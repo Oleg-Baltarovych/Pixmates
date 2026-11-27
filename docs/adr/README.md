@@ -14,6 +14,6 @@
 | 010 | [Rig views: front + three-quarter (3/4) for travel](010-rig-views-front-and-three-quarter.md) | Accepted (D-16); own numbers hold (011's revision void) |
 | 011 | [Adult proportions for all built-in characters, frame 56 × 72](011-adult-proportions.md) | Superseded by 012 (D-20) |
 | 012 | [Return to chibi 48 × 56 with a stern-look face option and a mouth-mask slot](012-return-to-chibi-stern-look.md) | Accepted (D-20, owner 2026-11-25) |
-| 013 | [MCP client: user-connected tools for the in-character agent](013-mcp-client.md) | Proposed (D-24, 2026-11-28) |
+| 013 | [MCP client: user-connected tools for the in-character agent](013-mcp-client.md) | Accepted (D-24, 2026-11-28) |
 | 014 | [Desktop window sensing: own Win32 calls over koffi FFI, not `get-windows`](014-desktop-window-sensing.md) | Proposed (M1, spike S4) |
 | 015 | [Radial menu: a lazy transparent React window, not Pixi on the stage](015-radial-menu-window.md) | Proposed (M1) |
