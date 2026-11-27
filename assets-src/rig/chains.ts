@@ -564,7 +564,10 @@ export function buildShorts(body: Body, p: PoseFrame, hip: Point, q: boolean): P
     [hip[0] + sh.topHalf * farW, hip[1] + sh.top],
     [hip[0] + sh.hemHalf * farW + flare + hemDx + legOut, hemY],
     ...notch,
-    [hip[0] - sh.hemHalf - flare - trailFlare + hemDx - legOut, hemY],
+    // `Body.shortsFlareQ34: false`: the trailing hem corner sits under the waist corner (straight back edge).
+    q && body.shortsFlareQ34 === false
+      ? [hip[0] - sh.topHalf, hemY]
+      : [hip[0] - sh.hemHalf - flare - trailFlare + hemDx - legOut, hemY],
   ]);
   return part(
     curveX(shorts, hip[0], sh.curve),

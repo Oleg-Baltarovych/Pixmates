@@ -68,6 +68,8 @@ export const CODER: Body = {
   },
   variants: { headAcc: 'none', hairBack: 'short', hem: 'shorts', back: 'none', neckAcc: 'none', sleeves: 'long' },
   dressShade: 2,
+  // q34 jeans seat: straight back edge from the rib to the leg on walk passing frames (no skirt-like flare, MA-69).
+  shortsFlareQ34: false,
   // Sleeves two steps over the body: onyx 3 matched the shade-side outline at ΔL 0 on petted/2 + /6 (arm-over-torso
   // gate); a darker ribbed cuff, hands fully visible (no sweater paws).
   sleeve: { ramp: 'cloth_onyx', shade: 4 },

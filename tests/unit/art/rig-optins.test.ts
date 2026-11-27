@@ -125,6 +125,34 @@ describe('rig opt-in: tailored shorts', () => {
   });
 });
 
+describe('rig opt-in: shortsFlareQ34 false (MA-69, coder jeans seat)', () => {
+  const passing = walk.frames[2];
+  if (!passing) throw new Error('walk f2');
+  const hip = createRigRenderer(DUMMY_A).joints(walk, 2).hip;
+  /** Leftmost (trailing, back) seat px per row of the q34 shorts on the walk passing frame. */
+  const backEdge = (b: Body): number[] => {
+    const left = new Map<number, number>();
+    for (const f of buildShorts(b, passing, hip, true).shape.fragments)
+      left.set(f.y, Math.min(left.get(f.y) ?? f.x, f.x));
+    return [...left.entries()].sort((a, c) => a[0] - c[0]).map(([, x]) => x);
+  };
+
+  it('default: the back edge flares out toward the hem on passing frames (skirt-like)', () => {
+    const edge = backEdge(DUMMY_A);
+    expect(Math.min(...edge)).toBeLessThan(edge[0] ?? 0);
+  });
+  it('false: the back edge runs straight down from the waist (never out past its top px)', () => {
+    const edge = backEdge({ ...DUMMY_A, shortsFlareQ34: false });
+    const top = edge[0] ?? 0;
+    for (const x of edge) expect(x).toBeGreaterThanOrEqual(top);
+    expect(Math.max(...edge) - Math.min(...edge)).toBeLessThanOrEqual(1);
+  });
+  it('front frames are untouched; needs hem shorts', () => {
+    expect(same(render({ ...DUMMY_A, shortsFlareQ34: false }), render(DUMMY_A))).toBe(true);
+    expect(() => createRigPack({ ...DUMMY_B, shortsFlareQ34: false }, ANIMS)).toThrow('shortsFlareQ34');
+  });
+});
+
 describe('rig opt-in: shinWrap', () => {
   it('paints the row `row` above each foot in the legs-ramp `shade`; only on that row', () => {
     const wrapped: Body = { ...DUMMY_A, shinWrap: { row: 3, shade: 1 } };

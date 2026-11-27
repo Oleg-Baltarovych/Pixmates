@@ -183,7 +183,8 @@ cream or mustard `{ }` / `;` glyphs, never green, never binary rain.
 ## 7. Rig work
 None for D-21: the hood lives in the coder's head masks, the back hair is an empty authored mask, all other options
 are existing opt-ins. Earlier rig items (R-C1 `neckAcc: 'hood'`, R-C2 cuff flare, R-C4 shorts flare) were not needed.
-Open from round 1: the q34 jeans seat bump on passing frames is the procedural `hem: 'shorts'` seat (shared-rig opt-in).
+Closed in MA-69: the q34 jeans seat no longer flares on passing frames (`shortsFlareQ34: false`: straight back edge in
+every q34 frame).
 
 ## 8. Owner decisions
 - **D-21 (2026-11-27)**: black hoodie, hood always up, not like ronin, variant A (mustard accent), glasses; the

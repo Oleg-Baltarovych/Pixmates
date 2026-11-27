@@ -48,6 +48,8 @@ MA-69 polish opt-ins (unset = byte-identical, tests in `rig-optins.test.ts`):
 - **`SilhouetteOutline.head` {lit?, shade?}** — outer-outline px whose inner neighbour is a head-mask px (still
   unlabelled: no arm / torso drew over it) take these tones instead of the ramp's `lit` / `shade`. coder: onyx hood
   shade side 4 (body-wide 4 would fail the arm-over-torso gate).
+- **`Body.shortsFlareQ34: false`** (`hem: 'shorts'`) — the q34 seat's trailing hem corner sits under the waist
+  corner (no pose flare, hem trail or trailing flare): a straight back edge, trousers not a skirt. coder jeans.
 
 ## Part ids (`rig/part-ids.ts`, written per px by compose and `stampMask`)
 | id | part | id | part |

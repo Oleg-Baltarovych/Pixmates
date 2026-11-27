@@ -396,6 +396,8 @@ function slotProblems(body: Body, usesQ34: boolean): string[] {
     problems.push(`${id}: sash.dy must be a whole 0..${String(SASH_DY_MAX)}`);
   }
   if (body.skirtLace === false && body.variants.hem !== 'skirt') problems.push(`${id}: skirtLace needs hem 'skirt'`);
+  if (body.shortsFlareQ34 === false && body.variants.hem !== 'shorts')
+    problems.push(`${id}: shortsFlareQ34 needs hem 'shorts'`);
   return problems;
 }
 /** `Body.mask.down` / `downQ34` row cap (ART-BIBLE §11.10: under the chin, ≤ 3 rows). */

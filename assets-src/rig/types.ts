@@ -498,6 +498,11 @@ export interface Body {
    */
   readonly shorts?: { readonly shade: number; readonly raise: number };
   /**
+   * Opt-in (MA-69, `hem: 'shorts'`): false drops the q34 seat's trailing flare (pose flare, hem trail, 1-px trailing
+   * flare), so its back edge runs straight down from the waist like trousers, not out like a skirt.
+   */
+  readonly shortsFlareQ34?: false;
+  /**
    * Shin wraps: a darker legs-ramp row `row` rows above each foot joint, in `shade` (0..5, default 3); only leg px
    * (near and far) are painted.
    */
