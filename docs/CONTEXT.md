@@ -2,10 +2,10 @@
 
 > Current state only; update it in the commit that changes structure, systems, commands or decisions.
 > Finished narratives go to `docs/CONTEXT-HISTORY.md`.
-> Last updated: 2026-11-28 (D-24 accepted: ADR 013, milestone order, v1 wow scope; SPEC v1.18).
+> Last updated: 2026-11-28 (D-26 UI direction A, UI-GUIDE v0; SPEC v1.19).
 
 ## 1. Status
-- **M0 ✅** (spikes S1–S3 on unmerged `spike/*` branches). **M-ART ✅ accepted by qa-lead 2026-11-28** (with follow-ups: packaged smoke look, perf re-run before M1) on `feat/m-art` (draft PR #4), plan `docs/plans/2026-11-23-m-art.md`. SPEC v1.18, ART-BIBLE v1. MVP for the portfolio = M0 + M-ART + M1 + M2.
+- **M0 ✅** (spikes S1–S3 on unmerged `spike/*` branches). **M-ART ✅ accepted by qa-lead 2026-11-28** (with follow-ups: packaged smoke look, perf re-run before M1) on `feat/m-art` (draft PR #4), plan `docs/plans/2026-11-23-m-art.md`. SPEC v1.19, ART-BIBLE v1. MVP for the portfolio = M0 + M-ART + M1 + M2.
 - **Art direction (D-20, ADR 012; supersedes D-19 / ADR 011):** chibi, frame **48 × 56** with headroom, «anime soft» (ADR 009), `scaleRef` 48, clamp 0.25 + L 176 DIP (S/M/L ×3/×4/×5 at 1080p/125 %, ×2/×3/×4 at 100 %). Views `front` + `q34` (ADR 010).
 - **Roster v1 = 8 (D-18):** signed off — `maid`, `kitsune` (fox-girl ninja; originality re-check MA-28r PASS), `witch`, `goth` (stern face, MA-64), `ronin` (armoured samurai, red menpō with a black dragon, MA-65), `coder` (stern, black `cloth_onyx` hoodie with the hood always up, steel glasses, mustard hood edge + drawstrings + badge `>_`, badge on a steel chain, D-21, MA-66; open polish: hood shade edge on dark needs a per-part outline opt-in → MA-69), `knight` (D-22, MA-67), `vampire` (MA-68, D-23: variant A + C's fan collar + a widow's peak; only user of `back: 'cloak'` + `neckAcc: 'collar'` + `jawOverNeckAcc` (MA-33 walk cheek shimmer fix; q34 cheek rim softened to skin 5 in his own mask); `cloth_midnight`; as built `docs/art/vampire.md` §9; tests `vampire.test.ts`, `vampire-palette.test.ts`). Costume richness passes for maid/kitsune/witch after M1 (Q-D20-2).
 - **MA-67 knight ✅ (owner sign-off 2026-11-27 after AD round 1, D-22):** variant B (owner pick 2026-11-27) — human chibi in full `metal_silver` plate, great bascinet with a hounskull visor lowered per animation (`VISOR_DOWN_IN`, `Body.visor`, `Body.gauntlets`; rule `docs/art/knight.md` §1), mail camail + mail hem, `cloth_emerald` sash (baldric + panel) and eyes, sword at the hip; normal face. Owner fix 2026-11-27: calm camail (5 rows, ≤ 28 px, sparse rings, clean silver-1 hem; tested). As built: `docs/art/knight.md` §7; tests `knight.test.ts`, `knight-palette.test.ts`.
@@ -17,7 +17,8 @@
 - **README showcase ✅ (2026-11-28):** portfolio `README.md` (cast, art as code, architecture, practice); media in `docs/media/` from `pnpm showcase` (`tools/showcase.ts`, `tools/lib/{showcase,gif}.ts`, tests `tests/unit/tools/{showcase,gif}.test.ts`, test-only decoder `tests/fixtures/gif-decode.ts`).
 - **Next:** PR #4 merge prep, then M1. Art gates for any later change: other packs unchanged (`assets-src/sprites.lock.json`), ≤ 2 art-director rounds, owner sees round 1; every character checked against the whole lineup (ART-BIBLE §12 p. 5).
 - **D-24 ✅ (ADR 013 accepted):** MCP client for user-connected servers, part of v1. Order M1 → M2 → M4 → M-MCP → M3 → M5 → M6 (approved). M2 builds the tool registry with `source` + core `decideToolCall`. CLAUDE.md tool rule amended (480ba45). **v1 wow scope (SPEC v1.18):** "explain this error" from the clipboard (M2, §6.1) · "why is CI red?" via `gh run view --log-failed`, tool `get_ci_failure` (M4, §7) · handoff to Claude Code: `draft_handoff` → user "Передати" → `get_handoff` on our MCP server, table `handoffs` (M4, §7) · morning brief, calendar + GitHub, `auto` read tools only, opt-in (M-MCP, §6.8). Voice post-v1; MCP OAuth = M-MCP step 2. **D-25:** provider presets Ollama / Haiku 5.5 / Opus 5.5 with cost hints as dated `src/content/` data, plus an M2 cost meter.
-- Owner decisions D-1…D-25 (`docs/SPEC-REVIEW.md`): Windows 11 only; Dev companion in v1 (M4); one active character, switchable; layer on-top / desktop-only, hotkey `Ctrl+Alt+P`, appId `io.github.oleg-baltarovych.pixmates`; default ≈ 136 DIP, integer physical scale; all art by code. Post-v1 backlog: `golem`, `corsair`, `salamander`, `robot`, `glitch`.
+- **D-26 ✅ UI direction A "Pixel-native"** (spike `docs/design/ui-spike/`): tokens/components/a11y in `docs/design/UI-GUIDE.md` v0. Reading text = Rubik, identifiers/JSON = mono, pixel fonts only for chrome, WCAG AA, visible focus. Fonts bundled (OFL, `docs/art/LICENSES.md`); CSP needs `font-src 'self'` when wired (M1/M2).
+- Owner decisions D-1…D-26 (`docs/SPEC-REVIEW.md`): Windows 11 only; Dev companion in v1 (M4); one active character, switchable; layer on-top / desktop-only, hotkey `Ctrl+Alt+P`, appId `io.github.oleg-baltarovych.pixmates`; default ≈ 136 DIP, integer physical scale; all art by code. Post-v1 backlog: `golem`, `corsair`, `salamander`, `robot`, `glitch`.
 - Repo: public `github.com/Oleg-Baltarovych/pixmates`; commits from the GitHub noreply address (repo-local `user.email`); LF via `.gitattributes`.
 
 ## 2. Repo map (SPEC §11; ✅ = exists)
@@ -36,7 +37,7 @@ assets-src/ ✅ palettes/master.json, lib/ (art lib), rig/, characters/<id>/, fx
 tools/ ✅      build-sprites, sprites-sheet, sprites-lock, sprites-compare, rig-contrast, perf, showcase;
                lib/{png,gif,sprites,sprite-outputs,sprite-compare,showcase,canvas,cli,git-tree,csp,perf-args}.ts; eval.ts (M2)
 tests/ ✅      unit/{core,main,renderer,shared,lint,art,tools}, fixtures/ → e2e/ (M6)
-docs/ ✅       media/ (README images, generated by `pnpm showcase`), SPEC.md, SPEC-REVIEW.md, CONTEXT.md, CONTEXT-HISTORY.md, AI-WORKFLOW.md, adr/, plans/, art/ (ART-BIBLE, RIG, <id>.md)
+docs/ ✅       media/ (README images, generated by `pnpm showcase`), SPEC.md, SPEC-REVIEW.md, CONTEXT.md, CONTEXT-HISTORY.md, AI-WORKFLOW.md, adr/, plans/, art/ (ART-BIBLE, RIG, <id>.md, LICENSES), design/ (UI-GUIDE, ui-spike/)
 skins-local/   owner's personal packs — git-ignored, agents never write here
 .claude/ ✅    agents/, skills/, rules/, hooks/, settings.json
 ```
