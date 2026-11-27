@@ -5,7 +5,7 @@ Dev companion: an unimpressed senior dev in a **black hoodie with the hood alway
 one mustard accent. Frame 48 × 56, chibi ≈ 2.2 heads, shared rig poses. Must read clearly **male** at 1× (boy cues:
 visible straight brows, no lashes flick, boxy shoulders, jeans, chunky sneakers).
 
-Originality gate: **PASS for the redesign, pending art-director round 2** (lookalikes below). Every character is also
+Status: **owner signed off 2026-11-27** (MA-66). Originality gate: **PASS for the redesign, confirmed by art-director round 2** (lookalikes below). Every character is also
 checked against the whole cast (ART-BIBLE §12 p. 5): the coder must not resemble `ronin` or `goth`, the other two
 stern, dark-clad cast members.
 
