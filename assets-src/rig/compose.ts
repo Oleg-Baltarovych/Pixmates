@@ -68,6 +68,7 @@ import {
   labelImage,
   greaveTones,
   legRim,
+  jawOverNeckAcc,
   napeIndent,
   pointToe,
   recolorHornOutline,
@@ -443,13 +444,16 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     }
     const neckAcc = bodyParts.masks.neckAcc;
     // Collar accessory = torso trim: the arm-over-torso pass and check cover the shoulder seam against it.
+    const neckAccPx: number[] = [];
     if (neckAcc) {
       const [x, y] = [j.neck[0] + neckAcc.at[0], j.neck[1] + neckAcc.at[1]];
       // A mantle `collar` sits on the shoulders under the arms (arms always draw over it).
-      stampMask(buf, body, neckAcc.mask, Math.round(x), Math.round(y), DEPTH_TRIM_MASK, MAT.trim, locked, {
-        partId: PART_ID.trim,
-        ...(v.neckAcc === 'collar' ? { allow: NOT_ARM } : {}),
-      });
+      neckAccPx.push(
+        ...stampMask(buf, body, neckAcc.mask, Math.round(x), Math.round(y), DEPTH_TRIM_MASK, MAT.trim, locked, {
+          partId: PART_ID.trim,
+          ...(v.neckAcc === 'collar' ? { allow: NOT_ARM } : {}),
+        }),
+      );
     }
     // Sash knot on the near hip (trim, never over an arm).
     const knot = bodyParts.sashKnot;
@@ -598,6 +602,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     } else {
       for (const foot of [j.footL, j.footR]) feet.push(stampShoe(shoe, foot));
     }
+    if (body.jawOverNeckAcc) jawOverNeckAcc(buf, neckAccPx, headPx, locked);
     return { tieAt, hairFarPx, headPx, feet };
   };
 

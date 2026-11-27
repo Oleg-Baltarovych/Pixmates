@@ -58,6 +58,8 @@ export const VAMPIRE: Body = {
   // Sleeves midnight 3: a value step over the cloak (2) and under the waistcoat (4), so the arms read on both.
   sleeve: { ramp: 'cloth_midnight', shade: 3 },
   sleeveRim: 4,
+  // The fan collar's tips sit under the jaw: the head bob would swap the jaw outline for collar rim / gold per frame.
+  jawOverNeckAcc: true,
   cuff: { ramp: 'cloth_cream', shade: 4 },
   // A flat 1-px cream-4 shirt cuff band at each wrist (the kote opt-in locks the cuff px to one tone; no frill, no stud).
   kote: { side: 'L', both: true, ramp: 'cloth_cream', shade: 4, stud: { ramp: 'cloth_cream', shade: 4, count: 0 } },

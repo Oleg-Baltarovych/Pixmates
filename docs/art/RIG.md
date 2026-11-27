@@ -178,6 +178,7 @@ offsets per joint). A body never forks an animation; proportions go through `twe
 | `Body.cuff` {ramp, shade} (MA-29) | bell-cuff ramp + whole shade (default clothAlt 3); the hem lace keeps clothAlt |
 | `Body.silhouetteOutline` [{ramp, lit, shade}] (MA-29) | outer-outline px of each listed ramp (once each) take whole shade `lit` on the top-left, `shade` elsewhere (dark ramps never melt into dark backdrops) |
 | `Body.sleeveRim` (MA-29) | whole sleeve-ramp shade on the near (L) sleeve's outer edge only; the far (R) sleeve never |
+| `Body.jawOverNeckAcc` (MA-33, vampire) | neck-accessory px (still trim) 4-touching a head skin px are cleared and unlocked before the outline, so the jaw takes its outer outline there as over an empty backdrop; the cheek contour moves only with the head when the head bobs against a collar whose tips sit under the jaw |
 | `Body.lockLean` (MA-29) | side-lock chain points between root and tip on one straight line (no outward kink) |
 | `BodyView.hairTipLag` (MA-29, q34) | back-hair tips add the previous frame's `hairDx`, capped at `HAIR_TIP_MAX` 2 px |
 | `headAcc: 'hat'` (MA-29a, R-W1) | stamped like `clip` (over the head mask); `validateBody` bounds per view: ≤ `HAT_MAX` 28 × 10 px, rest top ≥ figure row −1 (outline −2, highest pose +3 → apex frame row 3 = kitsune ears), inside the frame width; needs a `headAcc` mask |

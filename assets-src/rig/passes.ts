@@ -805,6 +805,34 @@ export function hairBackCuts(buf: IndexBuffer, rows: readonly number[]): void {
   }
 }
 
+/**
+ * `Body.jawOverNeckAcc`: neck-accessory px (still trim) 4-touching a head skin px are cleared and unlocked, so the
+ * outline pass gives the jaw its outer outline there as over an empty backdrop (a contour that moves only with the
+ * head, whatever the collar does under it).
+ */
+export function jawOverNeckAcc(
+  buf: IndexBuffer,
+  neckAccPx: readonly number[],
+  headPx: ReadonlySet<number>,
+  locked: Locked,
+): void {
+  const { width: w, height: h } = buf;
+  const skin = (x: number, y: number): boolean => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return false;
+    const i = y * w + x;
+    return headPx.has(i) && buf.material[i] === MAT.skin;
+  };
+  const ring = neckAccPx.filter((i) => {
+    if (buf.partId[i] !== PART_ID.trim) return false;
+    const [x, y] = [i % w, Math.floor(i / w)];
+    return N4.some(([dx, dy]) => skin(x + dx, y + dy));
+  });
+  for (const i of ring) {
+    buf.clear(i % w, Math.floor(i / w));
+    locked.delete(i);
+  }
+}
+
 /** Nape indent: back-hair px 4-adjacent to a torso / trim px on row `y` take shade 0 of their ramp. */
 export function napeIndent(buf: IndexBuffer, y: number): void {
   if (y < 0 || y >= buf.height) return;

@@ -210,3 +210,10 @@ Files: `assets-src/characters/vampire/{body,face,masks}.ts`; tests `tests/unit/a
 - **Deferred to M1** (with his reactions): the cloak-hide pose, the bow, the light-theme recoil (§5). Not built.
 - AD round 1 note 7 done in MA-69: `Cloak.widths.taper: 1` narrows the front edge 1 px over the bottom third, hem
   width kept. `cloth_ochre` stays (note 8; witch also uses it on broad stockings vs his small accents).
+- **Walk cheek shimmer (owner MA-33, 2026-11-27, fixed):** the walk bobs the head 0 / +1 / +1 / 0 against a body bob
+  of +1 / +1 / 0 / 0, so the fan collar's screen-left tip (lit midnight-5 rim, gold tip) slid 1 row up and down under
+  the far jaw. On frames where it rose, the collar's locked tones replaced the jaw's 1-px skin outline (cols 12–15,
+  rows 29–32): 3–4 px per pair flipped dark skin ↔ light rim / gold. Fix: rig opt-in `Body.jawOverNeckAcc` (RIG.md)
+  — collar px touching head skin are cleared before the outline, so the jaw always carries its own outline and the
+  collar shows only below it. Walk cheeks now differ only by the head's whole-px offset, except 1 chin-bottom AA px
+  on the 2 head-dip pairs (1 skin step; tested in `vampire.test.ts`).

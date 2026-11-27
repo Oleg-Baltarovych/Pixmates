@@ -476,6 +476,12 @@ export interface Body {
    * (R) sleeve is never lit, in front and q34 views alike.
    */
   readonly sleeveRim?: number;
+  /**
+   * Opt-in (vampire's fan collar): neck-accessory px 4-touching a head skin px are cleared before the outline, so
+   * the jaw takes its own outer outline there as over an empty backdrop. The cheek contour then moves only with the
+   * head; without it the head bob against the body swaps the jaw outline for collar tones frame to frame.
+   */
+  readonly jawOverNeckAcc?: true;
   /** Authored head (skin, fringe, crown; horns when `headAcc` is `horns`); `at` from the head joint. */
   readonly head: HeadPlacement;
   readonly face: FaceLibrary;

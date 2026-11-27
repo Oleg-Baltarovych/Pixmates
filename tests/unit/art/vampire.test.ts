@@ -422,4 +422,55 @@ describe('q34 owner rules (RIG.md: monotonic contour, no cheek bump, head never 
     };
     expect(dx('turn', 1)).toBe(dx('walk', 0));
   });
+
+  // Owner MA-33 (2026-11-27): «something glitters on his cheeks when he walks». The fan collar's tips sit under the
+  // jaw and the walk bobs the head against the body, so without `jawOverNeckAcc` the jaw outline px swapped for the
+  // collar's lit rim / gold tip frame to frame.
+  describe('walk cheeks (Body.jawOverNeckAcc)', () => {
+    /** Head-aligned diff of the unlabelled px (head, hair, face, jaw outline) above the neck row, per walk pair. */
+    const cheekDiffs = (r: ReturnType<typeof createRigRenderer>): { collar: number; tone: [number, number][] } => {
+      const walk = anim('walk');
+      const n = walk.frames.length;
+      const frames = walk.frames.map((_, f) => ({ ...r.renderLabeled(walk, f, ctx), j: r.joints(walk, f) }));
+      let collar = 0;
+      const tone: [number, number][] = [];
+      for (let f = 0; f < n; f++) {
+        const a = frames[f];
+        const b = frames[(f + 1) % n];
+        if (!a || !b) throw new Error(`walk/${String(f)}`);
+        const dx = Math.round(b.j.head[0]) - Math.round(a.j.head[0]);
+        const dy = Math.round(b.j.head[1]) - Math.round(a.j.head[1]);
+        const w = a.image.width;
+        for (let y = 0; y < Math.round(a.j.neck[1]); y++) {
+          for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            if (a.labels.data[i + 3] || !a.image.data[i + 3]) continue;
+            const [bx, by] = [x + dx, y + dy];
+            if (bx < 0 || by < 0 || bx >= w || by >= a.image.height) continue;
+            const k = (by * w + bx) * 4;
+            if (b.labels.data[k] === ARM_LABEL.trim) collar++;
+            else if (!b.labels.data[k + 3] && rgbAt(a.image.data, i / 4) !== rgbAt(b.image.data, k / 4))
+              tone.push([rgbAt(a.image.data, i / 4), rgbAt(b.image.data, k / 4)]);
+          }
+        }
+      }
+      return { collar, tone };
+    };
+    it('keeps the face and jaw contour moving with the head: no collar px takes a cheek px, ≤ 1 skin step per pair', () => {
+      const { collar, tone } = cheekDiffs(renderer);
+      expect(collar).toBe(0);
+      const skin = ramp('skin');
+      // The chin's bottom px sits on the shirt and takes 1 AA step on the 2 head-dip pairs (dim, not a glint).
+      expect(tone.length).toBeLessThanOrEqual(2);
+      for (const [a, b] of tone) {
+        expect(skin.indexOf(a), a.toString(16)).toBeGreaterThanOrEqual(0);
+        expect(Math.abs(skin.indexOf(a) - skin.indexOf(b)), b.toString(16)).toBeLessThanOrEqual(1);
+      }
+    });
+    it('is the opt-in that does it (off: the collar rim / gold swaps into the jaw outline)', () => {
+      const { jawOverNeckAcc, ...off } = VAMPIRE;
+      expect(jawOverNeckAcc).toBe(true);
+      expect(cheekDiffs(createRigRenderer(off)).collar).toBeGreaterThan(0);
+    });
+  });
 });
