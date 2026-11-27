@@ -1,11 +1,11 @@
 // coder face library — D-20 stern "unimpressed senior dev" (MA-66, docs/art/coder.md §4 + «D-20»; format in
 // rig/face.ts). The shared stern kit (rig/faces/stern.ts, ART-BIBLE §11.9) with the coder's own eye: a flat ink lid
 // 2 rows thick (square outer tick, no flick) over a 4-col iris so 3 rows show, a 2 × 2 pupil touching the lid, a 1 × 1
-// highlight top-left in both eyes, and the signature eye bags (2 px of skin 2 under the outer half, never ink). Grey-
-// blue `hair_ash` eyes. Brows (hair 0) through the fringe gaps 1 row higher than the kit (1 skin row above the thick
+// highlight top-left in both eyes, behind rectangular steel glasses drawn in the head masks (their lower rim takes the
+// old eye-bag row, so there are no bags; owner 2026-11-27). Grey-blue `hair_ash` eyes. Brows (hair 0) through the fringe gaps 1 row higher than the kit (1 skin row above the thick
 // lid). Neutral mouth: the kit's flat `XXX` 1 px right of the axis. No blush outside happy / petted (`ff` only).
 // Emotions break it: happy = the lid lifts off a full 5-row iris with an extra highlight + a lopsided smile; startle /
-// worried = the kit's open eyes; petted / sleep = closed lines.
+// worried = the kit's open eyes cut to the lenses; petted / sleep = closed lines. No face part touches the glasses.
 import type { Mask } from '../../lib/mask.ts';
 import type { FacePart, ViewFaceLibrary } from '../../rig/face.ts';
 import { STERN_FACE, sternFace } from '../../rig/faces/stern.ts';
@@ -17,10 +17,8 @@ const kitBrow = (id: string): FacePart => {
   return p;
 };
 
-const BAGS = '...ss..........ss...';
-
 /**
- * Stern eye (face rows 4–9, art-director round 1): a hooded 2-row lid, both rows 1 px past the outer corner (flat),
+ * Stern eye (face rows 4–8, art-director round 1): a hooded 2-row lid, both rows 1 px past the outer corner (flat),
  * the lower row's inner end dropping 1 px onto the iris (`x`, the brow–lid wedge); a dark iris (ash 1 `c`, ash 0
  * `C`) with one 1 × 1 highlight top-left of each iris and no lower highlight; the 2 × 2 pupil touching the lid.
  */
@@ -30,7 +28,6 @@ const STERN: Mask = [
   '...KXXx......xXXC...',
   '...cXXc......KXXc...',
   '...CccC......CccC...',
-  BAGS,
 ];
 /** Glance (idle_a, think): the irises and pupils 1 px toward screen-right under the same lid and wedge. */
 const SIDE: Mask = [
@@ -39,7 +36,6 @@ const SIDE: Mask = [
   '...CKXX......xCXX...',
   '...ccXX......KcXX...',
   '...CCcc......CCcc...',
-  BAGS,
 ];
 /** Wince: the screen-left eye stern, the screen-right one squeezed shut. */
 const WINCE: Mask = [
@@ -48,7 +44,6 @@ const WINCE: Mask = [
   '...KXXx.........XX..',
   '...cXXc.......XX....',
   '...CccC.............',
-  BAGS,
 ];
 /** Happy ("huh, it works"): the lid lifts off the iris — 5 rows show, an extra lower highlight. */
 const HAPPY: Mask = [
@@ -59,30 +54,39 @@ const HAPPY: Mask = [
   '...CkkC......CkkC...',
   '....kk........kk....',
 ];
-/** The eye slot maps `c` to ash 1 (the dark stern iris): kit parts keep their ash-0 rims as `C`. */
-const darkRims = (p: FacePart): FacePart => ({ ...p, mask: p.mask.map((r) => r.replaceAll('c', 'C')) });
-const kitEye = (id: string): FacePart => {
-  const p = STERN_FACE.eyes[id];
-  if (!p) throw new Error(`stern kit has no eyes "${id}"`);
-  return darkRims(p);
-};
+/**
+ * Worried and startle: the kit's open eyes cut to the lenses (face cols 1–6 | 13–18; the lower rim is face row 9), the
+ * lid lifted 1 row above the frame top (face row 3) so a full 5-row iris shows and no px lands on a frame. Rims are
+ * ash 0 (`C`): the eye slot maps `c` to ash 1, the dark stern iris.
+ */
+const WORRIED: Mask = [
+  '...XXXX......XXXX...',
+  '...KXXC......KXXC...',
+  '...iXXi......iXXi...',
+  '...CikC......CikC...',
+  '...CkkC......CkkC...',
+  '....kk........kk....',
+];
+const STARTLE: Mask = [
+  '.XXXXXX......XXXXXX.',
+  '.pKXXCp......pKXXCp.',
+  '.piXXip......piXXip.',
+  '.pCikCp......pCikCp.',
+  '.pCkkCp......pCkkCp.',
+  '..pkkp........pkkp..',
+];
 
 export const CODER_FACE = sternFace({
   eyes: {
     stern: part(STERN, 0, 4),
     side: part(SIDE, 0, 4),
-    half: part(
-      ['.XXXXXX......XXXXXX.', '..XXXXX......XXXXX..', '...cXXx......xXXc...', '...CccC......CccC...', BAGS],
-      0,
-      5,
-    ),
-    closed: part(['..XXXXX......XXXXX..', '....................', BAGS], 0, 7),
-    /** Petted / sleep: flat closed lines, no bags (relaxed). */
-    shut: part(['..XXXXX......XXXXX..'], 0, 7),
+    half: part(['.XXXXXX......XXXXXX.', '..XXXXX......XXXXX..', '...cXXx......xXXc...', '...CccC......CccC...'], 0, 5),
+    /** Blink, petted, sleep: flat closed lines on the lid row above the glasses' lower rim. */
+    closed: part(['..XXXXX......XXXXX..'], 0, 7),
     happy: part(HAPPY, 0, 3),
     wince: part(WINCE, 0, 4),
-    worried: kitEye('worried'),
-    startle: kitEye('startle'),
+    worried: part(WORRIED, 0, 3),
+    startle: part(STARTLE, 0, 3),
   },
   brows: {
     set: { ...kitBrow('set'), at: [0, 1] },
@@ -100,12 +104,13 @@ export const CODER_FACE = sternFace({
     small_smile: part(['.........XX.........'], 0, 11),
   },
   cheeks: {
-    ff: part(['...ff..........ff...'], 0, 9),
+    /** Under the glasses' lower rim (face row 9), never on it. */
+    ff: part(['...ff..........ff...'], 0, 10),
   },
   expressions: {
     happy: { eyes: 'happy', brows: 'flat', mouth: 'lopsided', cheeks: 'ff' },
-    petted: { eyes: 'shut', brows: 'flat', mouth: 'small_smile', cheeks: 'ff' },
-    sleep: { eyes: 'shut', mouth: 'sleep', cheeks: 'none' },
+    petted: { eyes: 'closed', brows: 'flat', mouth: 'small_smile', cheeks: 'ff' },
+    sleep: { eyes: 'closed', mouth: 'sleep', cheeks: 'none' },
     worried: { eyes: 'worried', brows: 'up', mouth: 'worried', cheeks: 'none' },
     startle: { eyes: 'startle', brows: 'flat', mouth: 'small_o', cheeks: 'none' },
     think: { eyes: 'side', brows: 'set', mouth: 'grim', cheeks: 'none' },
@@ -119,14 +124,13 @@ const STERN_Q34: Mask = [
   '...KXXx......xXC....',
   '...cXXc......KXc....',
   '...CccC......CcC....',
-  '...ss.........ss....',
 ];
 
 export const CODER_FACE_Q34: ViewFaceLibrary = {
   style: 'stern',
   eyes: {
     stern: part(STERN_Q34, 0, 4),
-    closed: part(['..XXXXX......XXXX...', '....................', '...ss.........ss....'], 0, 7),
+    closed: part(['..XXXXX......XXXX...'], 0, 7),
   },
   brows: { set: part(['...JJJ........JJ....', '......J......J......'], 0, 1) },
   mouths: { set: part(['..........XXX.......'], 0, 11) },

@@ -1,6 +1,7 @@
-// M-ART MA-66 (D-20, docs/art/coder.md): `pixmates.coder` — pack build, headroom with the cowlick, the costume layers
-// on every frame (mustard hoodie, cream tee hem / lanyard, denim, indigo cord), the arm-over-torso gate, the q34 walk
-// head rules. Faces and head masks: coder-face.test.ts; ramp gates: coder-palette.test.ts.
+// M-ART MA-66 (D-20, docs/art/coder.md; owner redesign 2026-11-27): `pixmates.coder` — pack build, headroom under the
+// hood, the costume layers on every frame (black hoodie, mustard accent, cream tee hem / badge / sneakers, denim), the
+// arm-over-torso gate, the q34 walk head rules and the chest reads (drawstrings, chain + badge, pocket line). Faces,
+// glasses, hood and head masks: coder-face.test.ts; ramp gates: coder-palette.test.ts.
 import { describe, expect, it } from 'vitest';
 import { CODER, createCoderPack } from '../../../assets-src/characters/coder/body.ts';
 import { CHEST, CHEST_Q34 } from '../../../assets-src/characters/coder/masks.ts';
@@ -54,7 +55,7 @@ describe('pixmates.coder pack (D-20 chibi, stern)', () => {
     );
     expect(problems).toEqual([]);
   });
-  it('keeps row 0 clear in every frame (headroom with the cowlick)', () => {
+  it('keeps row 0 clear in every frame (headroom over the hood)', () => {
     for (const a of ANIMS) {
       a.frames.forEach((_, f) => {
         const { image } = renderer.renderLabeled(a, f, ctx);
@@ -67,22 +68,20 @@ describe('pixmates.coder pack (D-20 chibi, stern)', () => {
 
 describe('costume (coder.md «D-20», ART-BIBLE §12)', () => {
   it.each([
-    ['cloth_mustard', 'hoodie'],
-    ['cloth_cream', 'tee hem, lanyard, sneakers'],
-    ['cloth_indigo', 'jeans + cord'],
-    ['hair_cocoa', 'hair'],
+    ['cloth_onyx', 'hoodie + hood'],
+    ['cloth_mustard', 'hood edge, drawstrings'],
+    ['cloth_cream', 'tee hem, badge, sneakers'],
+    ['cloth_indigo', 'jeans'],
+    ['metal', 'glasses, zipper pull, chain'],
+    ['hair_cocoa', 'fringe'],
   ])('shows %s (%s) on every frame', (ramp) => {
     for (const a of ANIMS)
       a.frames.forEach((_, f) => {
         expect(count(a.name, f, ramp), `${a.name}/${String(f)}`).toBeGreaterThan(0);
       });
   });
-  it('shows the steel zipper pull and the amber badge mark on the idle front', () => {
-    expect(count('idle_a', 0, 'metal')).toBeGreaterThan(0);
-    expect(count('idle_a', 0, 'cloth_ochre')).toBeGreaterThan(0);
-  });
-  it('never uses black, red or green cloth ramps (originality: no Mr. Robot / Kenma / Gon read)', () => {
-    for (const ramp of ['cloth_black', 'hair_black', 'fx_red', 'gem_garnet', 'cloth_moss', 'jade']) {
+  it('never uses the cast’s tinted blacks, red or green (originality: no goth / ronin / Kenma / Gon read)', () => {
+    for (const ramp of ['cloth_black', 'hair_black', 'lacquer_black', 'fx_red', 'gem_garnet', 'cloth_moss', 'jade']) {
       for (const a of ANIMS) expect(count(a.name, 0, ramp), `${ramp} ${a.name}`).toBe(0);
     }
   });
@@ -120,7 +119,7 @@ describe('q34 walk owner rules (coder.md §6.8, RIG.md)', () => {
   });
 });
 
-describe('chest reads (art-director MA-66 round 1: cord V, badge, pocket line)', () => {
+describe('chest reads (owner 2026-11-27: drawstrings, chain + badge, pocket line on the black hoodie)', () => {
   const slotAt = (m: Mask, x: number, y: number): readonly [string, number] | undefined =>
     LEGEND[m[y]?.charAt(x) ?? '.'];
   const shadeAt = (m: Mask, x: number, y: number): [string, number] | undefined => {
@@ -129,51 +128,80 @@ describe('chest reads (art-director MA-66 round 1: cord V, badge, pocket line)',
     const sw = CODER.outfit[e[0] as keyof typeof CODER.outfit];
     return [sw.ramp, sw.tones[e[1]] ?? -1];
   };
-  const clipOf = (m: Mask): [number, number] => {
-    for (let y = 3; y < m.length; y++) {
-      const x = (m[y] ?? '').split('').findIndex((_, c) => slotAt(m, c, y)?.[0] === 'horn');
-      if (x >= 0) return [x, y];
-    }
-    throw new Error('no badge clip');
-  };
-  it.each([
+  const px = (m: Mask, f: (s: [string, number]) => boolean): [number, number][] =>
+    m.flatMap((r, y) =>
+      r.split('').flatMap((_, x) => {
+        const s = shadeAt(m, x, y);
+        return s && f(s) ? [[x, y] as [number, number]] : [];
+      }),
+    );
+  const VIEWS = [
     ['front', CHEST],
     ['q34', CHEST_Q34],
-  ])('%s: an indigo-2 cord V from the collar to a 1-px steel-5 clip, the badge hung below it', (_, m) => {
-    const [cx, cy] = clipOf(m);
-    expect(shadeAt(m, cx, cy)).toEqual(['metal', 5]);
-    for (const dx of [-1, 1]) expect(shadeAt(m, cx + dx, cy - 1), `arm ${String(dx)}`).toEqual(['cloth_indigo', 2]);
-    for (const dx of [-2, 2]) expect(shadeAt(m, cx + dx, cy - 2), `arm ${String(dx)}`).toEqual(['cloth_indigo', 2]);
-    // The blank cream badge starts right under the clip, with an amber `>_` (2 px) and a mustard-1 bottom edge.
-    const badge = m.slice(cy + 1).flatMap((r, y) => r.split('').map((_, x) => shadeAt(m, x, cy + 1 + y)));
-    expect(shadeAt(m, cx, cy + 1)?.[0]).toBe('cloth_cream');
-    expect(badge.filter((s) => s?.[0] === 'cloth_ochre')).toHaveLength(2);
-    expect(cy, 'hung 1–2 rows lower than round 0 (clip on row 5)').toBeGreaterThanOrEqual(5);
+  ] as const;
+  /** The 2-px zipper pull: the steel px of the collar rows (0–2). */
+  const pullOf = (m: Mask): [number, number][] => px(m, ([r]) => r === 'metal').filter(([, y]) => y <= 2);
+
+  it.each(VIEWS)('%s: a 2-px steel zipper pull hangs on one column from the collar', (_, m) => {
+    const pull = pullOf(m);
+    expect(pull).toHaveLength(2);
+    expect(new Set(pull.map(([x]) => x)).size).toBe(1);
   });
-  it.each([
-    ['front', CHEST],
-    ['q34', CHEST_Q34],
-  ])('%s: a continuous mustard-2 pocket edge of 8–10 px, no `{ }` print left on the chest', (_, m) => {
+  it.each(VIEWS)(
+    '%s: two mustard drawstrings, 1 px wide, either side of the pull, ≥ 3 px long, unequal, each with a lit tip',
+    (_, m) => {
+      const pullX = pullOf(m)[0]?.[0] ?? -1;
+      const strings = px(m, ([r]) => r === 'cloth_mustard').filter(([, y]) => y <= 5);
+      const cols = [...new Set(strings.map(([x]) => x))].sort((a, b) => a - b);
+      expect(cols).toHaveLength(2);
+      const [l = -1, r = -1] = cols;
+      expect(l < pullX && pullX < r, 'pull between the strings').toBe(true);
+      const lens = cols.map((c) => {
+        const ys = strings.filter(([x]) => x === c).map(([, y]) => y);
+        // Contiguous from the collar row 1 down.
+        expect(Math.min(...ys)).toBe(1);
+        expect(Math.max(...ys) - Math.min(...ys) + 1).toBe(ys.length);
+        // The tip is the lightest px of the string.
+        const tones = ys.map((y) => shadeAt(m, c, y)?.[1] ?? -1);
+        expect(shadeAt(m, c, Math.max(...ys))?.[1]).toBe(Math.max(...tones));
+        return ys.length;
+      });
+      expect(Math.min(...lens)).toBeGreaterThanOrEqual(3);
+      expect(lens[0]).not.toBe(lens[1]);
+    },
+  );
+  it.each(VIEWS)(
+    '%s: a steel chain (8-connected, below the collar) ends in a steel-5 clip right over the cream badge with a mustard-2 `>_`',
+    (_, m) => {
+      const chain = px(m, ([r]) => r === 'metal').filter(([, y]) => y >= 3);
+      expect(chain.length).toBeGreaterThanOrEqual(3);
+      chain.slice(1).forEach(([x, y], k) => {
+        const [px0 = 0, py0 = 0] = chain[k] ?? [];
+        expect(Math.abs(x - px0) <= 1 && y - py0 === 1, `link ${String(x)},${String(y)}`).toBe(true);
+      });
+      const [cx = 0, cy = 0] = chain.at(-1) ?? [];
+      expect(shadeAt(m, cx, cy)).toEqual(['metal', 5]);
+      expect(shadeAt(m, cx, cy + 1)?.[0]).toBe('cloth_cream');
+      // The badge: the 3 × 3 under the clip is cream except a 2-px mustard-2 mark, nothing else.
+      const badge = [-1, 0, 1].flatMap((dx) => [1, 2, 3].map((dy) => shadeAt(m, cx + dx, cy + dy)));
+      expect(badge.filter((s) => s?.[0] === 'cloth_mustard' && s[1] === 2)).toHaveLength(2);
+      expect(badge.filter((s) => s?.[0] === 'cloth_cream')).toHaveLength(7);
+    },
+  );
+  it.each(VIEWS)('%s: one continuous onyx-0 pocket line of 5–10 px under the badge clip row', (_, m) => {
     const runs = m.map((r, y) => {
       let best = 0;
       let run = 0;
       for (let x = 0; x < r.length; x++) {
         const s = shadeAt(m, x, y);
-        run = s?.[0] === 'cloth_mustard' && s[1] === 2 ? run + 1 : 0;
+        run = s?.[0] === 'cloth_onyx' && s[1] === 0 ? run + 1 : 0;
         best = Math.max(best, run);
       }
       return best;
     });
-    const edge = Math.max(...runs.slice(3));
+    const edge = Math.max(...runs.slice(3, 9));
     expect(edge).toBeGreaterThanOrEqual(m === CHEST ? 8 : 5);
     expect(edge).toBeLessThanOrEqual(10);
-    const [cx, cy] = clipOf(m);
-    const indigo = m.flatMap((r, y) =>
-      r.split('').flatMap((_, x) => (shadeAt(m, x, y)?.[0] === 'cloth_indigo' ? [[x, y] as const] : [])),
-    );
-    // Indigo only on the cord (the 2 rows above the clip).
-    for (const [x, y] of indigo)
-      expect(y >= cy - 2 && y < cy && Math.abs(x - cx) <= 2, `${String(x)},${String(y)}`).toBe(true);
   });
   it('front: the tee hem is 2–3 broken cream px on the lit-left side only', () => {
     const last = CHEST.length - 1;
