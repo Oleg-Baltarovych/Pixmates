@@ -1,6 +1,6 @@
 // Pack builder core for `pnpm sprites` (plan M-ART MA-08, MA-23, MA-26): renders every frame of a PackDef, checks it
-// (size, palette conformance, binary alpha, non-empty, headroom row 0 for built-ins), packs one atlas (`rows`: one
-// row per animation; `shelf`: strips packed into shelves ≤ 1024 wide) with `origin` per animation, and writes the
+// (size, palette conformance, binary alpha, non-empty, headroom row 0 for built-ins), packs one atlas (animation
+// strips shelf-packed ≤ 1024²) with `origin` per animation, and writes the
 // manifest with a SHA-256 per file. Also builds the FX marks atlas. Pure apart from reading the master palette, so the
 // determinism tests can build twice in memory and compare hashes.
 import { createHash } from 'node:crypto';
@@ -15,8 +15,6 @@ import { encodePng, type RgbaImage } from './png.ts';
 
 export const ATLAS_FILE = 'sprites/atlas.png';
 export const FX_FILE = 'sprites/fx.png';
-/** rules/render.md: one atlas per character ≤ 2048² (row layout). */
-export const MAX_ATLAS_SIDE = 2048;
 /** Plan M-ART phase 2: built-in (shelf) atlases ≤ 1024², FX ≤ 512². */
 export const MAX_SHELF_SIDE = 1024;
 export const MAX_FX_SIDE = 512;
@@ -124,35 +122,22 @@ export function buildPack(def: PackDef, ctx: RenderContext): BuiltPack {
     }
   }
   const frameCount = (n: string): number => def.animations[n]?.frames ?? 0;
-  let width: number;
-  let height: number;
-  let placeOf: (name: string, row: number) => { x: number; y: number };
-  if (def.layout === 'shelf') {
-    const shelf = shelfPack(
-      names.map((name) => ({ name, frames: frameCount(name) })),
-      w,
-      h,
-      MAX_SHELF_SIDE,
-    );
-    ({ width, height } = shelf);
-    if (height > MAX_SHELF_SIDE) throw new Error(`${def.id}: atlas height ${String(height)} exceeds 1024`);
-    placeOf = (name) => shelf.placements.get(name) ?? { x: 0, y: 0 };
-  } else {
-    width = Math.max(...names.map(frameCount)) * w;
-    height = names.length * h;
-    if (width > MAX_ATLAS_SIDE || height > MAX_ATLAS_SIDE) {
-      throw new Error(`${def.id}: atlas ${String(width)}×${String(height)} exceeds ${String(MAX_ATLAS_SIDE)}²`);
-    }
-    placeOf = (_name, row) => ({ x: 0, y: row * h });
-  }
+  const shelf = shelfPack(
+    names.map((name) => ({ name, frames: frameCount(name) })),
+    w,
+    h,
+    MAX_SHELF_SIDE,
+  );
+  const { width, height } = shelf;
+  if (height > MAX_SHELF_SIDE) throw new Error(`${def.id}: atlas height ${String(height)} exceeds 1024`);
   const data = new Uint8Array(width * height * 4);
   const frames = new Map<string, RgbaImage[]>();
   const fx = new Map<string, (readonly [number, number])[]>();
   const animations: Record<string, unknown> = {};
-  names.forEach((name, row) => {
+  for (const name of names) {
     const anim = def.animations[name];
-    if (!anim) return;
-    const origin = placeOf(name, row);
+    if (!anim) continue;
+    const origin = shelf.placements.get(name) ?? { x: 0, y: 0 };
     const list: RgbaImage[] = [];
     for (let f = 0; f < anim.frames; f++) {
       const image = def.render(name, f, ctx);
@@ -178,7 +163,7 @@ export function buildPack(def: PackDef, ctx: RenderContext): BuiltPack {
       ...(anim.anchor ? { anchor: anim.anchor } : {}),
       ...(anim.facing ? { facing: anim.facing } : {}),
     };
-  });
+  }
   const atlas = encodePng({ width, height, data });
   const hash = sha256(atlas);
   const manifest = {

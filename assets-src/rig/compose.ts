@@ -868,7 +868,6 @@ export function createRigPack(body: Body, anims: readonly RigAnim[], frameH: num
     frameSize: { w: rigW, h: frameH },
     anchor: { x: 0.5, y: 1 },
     scaleRef: layout.scaleRef,
-    layout: 'shelf',
     headroom: true,
     animations,
     fallbacks: FALLBACKS,

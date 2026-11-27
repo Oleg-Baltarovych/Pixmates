@@ -33,15 +33,13 @@ export interface PackDef {
   readonly author: string;
   readonly frameSize: { readonly w: number; readonly h: number };
   readonly anchor: { readonly x: number; readonly y: number };
-  /** In atlas row order. */
+  /** Manifest order; the atlas shelf-packs the strips longest first (ties keep this order). */
   readonly animations: Readonly<Record<string, AnimDef>>;
   readonly fallbacks: Readonly<Record<string, string>>;
   /** Standing-figure height for sizing (manifest `scaleRef`); omitted = frame height. */
   readonly scaleRef?: number;
   /** Manifest `emotions`: animation names the LLM layer may pick (M1); each must be an animation of the pack. */
   readonly emotions?: readonly string[];
-  /** `rows` (default): one atlas row per animation. `shelf`: strips packed into shelves ≤ 1024 wide. */
-  readonly layout?: 'rows' | 'shelf';
   /** Built-ins with headroom (ADR 009): the builder fails when a frame has an opaque px on row 0. */
   readonly headroom?: boolean;
   /** FX mark anchor per frame (frame px), for previews; reaches the manifest/IPC in M1. */
