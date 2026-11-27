@@ -45,6 +45,8 @@ export const VISOR_DOWN_IN: Visor['downIn'] = {
 
 /** Silver tones for the hair (helmet) and shoe (armour) slots: 0 dark reflection · 2 · 3 · 4 base · 5 · 6 spec. */
 const SILVER = [0, 2, 3, 4, 5, 6] as const;
+/** Camail hem row (front head mask, MA-69): mask tone 1 reaches silver 1 for the scallop; the helmet keeps SILVER. */
+const HEM_SILVER = [0, 1, 3, 4, 5, 6] as const;
 const T6 = [0, 1, 2, 3, 4, 5] as const;
 const T6UP = [1, 2, 3, 4, 5, 6] as const;
 const HEAD_AT = [-15, -18] as const;
@@ -107,7 +109,7 @@ export const KNIGHT: Body = {
   sleeve: { ramp: 'metal_silver', shade: 4 },
   cuff: { ramp: 'metal_silver', shade: 5 },
   gauntlets: { ramp: 'metal_silver' },
-  head: { mask: HEAD, at: HEAD_AT, band: 16 },
+  head: { mask: HEAD, at: HEAD_AT, band: 16, hemTones: { rows: 1, slot: 'hair', tones: HEM_SILVER } },
   face: knightFace,
   masks: { shoe: SHOE, hairBack: NO_BACK_HAIR, neckAcc: GORGET },
   torsoMask: { mask: CHEST, at: [-6, 0] },
@@ -116,6 +118,8 @@ export const KNIGHT: Body = {
   sash: { rows: 2, knot: { mask: SWORD, at: [6, -4] } },
   shorts: { shade: 3, raise: 0 },
   legRim: 5,
+  // Greaves (MA-69): calm plate tones 5 · 4 · 3 across each shin, tone 6 on one lit-left corner px per leg.
+  greaves: { lit: 5, mid: 4, shade: 3, spec: 6 },
   hairBackStretch: 0.2,
   sideLocks: false,
   visor: { ...VISOR, downIn: VISOR_DOWN_IN },

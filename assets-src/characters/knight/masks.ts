@@ -183,7 +183,7 @@ export const CHEST: Mask = [
   'gtTTTlLTTdDg',
   'ggtttLltttgg',
   'mbBBBlLBBbbm',
-  'MmmmmmmmmmmM',
+  'MmbbbbbbbmmM',
 ];
 export const CHEST_Q34: Mask = [
   '.dDBBLlBBbbM',
@@ -197,7 +197,7 @@ export const CHEST_Q34: Mask = [
   '.tTTTlLTTdDg',
   '.gtttLltttgg',
   '.bBBBlLBBbbm',
-  '.mmmmmmmmmmM',
+  '.mbbbbbbbmmM',
 ];
 /** Faulds (from hip − (6, 2)): two plate lames one tone apart (tones 2–5, tone 6 only at each lit-left corner) over a 2-row mail hem; the emerald panel. */
 export const FAULDS: Mask = ['Lllbvddvlbbm', 'bBBbvdDvBbbm', 'LBbbvdDvbbbm', 'mbmbvddvmbmb', '.mbmvdwvbmb.'];

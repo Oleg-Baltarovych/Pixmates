@@ -104,10 +104,18 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
     partProblems.push(`${body.id}: silhouetteOutline lists ramp "${r}" more than once`);
   }
   /** Shade opt-ins: 0..MAX_SHADE, within their ramp when it is known, whole when written straight into buf.shade. */
-  const shades: { name: string; s: number | undefined; ramp?: RampName; int?: true }[] = [
+  const shades: { name: string; s: number | undefined; ramp?: RampName; int?: true; full?: true }[] = [
     { name: 'shorts.shade', s: body.shorts?.shade },
     { name: 'shinWrap.shade', s: body.shinWrap?.shade },
     { name: 'legRim', s: body.legRim, ramp: body.ramps.legs, int: true },
+    ...(['lit', 'mid', 'shade', 'spec'] as const).map((k) => ({
+      name: `greaves.${k}`,
+      s: body.greaves?.[k],
+      ramp: body.ramps.legs,
+      int: true as const,
+      // Plate spec: a 7-tone metal ramp's top step is allowed.
+      full: true as const,
+    })),
     // Fractional on purpose (a far-leg tone between two steps).
     { name: 'views.q34.farLegShade', s: q34?.farLegShade },
     // The bodice lifts by BREATH_GLOW on breath frames.
@@ -130,9 +138,9 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
       { name: `silhouetteOutline.${o.ramp}.head.shade`, s: o.head?.shade, ramp: o.ramp, int: true as const },
     ]),
   ];
-  for (const { name, s, ramp, int } of shades) {
+  for (const { name, s, ramp, int, full } of shades) {
     if (s === undefined) continue;
-    const top = Math.min(MAX_SHADE, ramp === undefined ? MAX_SHADE : topOf(ramp));
+    const top = ramp === undefined ? MAX_SHADE : full ? topOf(ramp) : Math.min(MAX_SHADE, topOf(ramp));
     if (!(s >= 0 && s <= top)) partProblems.push(`${body.id}: ${name} ${String(s)} is outside 0..${String(top)}`);
     else if (int && !Number.isInteger(s)) partProblems.push(`${body.id}: ${name} ${String(s)} must be a whole shade`);
   }

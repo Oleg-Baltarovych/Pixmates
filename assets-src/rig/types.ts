@@ -4,7 +4,7 @@
 // joint offsets, part variants, the face expression, squash and breath. Bodies never fork an animation.
 import type { RampName } from '../lib/buffer.ts';
 import type { Point } from '../lib/chain.ts';
-import type { Mask, Outfit } from '../lib/mask.ts';
+import type { Mask, Outfit, Slot, Swatch } from '../lib/mask.ts';
 import type { ExpressionId, FaceLibrary, ViewFaceLibrary } from './face.ts';
 
 /** Rig views (ADR 010): `front` and three-quarter `q34`, authored facing screen-right (left = runtime mirror). */
@@ -170,6 +170,16 @@ export interface Apron {
 }
 
 /**
+ * Head mask placement: `band` = the shine-band row; opt-in `hemTones` (MA-69): the mask's last `rows` rows paint
+ * `slot` px with these tones instead of the outfit's (e.g. a mail hem reaching a ramp step the slot's six tones skip;
+ * the rest of the head keeps the outfit tones).
+ */
+export type HeadPlacement = PlacedMask & {
+  readonly band: number;
+  readonly hemTones?: { readonly rows: number; readonly slot: Slot; readonly tones: Swatch['tones'] };
+};
+
+/**
  * Per-body fox tail (`back: 'fox_tail'`). Unset views keep the rig defaults (dummy-b's tail). Radii are per
  * centre-line point, root first; the pale tip is a second stroke over the last `tipRadii.length` points.
  */
@@ -298,7 +308,7 @@ export interface HeadAccMasks {
 
 /** Per-view authored parts (ADR 010): a body supplies them for every non-front view its poses use. */
 export interface BodyView {
-  readonly head: PlacedMask & { readonly band: number };
+  readonly head: HeadPlacement;
   /** Only the expressions the view's poses reference are required (q34: neutral, blink). */
   readonly face: ViewFaceLibrary;
   readonly masks: HeadAccMasks & {
@@ -458,7 +468,7 @@ export interface Body {
    */
   readonly sleeveRim?: number;
   /** Authored head (skin, fringe, crown; horns when `headAcc` is `horns`); `at` from the head joint. */
-  readonly head: PlacedMask & { readonly band: number };
+  readonly head: HeadPlacement;
   readonly face: FaceLibrary;
   readonly masks: HeadAccMasks & {
     /** One shoe, top-left = foot − (2, 0.6). */
@@ -521,6 +531,13 @@ export interface Body {
    * legs-ramp shade (0..5), a 1-px lit side on pale legwear; shin wraps paint over it.
    */
   readonly legRim?: number;
+  /**
+   * Opt-in (MA-69, plate greaves): a final tone pass over the visible procedural leg px (legs ramp). In each row of a
+   * leg the contour px stay; the inner px run lit → mid → shade from screen-left (`lit`, `mid`, `shade`, whole legs-ramp
+   * shades), and one px per leg — the first inner px of its top visible row — takes `spec`. Calms the per-column
+   * gradient + rim "barcode" on short metal shins.
+   */
+  readonly greaves?: { readonly lit: number; readonly mid: number; readonly shade: number; readonly spec: number };
   /**
    * Waist sash: band height in rows (default 1), a knot mask on the near hip (from the hip joint) and `dy` whole rows
    * lower than the default waist band (0..`SASH_DY_MAX`, default 0; the torso shows between a collar and the sash).

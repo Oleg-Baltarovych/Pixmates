@@ -66,6 +66,7 @@ import {
   handShadows,
   kneeCreases,
   labelImage,
+  greaveTones,
   legRim,
   napeIndent,
   pointToe,
@@ -84,9 +85,10 @@ import {
   WRAP_SHADE,
   type Locked,
   type Stamp,
+  type StampOptions,
 } from './passes.ts';
 import { SOFT as style } from './style.ts';
-import type { Body, BodyView, JointMap, PoseFrame, RigAnim, ScarfEnds, View } from './types.ts';
+import type { Body, BodyView, HeadPlacement, JointMap, PoseFrame, RigAnim, ScarfEnds, View } from './types.ts';
 import { validateBody } from './validate.ts';
 import { animFacing, bodyViewOf, headViewOf, visorIsDown } from './views.ts';
 
@@ -513,6 +515,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
         3.5,
         MAT.skin,
         locked,
+        hemTonesOf(headParts.head, headParts.headMask.length),
       ),
     );
     if (headAcc && accMask && !accFirst) {
@@ -717,6 +720,7 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
       buf.shade[i] = shade;
     }
     rimLight(buf, map, ctx.rampSize, { strength: style.rim });
+    if (body.greaves) greaveTones(buf, ctx.palette.rampNames.indexOf(body.ramps.legs), body.greaves);
     // The far lock keeps its authored hair-shadow tones: rim light would lift its outer edge into a forward tuft.
     // Only px still hair are restored (nothing drawn later over them is touched).
     for (const i of hairFarPx) {
@@ -769,6 +773,12 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
 }
 
 /** The row squash cuts at: the waist, under the chest. */
+/** `HeadPlacement.hemTones` → the stamp's row override (rows counted from the bottom of the banded head mask). */
+const hemTonesOf = (head: HeadPlacement, maskRows: number): StampOptions => {
+  const hem = head.hemTones;
+  return hem ? { toneRows: { from: maskRows - hem.rows, slot: hem.slot, tones: hem.tones } } : {};
+};
+
 const waistRow = (j: JointMap, layout: RigLayout): number => Math.round(j.hip[1] + layout.torso.waistRow);
 
 const FALLBACKS = {

@@ -5,7 +5,7 @@
 import type { RgbaImage } from '../../tools/lib/png.ts';
 import type { IndexBuffer, RampName } from '../lib/buffer.ts';
 import type { Point } from '../lib/chain.ts';
-import { LEGEND, maskSize, type Mask, type Swatch } from '../lib/mask.ts';
+import { LEGEND, maskSize, type Mask, type Slot, type Swatch } from '../lib/mask.ts';
 import { MAT } from '../lib/materials.ts';
 import { toOklab, type Palette } from '../lib/palette.ts';
 import { OUTER, type outline } from '../lib/passes.ts';
@@ -47,6 +47,8 @@ export interface StampOptions {
   readonly under?: number;
   readonly partId?: number;
   readonly allow?: (partId: number) => boolean;
+  /** Rows ≥ `from` paint `slot` px with `tones` instead of the outfit's (`HeadPlacement.hemTones`). */
+  readonly toneRows?: { readonly from: number; readonly slot: Slot; readonly tones: Swatch['tones'] };
 }
 
 /** Stamps an authored mask with final tones and locks its px; returns the px indices it wrote. */
@@ -72,9 +74,11 @@ export function stampMask(
       if (opts.under !== undefined && buf.get(px, py).material === opts.under) continue;
       if (opts.allow && !opts.allow(buf.partId[i] ?? 0)) continue;
       const swatch = body.outfit[entry[0]];
+      const tr = opts.toneRows;
+      const tones = tr && r >= tr.from && entry[0] === tr.slot ? tr.tones : swatch.tones;
       buf.set(px, py, {
         ramp: swatch.ramp,
-        shade: swatch.tones[entry[1]],
+        shade: tones[entry[1]],
         depth,
         material: SLOT_MATERIAL[entry[0]] ?? fallback,
         ...(opts.partId === undefined ? {} : { partId: opts.partId }),
@@ -347,6 +351,67 @@ export function silhouetteOutline(
     const inner = i - ox - oy * buf.width;
     const h = o.head && headPx.has(inner) && buf.partId[inner] === PART_ID.none ? o.head : undefined;
     buf.shade[i] = facing > 0 ? (h?.lit ?? o.lit) : (h?.shade ?? o.shade);
+  }
+}
+
+/**
+ * `Body.greaves` (MA-69): visible procedural leg px (`MAT.fur`, the legs ramp, part legs / far leg) get calm plate
+ * tones. Per row of each leg the first and last px (the contour) stay; inner px run `lit` (first), `shade` (last),
+ * `mid` between; one px per leg (4-connected) — the first inner px of its top visible row — takes `spec`.
+ */
+export function greaveTones(
+  buf: IndexBuffer,
+  legsRamp: number,
+  tones: { readonly lit: number; readonly mid: number; readonly shade: number; readonly spec: number },
+): void {
+  const w = buf.width;
+  const isLeg = (x: number, y: number): boolean => {
+    if (!buf.inBounds(x, y)) return false;
+    const i = y * w + x;
+    return buf.ramp[i] === legsRamp && buf.material[i] === MAT.fur && LEG_PARTS.has(buf.partId[i] ?? 0);
+  };
+  const seen = new Uint8Array(w * buf.height);
+  for (let y0 = 0; y0 < buf.height; y0++) {
+    for (let x0 = 0; x0 < w; x0++) {
+      if (seen[y0 * w + x0] === 1 || !isLeg(x0, y0)) continue;
+      // One leg: its 4-connected px, grouped by row.
+      const rows = new Map<number, number[]>();
+      const stack: [number, number][] = [[x0, y0]];
+      seen[y0 * w + x0] = 1;
+      while (stack.length > 0) {
+        const [x, y] = stack.pop() ?? [0, 0];
+        rows.set(y, [...(rows.get(y) ?? []), x]);
+        for (const [dx, dy] of N4) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (isLeg(nx, ny) && seen[ny * w + nx] === 0) {
+            seen[ny * w + nx] = 1;
+            stack.push([nx, ny]);
+          }
+        }
+      }
+      let specDone = false;
+      for (const y of [...rows.keys()].sort((a, b) => a - b)) {
+        const xs = (rows.get(y) ?? []).sort((a, b) => a - b);
+        // Contiguous runs only: a gap (another part) splits a row.
+        let start = 0;
+        for (let k = 1; k <= xs.length; k++) {
+          if (k < xs.length && (xs[k] ?? 0) === (xs[k - 1] ?? 0) + 1) continue;
+          const run = xs.slice(start, k);
+          start = k;
+          const inner = run.slice(1, -1);
+          inner.forEach((x, n) => {
+            const s = n === 0 ? tones.lit : n === inner.length - 1 ? tones.shade : tones.mid;
+            buf.shade[y * w + x] = s;
+          });
+          const first = inner[0];
+          if (!specDone && first !== undefined) {
+            buf.shade[y * w + first] = tones.spec;
+            specDone = true;
+          }
+        }
+      }
+    }
   }
 }
 

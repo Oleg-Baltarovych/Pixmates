@@ -14,10 +14,12 @@ import { COLLAR_MAX, HAT_MAX } from '../../../assets-src/rig/validate.ts';
 import { ARM_LABEL, PART_ID } from '../../../assets-src/rig/part-ids.ts';
 import {
   farLegGap,
+  greaveTones,
   napeIndent,
   silhouetteOutline,
   SPLIT_Q34_CONTACT_DX,
   squashSeparator,
+  stampMask,
   type Locked,
 } from '../../../assets-src/rig/passes.ts';
 import { CLOAK_DANGLE_NARROW, CLOAK_SEAT_HEM, cloakGeometry } from '../../../assets-src/rig/cloak.ts';
@@ -1220,5 +1222,36 @@ describe('rig opt-in: skirtSplit.q34 (two leg panels)', () => {
     });
     expect(() => createRigPack(bad({ rows: 9, notch: 2, passNotch: 1 }), [walk])).toThrow(/skirtSplit.q34/);
     expect(() => createRigPack(bad({ rows: 4, notch: 2, passNotch: 3 }), [walk])).toThrow(/skirtSplit.q34/);
+  });
+});
+
+describe('opt-in: HeadPlacement.hemTones (stamp toneRows)', () => {
+  it('repaints only the slot px of the last rows with the override tones', () => {
+    const buf = createIndexBuffer(4, 3, palette);
+    const tones = [0, 1, 3, 4, 5, 6] as const;
+    stampMask(buf, DUMMY_A, ['jj', 'jj', 'jj'], 0, 0, 1, MAT.hair, new Map(), {
+      toneRows: { from: 2, slot: 'hair', tones },
+    });
+    const own = DUMMY_A.outfit.hair.tones[1];
+    expect(buf.shade[0]).toBe(own);
+    expect(buf.shade[4]).toBe(own);
+    expect(buf.shade[8]).toBe(1);
+    expect(own).not.toBe(1);
+  });
+});
+
+describe('opt-in: Body.greaves (greaveTones)', () => {
+  it('keeps each leg row contour, runs the inner px lit → mid → shade, one spec px per leg', () => {
+    const buf = createIndexBuffer(12, 4, palette);
+    const legs = palette.rampNames.indexOf('metal_silver');
+    for (let y = 0; y < 4; y++)
+      for (const x0 of [0, 6])
+        for (let x = x0; x < x0 + 5; x++)
+          buf.set(x, y, { ramp: 'metal_silver', shade: 2, material: MAT.fur, partId: PART_ID.legs });
+    greaveTones(buf, legs, { lit: 5, mid: 4, shade: 3, spec: 6 });
+    const row = (y: number, x0: number): number[] => [0, 1, 2, 3, 4].map((d) => buf.shade[y * 12 + x0 + d] ?? -1);
+    expect(row(0, 0)).toEqual([2, 6, 4, 3, 2]);
+    expect(row(0, 6)).toEqual([2, 6, 4, 3, 2]);
+    for (let y = 1; y < 4; y++) expect(row(y, 0)).toEqual([2, 5, 4, 3, 2]);
   });
 });

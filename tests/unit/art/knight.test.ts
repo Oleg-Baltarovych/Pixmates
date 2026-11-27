@@ -343,3 +343,46 @@ describe('q34 owner rules (RIG.md: monotonic contour, no cheek bump, head never 
     expect(dx('turn', 1)).toBe(dx('walk', 0));
   });
 });
+
+describe('MA-69 polish: camail hem tone 1, calm greaves', () => {
+  const silver = palette.ramps.get('metal_silver') ?? [];
+  const rgbOf = (img: { data: Uint8Array }, i: number): number =>
+    ((img.data[i * 4] ?? 0) << 16) | ((img.data[i * 4 + 1] ?? 0) << 8) | (img.data[i * 4 + 2] ?? 0);
+
+  it('front camail hem reaches silver 1; nothing above the hem row changes', () => {
+    const { hemTones, ...head } = KNIGHT.head;
+    expect(hemTones?.rows).toBe(1);
+    const plain = createRigRenderer({ ...KNIGHT, head });
+    const idle = anim('idle_a');
+    const a = renderer.render(idle, 0, ctx);
+    const b = plain.render(idle, 0, ctx);
+    const changed: number[] = [];
+    for (let i = 0; i < a.width * a.height; i++) if (rgbOf(a, i) !== rgbOf(b, i)) changed.push(i);
+    expect(changed.length).toBeGreaterThan(0);
+    expect(changed.some((i) => rgbOf(a, i) === silver[1])).toBe(true);
+    // All changes sit on the hem row (the last head-mask row) or its outline right under it.
+    const rows = new Set(changed.map((i) => Math.floor(i / a.width)));
+    expect(rows.size).toBeLessThanOrEqual(2);
+  });
+
+  it('greaves: no tone 0–1 inside a shin row and at most one tone-6 px per leg', () => {
+    const { greaves, ...noGreaves } = KNIGHT;
+    expect(greaves).toEqual({ lit: 5, mid: 4, shade: 3, spec: 6 });
+    const plain = createRigRenderer(noGreaves);
+    for (const name of ['idle_a', 'walk', 'sit_edge']) {
+      const a = anim(name);
+      const img = renderer.render(a, 0, ctx);
+      const base = plain.render(a, 0, ctx);
+      const changed: number[] = [];
+      for (let i = 0; i < img.width * img.height; i++) if (rgbOf(img, i) !== rgbOf(base, i)) changed.push(i);
+      if (name === 'idle_a') expect(changed.length).toBeGreaterThan(0);
+      // Only leg px change, and only into silver 3..6.
+      for (const i of changed)
+        expect(
+          [3, 4, 5, 6].map((t) => silver[t]),
+          `${name} px ${String(i)}`,
+        ).toContain(rgbOf(img, i));
+      expect(changed.filter((i) => rgbOf(img, i) === silver[6]).length, name).toBeLessThanOrEqual(2);
+    }
+  });
+});
