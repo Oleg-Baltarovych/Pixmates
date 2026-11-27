@@ -62,21 +62,32 @@ Patches `reports/sprites/knight-spike-{A,B,C}.patch` (git apply on the D-22 grou
 - **C — sallet + bevor:** low skull with a cobalt crest, brim and swept tail (q34), chin bevor, lowered visor slit
   under the brim; full cobalt tabard with a cream star.
 
-## 7. As built (variant B, owner pick 2026-11-27; awaiting art-director round 1)
+## 7. As built (variant B, owner pick 2026-11-27; art-director round 1 notes applied, awaiting round 2)
 Code `assets-src/characters/knight/{body,face,masks}.ts` (spike variant scaffolding removed); ramps `metal_silver` +
 `cloth_emerald` (`cloth_cobalt` dropped). Tests `tests/unit/art/knight.test.ts`, `knight-palette.test.ts`.
 - **Layers:** mail (camail onto the shoulders, a 2-row mail hem under the faulds) → plate (bascinet, gorget,
   breastplate with a lit keel, spaulders, vambraces, gauntlets, two fauld lames, greaves, sabatons) → emerald sash
   (baldric near shoulder → far hip, tabard panel between the legs). Leather: belt (silver buckle), sword grip, scabbard
   with a silver locket and chape; the hanging hand rests on the hilt in front view.
-- **Signature:** the pointed ogive bascinet + hounskull visor. Raised: the snout tips up over the brow. Lowered: a pivot
-  seam with temple rivets, a lit-left / shaded-right cone, two slits angled toward the snout, the lit ridge only
-  **below** the slits (no cross, tested), single breath holes on the shade side (no T-slit, tested), a pointed tip
-  (≤ 6 px). q34: ridge off-centre toward the facing, long near slit + short far slit, the lower edge rising to the tip.
+- **Signature:** the pointed ogive bascinet + hounskull visor. Raised: a solid lit triangle (tone 5, tone-6 left edge)
+  tipped up over the brow, a tone-2 underside row, one rivet per side. Lowered: a pivot seam, a lit-left / shaded-right
+  cone, two slits in a shallow V (inner ends 1 px lower, 6-px centre gap), the ridge as a value split (tone 5 | tone 3)
+  starting ≥ 3 rows below the slits (no ridge px within 2 rows of a slit row: no T, no cross, tested), single breath
+  holes on the shade side (no T-slit, tested), a pointed tip (≤ 6 px). q34: ridge off-centre, long near slit + short
+  far slit, a tone-6 spec at the snout tip over a tone-2 underplane, the lower edge rising to the tip.
+- **Face opening:** an arch (top corners rounded in helmet tone 2, the brow shadow row follows it); bottom corners cut
+  with the cheek plates curving in. Neutral brows flat (worried / startle keep their angle); iris highlight cream only.
+- **Value rules (round 1):** faulds, greaves and sabatons use tones 2–5, tone 6 on one lit-left corner px per lame,
+  tone 0 only on the outer contour; the two fauld lames sit one tone apart. Camail shaded by rows (lighter top and lit
+  left, darker to the hem and right) with a scalloped hem. Sword: 1-px pommel, 3-px silver crossguard (spec left),
+  darker scabbard, silver chape.
 - **Visor rule** = §1 exactly (`VISOR_DOWN_IN`, tested per frame: lowered = no skin / ink / blush px; glints cream only,
   on slit px; startle / worried / wince / neutral glints, none on a blink).
 - **Face:** normal chibi (no stern option), emerald eyes; blush only on happy (light) and petted (strong).
 - **q34 owner rules:** the camail wraps the near jaw and tucks under the chin, so the facing contour never steps out
   and steps in ≤ 1 px per row with the visor up and down (head + visor composite tested); head ≤ torso + 4 px, steady.
+- **Round-1 deviations:** the hem scallop uses tone 2, not tone 1 (the silver slots map mask tones to 0 · 2 · 3 · 4 ·
+  5 · 6, and tone 2 reads on `#1b1f2a`); the resting hand is a shared rig pose, so the sword moved 1 px out instead of
+  the hand moving down (the guard was hidden under the faulds, not the hand).
 - **Open for the art director:** the q34 visor has no forward beak (the contour rule forbids a protrusion), so the
   pig-face reads from the front; emerald eyes vs ronin's jade eyes; mail checker density at 1×.
