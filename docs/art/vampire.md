@@ -208,6 +208,5 @@ Files: `assets-src/characters/vampire/{body,face,masks}.ts`; tests `tests/unit/a
 - **q34:** facing contour holds col 25 to the mouth, then steps in 1 px per row to a 1-px chin (the spike's jaw stepped
   2 px); head steady against the hip on walk / turn.
 - **Deferred to M1** (with his reactions): the cloak-hide pose, the bow, the light-theme recoil (§5). Not built.
-- Not done from AD round 1: note 7 (taper the cloak front edge 1 px over the bottom third, hem width kept) needs a new
-  `widths` shape in the shared `rig/cloak.ts` (`column` and `bell` cannot narrow only the bottom third) — out of the
-  pack's scope. `cloth_ochre` stays (note 8; witch also uses it on broad stockings vs his small accents).
+- AD round 1 note 7 done in MA-69: `Cloak.widths.taper: 1` narrows the front edge 1 px over the bottom third, hem
+  width kept. `cloth_ochre` stays (note 8; witch also uses it on broad stockings vs his small accents).

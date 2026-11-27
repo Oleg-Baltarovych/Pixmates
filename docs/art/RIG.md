@@ -165,7 +165,7 @@ offsets per joint). A body never forks an animation; proportions go through `twe
 | field | effect |
 |---|---|
 | `Body.scarf` / `BodyView.scarf` (`ScarfEnds`) | required with `neckAcc: 'scarf'` (build throws without). Two 2-segment chains, 2 px wide, part 12, hung from `at` (neck joint; front under the knot, q34 at the nape trailing); `lengths` = drawn length incl. the stroke cap; end points capped at chest row + `maxBelowChest` (default `SCARF_MAX_BELOW_CHEST` 5); q34 ends trail ≤ `maxTrail` px (default `SCARF_MAX_TRAIL` 6) and draw over the near arm. Knot + band = the authored neck_acc mask |
-| `Body.foxTail` (`FoxTail`) | per-body fox tail (default = dummy-b's). `front`: verlet chain from the back joint, `radii.length − 1` segments of `length`, `gravity` sets the rest direction, `bend` px per point (S-curve, tip curl), `root` (default [1, 1]), `shine` = lit stroke (tail shade 5) on the upper-left edge. `q34`: fixed centre line `points` (trailing = −x), tip swings against `hairDx`. Pale tip = second stroke over the last `tipRadii.length` points |
+| `Body.foxTail` (`FoxTail`) | per-body fox tail (default = dummy-b's). `front`: verlet chain from the back joint, `radii.length − 1` segments of `length`, `gravity` sets the rest direction, `bend` px per point (S-curve, tip curl), `root` (default [1, 1]), `shine` = lit stroke (tail shade 5) on the upper-left edge. `q34`: fixed centre line `points` (trailing = −x), tip swings against `hairDx`. Pale tip = second stroke over the last `tipRadii.length` points. `ribbon {ramp, shade}` (MA-69, kitsune): a 1-row, 3-px band across the tube just before the pale tip (both views, over the shine, hidden when tucked); on squash/stretch frames it slides down the line off the waist rows the squash drops/repeats |
 | `Body.shorts` {shade, raise} | tailored shorts (`hem: 'shorts'`): clothAlt shade (0..5, default 3), hem raised `raise` rows; front adds a 1-px notch between the legs + 1-px outward flare at each leg hem |
 | `Body.shinWrap` {row, shade?} | darker legs-ramp row `row` rows above each foot joint (shade 0..5, default `WRAP_SHADE` 3), leg px only (near and far) |
 | `Body.sash` {rows, knot, dy?} + `BodyView.sashKnot` | waist sash band `rows` high (default 1), `dy` whole rows lower (0..`SASH_DY_MAX` 3) + knot mask on the near hip (from the hip joint, trim part 8); q34 knot per view, default none |
@@ -184,6 +184,8 @@ offsets per joint). A body never forks an animation; proportions go through `twe
 | `masks.headAccRising` / `BodyView.masks.headAccRising` (MA-29a, R-W3) | alternate head-accessory mask (same size as `headAcc`) stamped on frames whose drawn head (fx anchor after squash) is higher than on the previous frame (loops wrap, one-shot frame 0 never): a hat tip droops 1 row while rising, back to rest on landing; no chain, deterministic |
 | `Body.skirtRaise` (MA-29a) | skirt hem raised whole rows (0..`SKIRT_RAISE_MAX` 3, `hem: 'skirt'` only) so more legwear shows |
 | `Body.legRim` (MA-29a) | whole legs-ramp shade on each leg's lit (screen-left) edge px (left neighbour not a leg px); shin wraps paint over it |
+| `Body.greaves` {lit, mid, shade, spec} (MA-69, knight) | final pass (after rim) over the visible procedural leg px: per row of each leg the contour px stay, inner px run `lit` → `mid` → `shade` from screen-left, one `spec` px per leg (first inner px of its top visible row); shades may reach a 7-tone ramp's top |
+| `head.hemTones` {rows, slot, tones} (MA-69, knight) | the head mask's last `rows` rows paint `slot` px with `tones` (`StampOptions.toneRows`): a mail hem reaches a ramp step the slot's six tones skip, the rest of the head keeps the outfit tones |
 | `BodyView.hairBackCuts` {rows, nape?} (MA-29a, q34) | clump tips on the trailing back-hair edge: per row (offset from the head joint, 0..24, ≤ 4 rows) the outermost hair px is cleared and the row above gets a 1-px outward flick; `nape` (offset from the neck) darkens back-hair px touching the torso/collar to shade 0 |
 | `Body.cloak` (MA-29b, R1) | required with `back: 'cloak'`; see «Cloak slot» |
 | `Body.prop` / `BodyView.prop` (MA-29b, R2) | authored mask on the hip joint (part 15) stamped only over empty / cloak / tail / hair / prop px (depth behindTorso: under torso, hem, legs, arms); optional `dangle` sub-mask offset ±1 px by hip lag + `hairDx`; q34 poses need `views.q34.prop` |
@@ -201,8 +203,8 @@ offsets per joint). A body never forks an animation; proportions go through `twe
 
 ### Cloak slot (`back: 'cloak'`, `rig/cloak.ts`; ronin, vampire later)
 One general panel behind everything (incl. the q34 far arm/leg), both views. `Cloak`: `ramp`, `shade`, `litShade` (screen-left
-edge column), `top` (rows from the shoulder line), `hemRow` (rows below the hip), `widths {top, hem, shape: bell|column}`
-(half-widths), `shoulder: square|round`, `hem {lobes (0 = straight), cornerDrop, curl, curlShade}`, `bands [{row, shade}]`
+edge column), `top` (rows from the shoulder line), `hemRow` (rows below the hip), `widths {top, hem, shape: bell|column, taper?}`
+(half-widths; `taper` (MA-69, vampire, front only): bottom-third rows above the hem row sit `taper` px in per side, the hem row keeps its width, the lining keeps its inset), `shoulder: square|round`, `hem {lobes (0 = straight), cornerDrop, curl, curlShade}`, `bands [{row, shade}]`
 (rows above the hem, ends inset 2 px, may be empty), `dither {rows, shades}` (cloak-local, interior px only), `lining {ramp,
 shade, corner [w, h]}` + `flareRows` (extra lining rows on hairLift / squash), `maxTrail` (default `CLOAK_MAX_TRAIL` 2). Per frame:
 front hem sways with hip lag + `hairDx` (≤ maxTrail, sheared from 0 at the top), lifts 1 on `hairLift`, widens by squash; seated

@@ -88,8 +88,9 @@ Code `assets-src/characters/knight/{body,face,masks}.ts` (spike variant scaffold
 - **Face:** normal chibi (no stern option), emerald eyes; blush only on happy (light) and petted (strong).
 - **q34 owner rules:** the camail wraps the near jaw and tucks under the chin, so the facing contour never steps out
   and steps in ≤ 1 px per row with the visor up and down (head + visor composite tested); head ≤ torso + 4 px, steady.
-- **Round-1 deviations:** the hem scallop uses tone 2, not tone 1 (the silver slots map mask tones to 0 · 2 · 3 · 4 ·
-  5 · 6, and tone 2 reads on `#1b1f2a`); the resting hand is a shared rig pose, so the sword moved 1 px out instead of
+- **Round-1 deviations:** the front hem scallop now reaches tone 1 (MA-69, `head.hemTones`; the helmet keeps the
+  0 · 2 · 3 · 4 · 5 · 6 slot map); greaves via `Body.greaves` 5 · 4 · 3 + one tone-6 px per leg, breastplate bottom row
+  softened (MA-69); the resting hand is a shared rig pose, so the sword moved 1 px out instead of
   the hand moving down (the guard was hidden under the faulds, not the hand).
 - **Open for the art director:** the q34 visor has no forward beak (the contour rule forbids a protrusion), so the
   pig-face reads from the front; emerald eyes vs ronin's jade eyes; mail checker density at 1×.
