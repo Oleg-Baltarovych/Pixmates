@@ -6,7 +6,7 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PACKS } from '../../../assets-src/packs.ts';
-import { CLICK_REACTIONS, DEFAULT_CHARACTER, type CoreAnimation } from '../../../src/content/stage.ts';
+import { CLICK_REACTIONS, DEFAULT_CHARACTER, DEV_ANIM_CYCLE, type CoreAnimation } from '../../../src/content/stage.ts';
 import { loadRegistry } from '../../../src/main/characters/registry.ts';
 import { builtinPackId, facingOf, resolveAnim, type Manifest } from '../../../src/shared/pack.ts';
 import { ROOT } from '../../../tools/lib/sprites.ts';
@@ -46,6 +46,7 @@ describe('built-in pack content integrity (MA-32)', () => {
     it('every animation resolves to itself and every animation src/content asks for exists', () => {
       for (const name of Object.keys(m.animations)) expect(resolveAnim(name, m)).toBe(name);
       for (const name of [...CORE_ANIMS, ...CLICK_REACTIONS]) expect(has(m, name), name).toBe(true);
+      for (const { anim } of DEV_ANIM_CYCLE) expect(has(m, anim), `dev cycle ${anim}`).toBe(true);
     });
 
     it('every fallback targets an animation of the pack', () => {

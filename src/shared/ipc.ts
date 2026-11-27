@@ -35,7 +35,7 @@ const stageAnimation = z
       .strict(),
     /** Per-animation pivot (manifest `anchor`, e.g. the sit_edge seat); the stage renderer applies it from M1. */
     anchor: unitPoint.optional(),
-    /** Authored facing (manifest `facing`, ADR 010); absent = `front`. The renderer mirrors from M1. */
+    /** Authored facing (manifest `facing`, ADR 010); absent = `front`. The dev cycle mirrors it (MA-33); M1 travel too. */
     facing: facingSchema.optional(),
   })
   .strict();
@@ -113,7 +113,7 @@ export const IPC = {
     payload: z
       .object({
         entries: z.array(stageCharacter).max(LIMITS.stageCharactersMax),
-        /** Dev: cycle idle ×3 → walk ×2 → happy ×1 (art lineup / --anim-cycle). */
+        /** Dev: play `DEV_ANIM_CYCLE` (content/stage.ts; art lineup / --anim-cycle). */
         animCycle: z.boolean(),
       })
       .strict(),

@@ -1,5 +1,5 @@
 // Stage numbers (SPEC v1.4 §3.3, owner decision D-10). Tuned by the owner by eye; logic never hard-codes them.
-import type { BUILTIN_PREFIX } from '../shared/pack.ts';
+import type { BUILTIN_PREFIX, Facing } from '../shared/pack.ts';
 
 /**
  * Size presets as target on-screen height in DIP (M ≈ 3 cm on a 15.6" 1080p laptop at 125 %). ADR 012: with
@@ -33,6 +33,26 @@ export const DEFAULT_CHARACTER = 'pixmates.maid' satisfies `${typeof BUILTIN_PRE
  * integer sprite scale on screen).
  */
 export const WALK_TRAVEL = { pxPerFrame: 2, fps: 10, pxPerSecond: 20 } as const;
+
+/** One step of the dev cycle: play `anim` for `loops` loops (a non-looping anim counts held ticks on its last frame). */
+export interface DevCycleStep {
+  readonly anim: string;
+  readonly loops: number;
+  /** Screen direction for a sided (q34) animation; the stage mirrors when it differs from the authored `facing`. */
+  readonly face?: Exclude<Facing, 'front'>;
+}
+
+/**
+ * Dev cycle (`--art-lineup` / `--anim-cycle`, plan MA-33 travel preview), in place: idle, turn, walk right, walk
+ * mirrored left, happy. `turn` is 2 frames at 10 fps; 3 counts hold its last frame ≈ 0.2 s more.
+ */
+export const DEV_ANIM_CYCLE: readonly DevCycleStep[] = [
+  { anim: 'idle_a', loops: 3 },
+  { anim: 'turn', loops: 3, face: 'right' },
+  { anim: 'walk', loops: 2, face: 'right' },
+  { anim: 'walk', loops: 2, face: 'left' },
+  { anim: 'happy', loops: 1 },
+];
 
 /** Animations the M0 core asks for until M1 behaviour (names from the built-in set, ADR 010). */
 export type CoreAnimation = 'idle_a' | 'drag' | 'happy' | 'wave';

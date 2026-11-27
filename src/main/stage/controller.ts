@@ -23,7 +23,8 @@ export function stageAnimation(a: Manifest['animations'][string]): StageAnimatio
     fps: a.fps,
     loop: a.loop,
     origin: a.origin ?? { x: 0, y: 0 },
-    // Per-animation pivot (sit_edge seat) and authored facing (ADR 010); the renderer ignores both until M1.
+    // Per-animation pivot (sit_edge seat) and authored facing (ADR 010); the renderer mirrors facing in the dev cycle
+    // (MA-33) and applies the pivot from M1.
     ...(a.anchor ? { anchor: a.anchor } : {}),
     ...(a.facing ? { facing: a.facing } : {}),
   };

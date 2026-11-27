@@ -16,6 +16,8 @@ export interface FrameRect {
   readonly y: number;
   readonly w: number;
   readonly h: number;
+  /** Drawn mirrored (left-facing travel): screen column x shows art column w − 1 − x. */
+  readonly mirrored?: boolean;
 }
 
 /**
@@ -36,7 +38,7 @@ export function isOpaqueInFrame(
   const fx = Math.floor((pointX - spriteX) / pixelDip);
   const fy = Math.floor((pointY - spriteY) / pixelDip);
   if (fx < 0 || fy < 0 || fx >= rect.w || fy >= rect.h) return false;
-  const ax = rect.x + fx;
+  const ax = rect.x + (rect.mirrored === true ? rect.w - 1 - fx : fx);
   const ay = rect.y + fy;
   if (ax < 0 || ay < 0 || ax >= mask.width || ay >= mask.height) return false;
   return (mask.alpha[ay * mask.width + ax] ?? 0) >= OPAQUE_ALPHA;

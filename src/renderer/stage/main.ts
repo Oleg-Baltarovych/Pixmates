@@ -4,11 +4,21 @@
 // Pixi ticker runs only while dragging (rules/render.md, SPEC §3.3). Empty entries (no valid pack) → nothing drawn.
 import 'pixi.js/unsafe-eval'; // first: strict CSP has no 'unsafe-eval'; swaps Pixi's generated shader code for static code
 // Named imports only; `skipExtensionImports` below stops Pixi from loading its browser bundle at init.
-import { Application, BufferImageSource, ImageSource, Rectangle, Sprite, Texture, type TextureSource } from 'pixi.js';
-import { CLICK_SLOP_DIP, DRAG_FPS, STAGE_LAYOUT_DIP } from '../../content/stage.ts';
+import {
+  Application,
+  BufferImageSource,
+  groupD8,
+  ImageSource,
+  Rectangle,
+  Sprite,
+  Texture,
+  type TextureSource,
+} from 'pixi.js';
+import { CLICK_SLOP_DIP, DEV_ANIM_CYCLE, DRAG_FPS, STAGE_LAYOUT_DIP, type DevCycleStep } from '../../content/stage.ts';
 import { resolveAnim } from '../../shared/anim.ts';
 import type { PayloadOf } from '../../shared/ipc.ts';
 import { pingMain } from '../shared/ping.ts';
+import { mirrorShiftPx, needsMirror } from './facing.ts';
 import { isOpaqueInFrame, type AlphaMask, type FrameRect } from './hit-test.ts';
 import { labelGlyph } from './label.ts';
 
@@ -36,13 +46,6 @@ if (import.meta.env.DEV) {
   });
 }
 
-/** Dev cycle (art lineup / --anim-cycle): idle ×3 → walk in place ×2 → happy ×1. */
-const CYCLE: readonly (readonly [string, number])[] = [
-  ['idle_a', 3],
-  ['walk', 2],
-  ['happy', 1],
-];
-
 interface Actor {
   readonly id: string;
   readonly entry: Entry;
@@ -50,9 +53,12 @@ interface Actor {
   readonly label: Sprite | undefined;
   readonly mask: AlphaMask;
   readonly textures: ReadonlyMap<string, readonly Texture[]>;
+  /** Mirrored frames of the sided (`facing` right/left) animations, for travel the other way (ADR 010). */
+  readonly mirroredTextures: ReadonlyMap<string, readonly Texture[]>;
   readonly sources: readonly TextureSource[];
   scale: number;
   anim: string;
+  mirrored: boolean;
   frame: number;
   loops: number;
   cycleStep: number;
@@ -110,17 +116,25 @@ async function start(): Promise<void> {
   const pixelDip = (actor: Actor): number => actor.scale / window.devicePixelRatio;
 
   const showFrame = (actor: Actor): void => {
-    const list = actor.textures.get(actor.anim);
+    const list = (actor.mirrored ? actor.mirroredTextures : actor.textures).get(actor.anim);
     const texture = list?.[actor.frame % list.length];
     if (!texture) return;
     actor.sprite.texture = texture;
     const origin = actor.entry.animations[actor.anim]?.origin ?? { x: 0, y: 0 };
     const { w, h } = actor.entry.frameSize;
-    actor.rect = { x: origin.x + (actor.frame % list.length) * w, y: origin.y, w, h };
+    actor.rect = { x: origin.x + (actor.frame % list.length) * w, y: origin.y, w, h, mirrored: actor.mirrored };
   };
 
-  const play = (actor: Actor, wanted: string): void => {
+  /** Play `wanted` facing `face` (a sided animation authored the other way is mirrored around its foot pivot). */
+  const play = (actor: Actor, wanted: string, face?: DevCycleStep['face']): void => {
     actor.anim = resolveAnim(wanted, actor.entry) ?? actor.anim;
+    const anim = actor.entry.animations[actor.anim];
+    const mirrored = needsMirror(anim?.facing, face);
+    if (mirrored !== actor.mirrored) {
+      const shift = mirrorShiftPx(anim?.anchor?.x ?? actor.entry.anchor.x, actor.entry.frameSize.w) * pixelDip(actor);
+      actor.sprite.x = snap(actor.sprite.x + (mirrored ? shift : -shift));
+      actor.mirrored = mirrored;
+    }
     actor.frame = 0;
     actor.loops = 0;
     showFrame(actor);
@@ -134,10 +148,11 @@ async function start(): Promise<void> {
       if (actor.frame >= anim.frames) {
         actor.frame = anim.loop ? 0 : anim.frames - 1;
         actor.loops++;
-        const step = CYCLE[actor.cycleStep];
-        if (latest.animCycle && step && actor.loops >= step[1]) {
-          actor.cycleStep = (actor.cycleStep + 1) % CYCLE.length;
-          play(actor, CYCLE[actor.cycleStep]?.[0] ?? 'idle_a');
+        const step = DEV_ANIM_CYCLE[actor.cycleStep];
+        if (latest.animCycle && step && actor.loops >= step.loops) {
+          actor.cycleStep = (actor.cycleStep + 1) % DEV_ANIM_CYCLE.length;
+          const next = DEV_ANIM_CYCLE[actor.cycleStep];
+          play(actor, next?.anim ?? 'idle_a', next?.face);
         }
       }
       showFrame(actor);
@@ -146,8 +161,11 @@ async function start(): Promise<void> {
     }, 1000 / anim.fps);
   };
 
-  const destroyGpu = (textures: ReadonlyMap<string, readonly Texture[]>, sources: readonly TextureSource[]): void => {
-    for (const list of textures.values()) for (const t of list) t.destroy();
+  const destroyGpu = (
+    textures: readonly ReadonlyMap<string, readonly Texture[]>[],
+    sources: readonly TextureSource[],
+  ): void => {
+    for (const map of textures) for (const list of map.values()) for (const t of list) t.destroy();
     for (const source of sources) source.destroy();
   };
 
@@ -156,7 +174,7 @@ async function start(): Promise<void> {
       clearTimeout(actor.timer);
       actor.sprite.destroy();
       actor.label?.destroy();
-      destroyGpu(actor.textures, actor.sources);
+      destroyGpu([actor.textures, actor.mirroredTextures], actor.sources);
     }
     actors = [];
   };
@@ -164,12 +182,13 @@ async function start(): Promise<void> {
   const entryActor = async (entry: Entry): Promise<Actor> => {
     const { bitmap, mask } = await loadAtlas(entry.atlasUrl);
     const textures = new Map<string, Texture[]>();
+    const mirroredTextures = new Map<string, Texture[]>();
     const sources: TextureSource[] = [];
     try {
-      return buildActor(entry, bitmap, mask, textures, sources);
+      return buildActor(entry, bitmap, mask, textures, mirroredTextures, sources);
     } catch (error) {
       // Partial build: free whatever was created before the throw, and the atlas bitmap.
-      destroyGpu(textures, sources);
+      destroyGpu([textures, mirroredTextures], sources);
       bitmap.close();
       throw error;
     }
@@ -180,12 +199,15 @@ async function start(): Promise<void> {
     bitmap: ImageBitmap,
     mask: AlphaMask,
     textures: Map<string, Texture[]>,
+    mirroredTextures: Map<string, Texture[]>,
     sources: TextureSource[],
   ): Actor => {
     const source = new ImageSource({ resource: bitmap, scaleMode: 'nearest', autoGenerateMipmaps: false });
     sources.push(source);
     for (const [name, anim] of Object.entries(entry.animations)) {
+      const sided = anim.facing !== undefined && anim.facing !== 'front';
       const list: Texture[] = [];
+      const mirroredList: Texture[] = [];
       for (let f = 0; f < anim.frames; f++) {
         const frame = new Rectangle(
           anim.origin.x + f * entry.frameSize.w,
@@ -194,8 +216,11 @@ async function start(): Promise<void> {
           entry.frameSize.h,
         );
         list.push(new Texture({ source, frame }));
+        // Mirrored about the frame centre; `play` shifts the sprite so the flip is around the foot pivot.
+        if (sided) mirroredList.push(new Texture({ source, frame, rotate: groupD8.MIRROR_HORIZONTAL }));
       }
       textures.set(name, list);
+      if (sided) mirroredTextures.set(name, mirroredList);
     }
     let label: Sprite | undefined;
     if (entry.label !== undefined) {
@@ -218,16 +243,19 @@ async function start(): Promise<void> {
       label,
       mask,
       textures,
+      mirroredTextures,
       sources,
       scale: entry.scale,
       anim: 'idle_a',
+      mirrored: false,
       frame: 0,
       loops: 0,
       cycleStep: 0,
       timer: undefined,
       rect: { x: 0, y: 0, w: entry.frameSize.w, h: entry.frameSize.h },
     };
-    play(actor, latest.animCycle ? (CYCLE[0]?.[0] ?? 'idle_a') : 'idle_a');
+    const first = latest.animCycle ? DEV_ANIM_CYCLE[0] : undefined;
+    play(actor, first?.anim ?? 'idle_a', first?.face);
     return actor;
   };
 

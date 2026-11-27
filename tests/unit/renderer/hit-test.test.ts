@@ -33,6 +33,18 @@ describe('isOpaqueInFrame', () => {
     expect(isOpaqueInFrame(mask, frame1, 0, 0, 1, -0.5, 0.5)).toBe(false);
     expect(isOpaqueInFrame(mask, frame1, 0, 0, 1, 2.5, 1.5)).toBe(false);
   });
+
+  it('reads a mirrored frame right to left (dev travel preview, MA-33)', () => {
+    // Mirrored, screen column x shows art column w - 1 - x: art (1,0) appears at screen column 2, art (2,1) at 1.
+    const mirrored = { ...whole, mirrored: true };
+    expect(isOpaqueInFrame(mask, mirrored, 0, 0, 1, 2.5, 0.5)).toBe(true);
+    expect(isOpaqueInFrame(mask, mirrored, 0, 0, 1, 1.5, 0.5)).toBe(false);
+    expect(isOpaqueInFrame(mask, mirrored, 0, 0, 1, 1.5, 1.5)).toBe(true);
+    expect(isOpaqueInFrame(mask, mirrored, 0, 0, 1, 2.5, 1.5)).toBe(false);
+    // The faint (3,0) shows at screen column 0 and still does not count; outside the frame stays transparent.
+    expect(isOpaqueInFrame(mask, mirrored, 0, 0, 1, 0.5, 0.5)).toBe(false);
+    expect(isOpaqueInFrame(mask, mirrored, 0, 0, 1, 4.5, 0.5)).toBe(false);
+  });
 });
 
 describe('click-through on a real frame (MA-30)', () => {
