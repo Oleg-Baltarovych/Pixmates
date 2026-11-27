@@ -186,6 +186,8 @@ offsets per joint). A body never forks an animation; proportions go through `twe
 | `headAccRising` view rule | never swaps on a frame whose body or head view differs from the previous frame (turn f0 → f1) |
 | `Body.skirtLace` (MA-29b) | false = no petticoat lace; the plain cloth runs to the same hem length |
 | `hemLiftOf(body, p)` | pose `hem.lift` + `skirtRaise` (skirt) / `shorts.raise`; used by skirt, shorts and the seated skirt knee; sum ≤ `HEM_LIFT_MAX` 5 |
+| `Body.visor` {up, upQ34?, down, downQ34?, slit?, slitQ34?, downIn} (MA-67, D-22) | movable face cover (knight's helmet visor), part 16, all masks from the head joint (author in head-mask coordinates). `downIn` = animation → `'all'` or frame indices (`visorIsDown`, `rig/views.ts`): on those frames no face part is stamped, `down` covers every skin px of the head mask and `slit[expression]` adds the eye-slit glints; on every other frame `up` is stamped over the helmet and must not cover a face part. q34 masks are required when q34 poses show the head; never together with `Body.mask`. Tests `rig-visor.test.ts` |
+| `Body.gauntlets` {ramp} (MA-67, D-22) | every arm-end px on the skin ramp (procedural hands, think chin fists) moves to `ramp` at the same shade, locked (`gauntletTones`) |
 | `Body.sleeve`, `Body.chinHand`, `Body.apron` (+ `ties`), `hornOutline`, `BodyView.{sleeveHairLine, hideFarShoulder, masks.hairFar}` | see «Arm over torso», «Views» |
 
 ### Cloak slot (`back: 'cloak'`, `rig/cloak.ts`; ronin, vampire later)

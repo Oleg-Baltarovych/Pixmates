@@ -1,6 +1,6 @@
 // View helpers (ADR 010, RIG.md «Views»): per-frame body/head view, manifest facing, view use per pose set.
 import type { Facing } from '../lib/types.ts';
-import type { RigAnim, View } from './types.ts';
+import type { RigAnim, View, Visor } from './types.ts';
 
 /** Body view of a frame (the frame is the single source of truth; default front). */
 export const bodyViewOf = (anim: RigAnim, frame: number): View => anim.frames[frame]?.view ?? 'front';
@@ -16,3 +16,8 @@ export const headViewOf = (anim: RigAnim, frame: number): View =>
 /** Does any frame of these animations use the view (body or head)? */
 export const usesView = (anims: readonly RigAnim[], view: View): boolean =>
   anims.some((a) => a.frames.some((_, i) => bodyViewOf(a, i) === view || headViewOf(a, i) === view));
+/** Is the visor (`Body.visor`, D-22) lowered on this frame of the named animation? */
+export const visorIsDown = (visor: Visor, anim: string, frame: number): boolean => {
+  const d = visor.downIn[anim];
+  return d === 'all' || (d !== undefined && d.includes(frame));
+};

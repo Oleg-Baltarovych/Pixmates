@@ -62,6 +62,7 @@ import {
   cutSpadeNotches,
   farLegGap,
   fistKindOf,
+  gauntletTones,
   handLineOverTies,
   hairBackCuts,
   handShadows,
@@ -89,7 +90,7 @@ import {
 import { SOFT as style } from './style.ts';
 import type { Body, BodyView, JointMap, PoseFrame, RigAnim, ScarfEnds, View } from './types.ts';
 import { validateBody } from './validate.ts';
-import { animFacing, bodyViewOf, headViewOf } from './views.ts';
+import { animFacing, bodyViewOf, headViewOf, visorIsDown } from './views.ts';
 
 export { ARM_LABEL } from './part-ids.ts';
 export { SCARF_MAX_BELOW_CHEST, SCARF_MAX_TRAIL, q34FoxTail } from './chains.ts';
@@ -514,9 +515,21 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     const mm = body.mask;
     const maskUp = mm !== undefined && !mm.downExpressions.includes(p.face);
     const mouths = new Set(Object.values(headParts.face.mouths));
-    for (const fp of expressionParts(headParts.face, p.face, armsUp, p.irisDx === 1, layout.irisHalf)) {
+    // Visor (D-22): lowered = no face part, the visor covers the face; raised = the face shows under the lifted visor.
+    const vz = body.visor;
+    const visorDown = vz !== undefined && visorIsDown(vz, anim.name, frame);
+    const faceParts = visorDown ? [] : expressionParts(headParts.face, p.face, armsUp, p.irisDx === 1, layout.irisHalf);
+    for (const fp of faceParts) {
       if (maskUp && mouths.has(fp)) continue;
       stamp(fp.mask, j.face[0] + fp.at[0], j.face[1] + fp.at[1], 3.6, MAT.skin, MAT.hair);
+    }
+    if (vz) {
+      const qHead = headViewOf(anim, frame) === 'q34';
+      const placed = visorDown ? (qHead ? vz.downQ34 : vz.down) : qHead ? vz.upQ34 : vz.up;
+      const slit = visorDown ? (qHead ? vz.slitQ34 : vz.slit)?.[p.face] : undefined;
+      for (const m of [placed, slit]) {
+        if (m) stamp(m.mask, j.head[0] + m.at[0], j.head[1] + m.at[1], 3.7, MAT.hair, undefined, PART_ID.mask);
+      }
     }
     if (mm) {
       const qHead = headViewOf(anim, frame) === 'q34';
@@ -592,6 +605,11 @@ export function createRigRenderer(body: Body, frameH: number = layoutOf().frameH
     // 3. Authored masks, then the opt-in locked tone passes over legs.
     const locked: Locked = new Map();
     const { tieAt, hairFarPx } = stampAuthored(buf, anim, frame, p, locked);
+    if (body.gauntlets) {
+      const g = body.gauntlets.ramp;
+      const ramp = { id: ctx.palette.rampNames.indexOf(g), steps: ctx.palette.ramps.get(g)?.length ?? 1 };
+      gauntletTones(buf, ctx.palette.rampNames.indexOf(body.outfit.skin.ramp), ramp, locked);
+    }
     // Cloak tones after the masks (a prop over the cloak can leave a 1-px cloak sliver, which is cleared).
     const cloakGeom = cloakOf(anim, frame);
     if (cloakGeom && body.cloak) {

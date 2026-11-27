@@ -384,6 +384,23 @@ export interface MouthMask {
   readonly downExpressions: readonly ExpressionId[];
 }
 
+/**
+ * Movable face cover (D-22, ART-BIBLE §11.11; the knight's helmet visor), lowered or raised per animation frame.
+ * All masks hang from the head joint (author them in head-mask coordinates: `at` = the head's `at`). Raised (`up`):
+ * stamped over the helmet, the face shows. Lowered (`down`): no face part is stamped, the mask covers every skin px
+ * of the head mask and `slit` (optional, per expression) adds the eye-slit glints that carry the emotion. Part id 16.
+ */
+export interface Visor {
+  readonly up: PlacedMask;
+  readonly upQ34?: PlacedMask;
+  readonly down: PlacedMask;
+  readonly downQ34?: PlacedMask;
+  readonly slit?: Readonly<Partial<Record<ExpressionId, PlacedMask>>>;
+  readonly slitQ34?: Readonly<Partial<Record<ExpressionId, PlacedMask>>>;
+  /** Animations whose frames show the visor lowered: every frame, or the listed frame indices. */
+  readonly downIn: Readonly<Record<string, 'all' | readonly number[]>>;
+}
+
 export interface Body {
   /** Pack id (`pixmates.<id>` for built-ins, `rig-dummy-*` for test bodies). */
   readonly id: string;
@@ -521,6 +538,13 @@ export interface Body {
   readonly prop?: Prop;
   /** Mouth mask slot (MA-63); unset = no mask. */
   readonly mask?: MouthMask;
+  /** Movable visor (D-22); unset = no visor. A body uses `mask` or `visor`, never both. */
+  readonly visor?: Visor;
+  /**
+   * Opt-in (D-22): gauntlets — both hands (procedural hands and the think chin fists) take this ramp instead of the
+   * skin ramp, same shades (final, locked).
+   */
+  readonly gauntlets?: { readonly ramp: RampName };
   /**
    * Armour opt-ins (MA-65, RIG.md «D-20»; unset = byte-identical). `torsoMask`: an authored torso overlay (dō plates)
    * from the chest joint, part torso, never over an arm. `tassets`: authored hip plates (kusazuri) from the hip joint

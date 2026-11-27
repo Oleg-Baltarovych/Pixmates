@@ -11,7 +11,7 @@ import { layoutOf } from './layout.ts';
 import { BREATH_GLOW, dressShadeOf, HEM_LIFT_MAX, hemLiftOf, skirtRampOf } from './chains.ts';
 import { EXPRESSIONS, Q34_EXPRESSIONS, validateFace, type ExpressionId, type ViewFaceLibrary } from './face.ts';
 import { FISTS, fistKindOf } from './passes.ts';
-import type { Body, BodyView, PlacedMask, RigAnim, View } from './types.ts';
+import type { Body, BodyView, PlacedMask, RigAnim, View, Visor } from './types.ts';
 import { headViewOf, usesView } from './views.ts';
 
 /** Highest index of a six-tone ramp / swatch (shade opt-ins are 0..MAX_SHADE). */
@@ -72,8 +72,13 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
       ['q34/prop', q34.prop?.mask],
       ['q34/prop.dangle', q34.prop?.dangle?.mask],
       ['q34/prop.hilt', q34.prop?.hilt?.mask],
+      ['q34/visor.up', body.visor?.upQ34?.mask],
+      ['q34/visor.down', body.visor?.downQ34?.mask],
+      ...Object.entries(body.visor?.slitQ34 ?? {}).map(([e, m]): [string, Mask] => [`q34/visor.slit.${e}`, m.mask]),
     );
   }
+  masks.push(['visor.up', body.visor?.up.mask], ['visor.down', body.visor?.down.mask]);
+  for (const [e, m] of Object.entries(body.visor?.slit ?? {})) masks.push([`visor.slit.${e}`, m.mask]);
   masks.push(['chinFist', FISTS[fistKindOf(body)]]);
   for (const [name, mask] of masks) if (mask) checkMask(mask, `${body.id}/${name}`);
   const partProblems: string[] = [];
@@ -84,6 +89,7 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
     ['cuff', body.cuff?.ramp],
     ['cloak', body.cloak?.ramp],
     ['cloak.lining', body.cloak?.lining?.ramp],
+    ['gauntlets', body.gauntlets?.ramp],
     ...outlines.map((o, i): [string, RampName] => [`silhouetteOutline[${String(i)}]`, o.ramp]),
   ];
   for (const [name, ramp] of ramps) {
@@ -198,6 +204,7 @@ export function validateBody(body: Body, anims: readonly RigAnim[], frameH: numb
     });
   }
   problems.push(...mouthMaskProblems(body, usesQ34, faceAtOf));
+  problems.push(...visorProblems(body, anims, usesQ34, faceAtOf));
   if (problems.length > 0) throw new Error(problems.join('\n'));
   if (body.variants.back === 'spade_tail' && !body.masks.spade) throw new Error(`${body.id}: spade_tail needs a spade`);
 }
@@ -448,5 +455,80 @@ function mouthMaskProblems(
       if (look(a) === look(b)) problems.push(`${id}: mask up — ${a} and ${b} must differ in eyes or brows`);
     }
   });
+  return problems;
+}
+
+/** Opaque px of a placed mask, as "x,y" keys relative to its joint. */
+const placedPx = (m: PlacedMask): Set<string> => {
+  const out = new Set<string>();
+  m.mask.forEach((row, y) => {
+    row.split('').forEach((ch, x) => {
+      if (isPx(ch)) out.add(`${String(m.at[0] + x)},${String(m.at[1] + y)}`);
+    });
+  });
+  return out;
+};
+
+/**
+ * Visor rules (D-22, ART-BIBLE §11.11) per view whose head the poses use: never with a mouth mask; `downIn` names
+ * animations of the pack and their frames; the lowered visor covers every skin px of the head mask; the raised visor
+ * covers no face-part px; every slit glint lies on the lowered visor.
+ */
+function visorProblems(
+  body: Body,
+  anims: readonly RigAnim[],
+  usesQ34: boolean,
+  faceAtOf: (view: View, head: Body['head']) => Point,
+): string[] {
+  const vz = body.visor;
+  if (!vz) return [];
+  const id = body.id;
+  const problems: string[] = [];
+  if (body.mask) problems.push(`${id}: visor and mask are both set (one face cover per body)`);
+  for (const [name, frames] of Object.entries(vz.downIn)) {
+    const a = anims.find((x) => x.name === name);
+    if (!a) problems.push(`${id}: visor.downIn names "${name}", not an animation of the pack`);
+    else if (frames !== 'all' && frames.some((f) => !Number.isInteger(f) || f < 0 || f >= a.frames.length)) {
+      problems.push(`${id}: visor.downIn.${name} lists a frame outside 0..${String(a.frames.length - 1)}`);
+    }
+  }
+  const q34 = body.views?.q34;
+  const views: [View, Body['head'], ViewFaceLibrary, PlacedMask | undefined, PlacedMask | undefined, Visor['slit']][] =
+    [['front', body.head, body.face, vz.up, vz.down, vz.slit]];
+  if (usesQ34 && q34) views.push(['q34', q34.head, q34.face, vz.upQ34, vz.downQ34, vz.slitQ34]);
+  if (usesQ34 && (!vz.upQ34 || !vz.downQ34)) {
+    problems.push(`${id}: visor.upQ34 and visor.downQ34 are required when q34 poses show the head`);
+  }
+  for (const [view, head, lib, up, down, slit] of views) {
+    const tag = view === 'front' ? 'visor' : 'visor (q34)';
+    if (down) {
+      const covered = placedPx(down);
+      const skin = [...placedPx(head)].filter((k) => {
+        const [x = 0, y = 0] = k.split(',').map(Number);
+        const ch = head.mask[y - head.at[1]]?.charAt(x - head.at[0]) ?? '';
+        return LEGEND[ch]?.[0] === 'skin' && !covered.has(k);
+      });
+      if (skin.length > 0) problems.push(`${id}: ${tag} down leaves face skin px ${skin[0] ?? ''} uncovered`);
+      for (const [e, m] of Object.entries(slit ?? {})) {
+        if ([...placedPx(m)].some((k) => !covered.has(k))) {
+          problems.push(`${id}: ${tag} slit.${e} has px off the lowered visor`);
+        }
+      }
+    }
+    if (up) {
+      const covered = placedPx(up);
+      const faceAt = faceAtOf(view, head);
+      const parts = [lib.eyes, lib.brows ?? {}, lib.mouths, lib.cheeks].flatMap((g) => Object.entries(g));
+      for (const [name, fp] of parts) {
+        const hit = [
+          ...placedPx({ mask: fp.mask, at: [fp.at[0] + faceAt[0] + head.at[0], fp.at[1] + faceAt[1] + head.at[1]] }),
+        ];
+        if (hit.some((k) => covered.has(k))) {
+          problems.push(`${id}: ${tag} up covers face part "${name}"`);
+          break;
+        }
+      }
+    }
+  }
   return problems;
 }

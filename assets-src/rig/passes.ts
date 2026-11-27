@@ -131,6 +131,26 @@ export const FISTS: Readonly<Record<FistKind, Mask>> = { bare: FIST, long: FIST_
 export const fistKindOf = (body: Body): FistKind =>
   body.variants.sleeves === 'short' ? 'bare' : body.sleeveOverHand ? 'paw' : 'long';
 
+/**
+ * Gauntlets (`Body.gauntlets`, D-22): every arm-end px (hand, chin fist) on the skin ramp moves to `ramp` at the
+ * same shade (clamped to the ramp), locked so later tone passes keep it.
+ */
+export function gauntletTones(
+  buf: IndexBuffer,
+  skinRamp: number,
+  ramp: { readonly id: number; readonly steps: number },
+  locked: Locked,
+): void {
+  const ends = new Set<number>([ARM_IDS_L.end, ARM_IDS_R.end]);
+  for (let i = 0; i < buf.width * buf.height; i++) {
+    if (!ends.has(buf.partId[i] ?? -1) || buf.ramp[i] !== skinRamp) continue;
+    const shade = Math.min(buf.shade[i] ?? 0, ramp.steps - 1);
+    buf.ramp[i] = ramp.id;
+    buf.shade[i] = shade;
+    locked.set(i, [ramp.id, shade]);
+  }
+}
+
 /** think: fists stamped over the bow/bib under the chin (after the head), each with its jaw break above. */
 export function stampChinFists(
   stamp: Stamp,
