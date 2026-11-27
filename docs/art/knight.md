@@ -80,8 +80,8 @@ Code `assets-src/characters/knight/{body,face,masks}.ts` (spike variant scaffold
 - **Face opening:** an arch (top corners rounded in helmet tone 2, the brow shadow row follows it); bottom corners cut
   with the cheek plates curving in. Neutral brows flat (worried / startle keep their angle); iris highlight cream only.
 - **Value rules (round 1):** faulds, greaves and sabatons use tones 2–5, tone 6 on one lit-left corner px per lame,
-  tone 0 only on the outer contour; the two fauld lames sit one tone apart. Camail shaded by rows (lighter top and lit
-  left, darker to the hem and right) with a scalloped hem. Sword: 1-px pommel, 3-px silver crossguard (spec left),
+  tone 0 only on the outer contour; the two fauld lames sit one tone apart. Camail: see «Calm camail» below (was rows
+  lighter top / darker hem with a scalloped hem). Sword: 1-px pommel, 3-px silver crossguard (spec left),
   darker scabbard, silver chape.
 - **Visor rule** = §1 exactly (`VISOR_DOWN_IN`, tested per frame: lowered = no skin / ink / blush px; glints cream only,
   on slit px; startle / worried / wince / neutral glints, none on a blink).
@@ -94,4 +94,11 @@ Code `assets-src/characters/knight/{body,face,masks}.ts` (spike variant scaffold
   the hand moving down (the guard was hidden under the faulds, not the hand).
 - **Sabatons (MA-69 AD re-gate):** `Body.sabatons` {top 4 · 3, max 5, spec 6, seam 2, rim 2} — top row one 4 4 3 run with tone-2 ends, one tone-6 toe-cap px per shoe (front: lit left corner; q34 `SHOE_Q34` toe row now 3 4 4 5 6, the spec on the toe), no rim on the shoes, a tone-2 greave–sabaton seam row, leg rim only on the outer greave edge ≤ 2 px; tests `knight.test.ts` + `rig-optins.test.ts`.
 - **Open for the art director:** the q34 visor has no forward beak (the contour rule forbids a protrusion), so the
-  pig-face reads from the front; emerald eyes vs ronin's jade eyes; mail checker density at 1×.
+  pig-face reads from the front; emerald eyes vs ronin's jade eyes.
+- **Calm camail (owner feedback 2026-11-27: «too much mail under the helmet»):** the plate cheeks run one row lower
+  (head-mask row 25); the mail is 5 mask rows (26–30, was 7: 25–31), flares 1 px past the helmet (28 px, was 30) and in
+  q34 no longer juts behind the helmet. Texture: silver 3 with sparse tone-2 rings on a 4-px lattice offset 2 px per
+  row (never diagonal neighbours, so no 2 × 2 checker), one tone-4 px at the top-left; the hem is one clean silver-1
+  row (`head.hemTones` now on the q34 head too), no scallop. Rendered (with outline): front 32 × 9 → 30 × 7 px, q34
+  24 × 10 → 23 × 7; silver ≥ 4 px in the camail 7–15 → ≤ 2. Tested in `knight.test.ts` («calm camail»); the mail
+  test now counts tone-2 rings set in silver 3 instead of checker blocks.

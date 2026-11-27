@@ -2,11 +2,11 @@
 // ogive skull, an arched face opening framed by a mail camail that drapes onto the shoulders; a hounskull ("pig-face")
 // visor — raised, a solid lit snout tipped up over the brow; lowered, a cone (lit left plane, shaded right plane) with
 // two eye slits in a shallow V, a ridge (lit-left / shade-right value split) that starts ≥ 2 rows below the slits (no T,
-// no cross) and breaths on the shade side. Camail shaded by rows (lighter top / lit left, darker to the hem and right),
-// scalloped hem. Under the plate: mail (camail, a mail hem under the faulds); over it: the emerald sash (baldric + tabard panel).
+// no cross) and breaths on the shade side. Camail (owner 2026-11-27: calm, close to the neck): 5 rows,
+// silver 3 with sparse tone-2 rings (no checker), a clean silver-1 hem row. Under the plate: mail (camail, a mail hem under the faulds); over it: the emerald sash (baldric + tabard panel).
 // Slots: hair = metal_silver (J 0 · j 2 · h 3 · H 4 · y 5 · Y 6), shoe = metal_silver (M 0 · m 2 · b 3 · B 4 · l 5 ·
 // L 6), dress = cloth_emerald (V 0 · v 1 · d 2 · D 3 · w 4 · W 5), horn / trim = hair_umber leather (N 1 · n 2 · o 3 ·
-// O 4 · u 5 · U 6), apron = cloth_cream (slit glints, P 5 · p 4). Mail = a j/h (m/b) checker. Legend:
+// O 4 · u 5 · U 6), apron = cloth_cream (slit glints, P 5 · p 4). Mail hem under the faulds = a m/b checker. Legend:
 // assets-src/lib/mask.ts. Visor masks are in head-mask coordinates (`at` = the head's `at` + offset).
 import type { Mask } from '../../lib/mask.ts';
 import type { PlacedMask, Visor } from '../../rig/types.ts';
@@ -40,13 +40,12 @@ export const HEAD: Mask = [
   '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
   '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
   '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
-  '..JHhHSSSSSSSSSSSSSSSSSsjhjJ..',
-  '..HhHhSSSSSSSSSSSSSSSSSshjhj..',
-  'JhHhHhHSSSSSSSSSSSSSSSshjhjhjJ',
-  'JHhHhHhHHSSSSSSSSSSSshhjhjhjhJ',
-  'jhjhjhjhjhHsssssssshjhjhjhjhjh',
-  'JjhjhjhjhjhjhjhjhjhjjJjJjJjJjJ',
-  '.JjjJjjJjjJjjJjjJjjJjjJjjJjJJ.',
+  '..jyHhSSSSSSSSSSSSSSSSSshhjJ..',
+  '..JhHhSSSSSSSSSSSSSSSSSshhhJ..',
+  '.JhhhhjSSSSSSSSSSSSSSSshhhhhJ.',
+  '.JhhjhhhjSSSSSSSSSSSshhhjhhhJ.',
+  '.JhhhhjhhhhsssssssshhhjhhhjhJ.',
+  '..jjjjjjjjjjjjjjjjjjjjjjjjjj..',
 ];
 /**
  * q34 (facing right): the camail wraps the near jaw (the face opening narrows from the near side toward the chin) and
@@ -78,13 +77,12 @@ export const HEAD_Q34: Mask = [
   '..jyHHhhSSSSSSSSSSSSSSSSSSsJ..',
   '..jyHHhhSSSSSSSSSSSSSSSSSSsJ..',
   '..jyHHhhSSSSSSSSSSSSSSSSSSsJ..',
-  '..JhjhjhjSSSSSSSSSSSSSSSSsJ...',
-  '..hjhjhjhjhSSSSSSSSSSSSSsJ....',
-  '..JhjhjhjhjhjSSSSSSSSSSSsJ....',
-  '.JhjhjhjhjhjhjhSSSSSSSSsJ.....',
-  '.JjhjhjhjhjhjhjhjsssssjhJ.....',
-  '.JhjhjhjhjhjhjhjhjhjhjhJ......',
-  '..JhjhjhjhjhjhjhjhjhjJJ.......',
+  '..jyHHhhhSSSSSSSSSSSSSSSSsJ...',
+  '..JhHhhhhhhSSSSSSSSSSSSSsJ....',
+  '..JhhhjhhhjhhSSSSSSSSSSSsJ....',
+  '..JhjhhhjhhhjhhSSSSSSSSsJ.....',
+  '..JhhhjhhhjhhhjhhssssshhJ.....',
+  '..JjjjjjjjjjjjjjjjjjjjjJ......',
 ];
 
 /** Raised (head-mask rows 10–15): a solid lit triangle (tone 5, tone-6 left edge), a tone-2 underside over the brow, one temple rivet per side. */

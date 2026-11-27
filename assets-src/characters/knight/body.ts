@@ -45,7 +45,7 @@ export const VISOR_DOWN_IN: Visor['downIn'] = {
 
 /** Silver tones for the hair (helmet) and shoe (armour) slots: 0 dark reflection · 2 · 3 · 4 base · 5 · 6 spec. */
 const SILVER = [0, 2, 3, 4, 5, 6] as const;
-/** Camail hem row (front head mask, MA-69): mask tone 1 reaches silver 1 for the scallop; the helmet keeps SILVER. */
+/** Camail hem row (last head-mask row, front and q34): mask tone 1 reaches silver 1 for a clean dark hem; the helmet keeps SILVER. */
 const HEM_SILVER = [0, 1, 3, 4, 5, 6] as const;
 const T6 = [0, 1, 2, 3, 4, 5] as const;
 const T6UP = [1, 2, 3, 4, 5, 6] as const;
@@ -72,7 +72,7 @@ const OUTFIT: Outfit = {
 };
 
 const Q34: BodyView = {
-  head: { mask: HEAD_Q34, at: HEAD_AT, band: 16 },
+  head: { mask: HEAD_Q34, at: HEAD_AT, band: 16, hemTones: { rows: 1, slot: 'hair', tones: HEM_SILVER } },
   face: knightFaceQ34,
   masks: { shoe: SHOE_Q34, hairBack: NO_BACK_HAIR, neckAcc: GORGET_Q34 },
   torsoMask: { mask: CHEST_Q34, at: [-7, 0] },

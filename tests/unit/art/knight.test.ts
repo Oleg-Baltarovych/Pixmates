@@ -103,29 +103,87 @@ describe('costume materials (knight.md §3, ART-BIBLE §12)', () => {
   ])('shows %s (%s) on every frame', (rampName) => {
     for (const [name, f] of allFrames()) expect(count(name, f, rampName), `${name}/${String(f)}`).toBeGreaterThan(0);
   });
-  it('shows mail texture (silver 2/3 checker blocks) on every frame', () => {
+  it('shows mail texture (tone-2 rings set in silver 3) on every frame', () => {
+    // Owner 2026-11-27: the camail is a quiet two-tone lattice, not a checker; the rings still read as mail.
     for (const [name, f] of allFrames()) {
       const s = steps(name, f, 'metal_silver');
-      let blocks = 0;
-      for (let y = 0; y < s.h - 1; y++)
-        for (let x = 0; x < s.w - 1; x++) {
-          const a = s.at(x, y);
-          const b = s.at(x + 1, y);
-          if (
-            (a === 2 || a === 3) &&
-            (b === 2 || b === 3) &&
-            a !== b &&
-            s.at(x + 1, y + 1) === a &&
-            s.at(x, y + 1) === b
-          )
-            blocks++;
-        }
-      expect(blocks, `${name}/${String(f)}`).toBeGreaterThanOrEqual(6);
+      let rings = 0;
+      for (let y = 0; y < s.h; y++)
+        for (let x = 1; x < s.w - 1; x++) if (s.at(x, y) === 2 && s.at(x - 1, y) === 3 && s.at(x + 1, y) === 3) rings++;
+      expect(rings, `${name}/${String(f)}`).toBeGreaterThanOrEqual(4);
     }
   });
   it('never uses the witch’s moss, ronin’s jade or a gold (originality: no witch, no Link cap, no coder mustard)', () => {
     for (const r of ['cloth_moss', 'jade', 'cloth_mustard']) {
       for (const a of ANIMS) expect(count(a.name, 0, r), `${r} ${a.name}`).toBe(0);
+    }
+  });
+});
+
+describe('calm camail (owner 2026-11-27: «too much mail under the helmet»)', () => {
+  /** Head-mask row where the mail starts under the plate cheeks (front and q34). */
+  const CAMAIL_ROW = 26;
+  const cut = (head: NonNullable<typeof HEAD_Q34>) => ({
+    mask: head.mask.slice(0, CAMAIL_ROW),
+    at: head.at,
+    band: head.band,
+  });
+  const noCamail = createRigRenderer({
+    ...KNIGHT,
+    head: cut(KNIGHT.head),
+    views: { q34: { ...Q34, head: cut(HEAD_Q34) } },
+  });
+  const silver = ramp('metal_silver');
+  /** The camail's px per frame: everything the mail rows add to the render (mail + its outline). */
+  const camail = (a: RigAnim, f: number) => {
+    const img = renderer.render(a, f, ctx);
+    const base = noCamail.render(a, f, ctx);
+    const px: { x: number; y: number; tone: number }[] = [];
+    for (let i = 0; i < img.width * img.height; i++)
+      if (rgbAt(img.data, i) !== rgbAt(base.data, i) || img.data[i * 4 + 3] !== base.data[i * 4 + 3])
+        px.push({ x: i % img.width, y: Math.floor(i / img.width), tone: silver.indexOf(rgbAt(img.data, i)) });
+    return px;
+  };
+  const frames = ANIMS.flatMap((a) => a.frames.map((_, f) => [a, f] as const));
+
+  // Before (2026-11-27): front 32 × 9 px with outline, 7–15 px of silver ≥ 4, a 2/3 checker field; q34 24 × 10.
+  it('sits close to the neck: ≤ 30 px wide and ≤ 7 rows (with outline) on every frame', () => {
+    for (const [a, f] of frames) {
+      const px = camail(a, f);
+      expect(px.length, `${a.name}/${String(f)}`).toBeGreaterThan(0);
+      const xs = px.map((p) => p.x);
+      const ys = px.map((p) => p.y);
+      const label = `${a.name}/${String(f)}`;
+      expect(Math.max(...xs) - Math.min(...xs) + 1, label).toBeLessThanOrEqual(30);
+      expect(Math.max(...ys) - Math.min(...ys) + 1, label).toBeLessThanOrEqual(7);
+    }
+  });
+  it('is quiet: no 2 × 2 checker of mail tones 2/3, at most 2 px of silver ≥ 4 (no sparkle)', () => {
+    for (const [a, f] of frames) {
+      const px = camail(a, f);
+      const tone = new Map(px.map((p) => [`${String(p.x)},${String(p.y)}`, p.tone]));
+      const t = (x: number, y: number): number => tone.get(`${String(x)},${String(y)}`) ?? -1;
+      const checker = px.filter(
+        ({ x, y }) =>
+          [2, 3].includes(t(x, y)) &&
+          [2, 3].includes(t(x + 1, y)) &&
+          t(x, y) !== t(x + 1, y) &&
+          t(x + 1, y + 1) === t(x, y) &&
+          t(x, y + 1) === t(x + 1, y),
+      ).length;
+      const label = `${a.name}/${String(f)}`;
+      expect(checker, label).toBe(0);
+      expect(px.filter((p) => p.tone >= 4).length, label).toBeLessThanOrEqual(2);
+    }
+  });
+  it('ends in a clean one-tone hem (silver 1, no flicker)', () => {
+    for (const head of [KNIGHT.head, HEAD_Q34]) {
+      const hem = (head.mask.at(-1) ?? '').replace(/^\.*J?|J?\.*$/g, '');
+      expect(hem.length).toBeGreaterThan(18);
+      expect(new Set(hem)).toEqual(new Set(['j']));
+      const jTone = LEGEND['j']?.[1];
+      expect(jTone).toBeDefined();
+      if (jTone !== undefined) expect(head.hemTones?.tones[jTone]).toBe(1);
     }
   });
 });
