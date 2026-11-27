@@ -27,6 +27,10 @@
     "sprites/atlas.png": "f2bcb35748f2393fe7d416fa58c8ae4650d44887761be7e447f621568a7d3517",
     "manifest.json": "557a5527fedd60cb7893ad766ece5585c6d9760ef7699b5afc80d58bd30e36ae"
   },
+  "pixmates.vampire": {
+    "sprites/atlas.png": "9e7944561368f45e17796ae8ef18f52260790300c4a681f21a747c788bece2d8",
+    "manifest.json": "37bbc7a5c55e32daccb188396dfe8057ccbf921c6507cfd8f514b39000591962"
+  },
   "spike-maid-48soft": {
     "sprites/atlas.png": "12b531036607c8afea82a0bb4967f3eefc8239be87a2cb766cc425d5ca2dc410",
     "manifest.json": "ab390ff8a0f97d955d2e334a23b57bda8dd0811a0f2fce6e7d6cbc6d24bd4f28"
