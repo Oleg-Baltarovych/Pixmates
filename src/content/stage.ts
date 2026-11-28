@@ -40,6 +40,9 @@ export const WALK_TRAVEL = { pxPerFrame: 2, fps: 10, pxPerSecond: 20 } as const;
  */
 export const TURN_PLAY = { frames: 2, fps: 10 } as const;
 
+/** The built-in `land` (4 frames at 10 fps, once). The core times a landing from it; a rig test keeps it equal. */
+export const LAND_PLAY = { frames: 4, fps: 10 } as const;
+
 /**
  * How far (art px) the walking foot pivot stays inside a surface's ends: the walk's feet stand 8 art px apart, so 6
  * keeps both on a window edge. The sprite itself may overhang the end (plan M1-07, ≤ 12).

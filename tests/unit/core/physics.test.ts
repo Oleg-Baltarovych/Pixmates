@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { FLIGHT_BOUNDS_ART, HARD_LANDING_HOLD_MS, LAND_PLAY, PHYSICS } from '../../../src/content/physics.ts';
+import { FLIGHT_BOUNDS_ART, HARD_LANDING_HOLD_MS, PHYSICS } from '../../../src/content/physics.ts';
 import {
   advanceFlight,
-  artPxDipOf,
   checkSupport,
   clampFling,
   planFlight,
@@ -10,9 +9,11 @@ import {
   startFlight,
   supportOf,
 } from '../../../src/core/physics.ts';
+import { artPxDipOf } from '../../../src/core/surfaces.ts';
 import { startTravel, advanceTravel, travelX } from '../../../src/core/travel.ts';
 import type { CoreState, Placement, World } from '../../../src/core/types.ts';
 import { samplePath } from '../../../src/shared/motion.ts';
+import { LAND_PLAY, TURN_PLAY } from '../../../src/content/stage.ts';
 import { makeCoreState, makeWindow, makeWorld } from '../../fixtures/core-state.ts';
 
 // makeWorld: 1920 × 1032 DIP, ×4 at 125 % → 3.2 DIP per art px.
@@ -116,15 +117,42 @@ describe('planFlight: ballistic closed form, landing on the first surface crosse
   });
 
   it('always ends: a wild fling caps the bounces, then drops straight down', () => {
-    const flight = planFlight(
-      makeWorld({ workArea: { width: 400, height: 1032 } }),
-      { x: 200, y: 300 },
-      clampFling({ vx: 1e6, vy: -1e6 }, world),
-    );
-    expect(flight.segments.length).toBeLessThanOrEqual(PHYSICS.maxBounces + 1);
+    // 160 DIP wide: the pivot bounds leave a 6.4-DIP corridor, so the fling hits a wall again and again.
+    const narrow = makeWorld({ workArea: { width: 160, height: 1032 } });
+    const bounds = { left: LEFT, right: 160 - LEFT };
+    const flight = planFlight(narrow, { x: 80, y: 300 }, clampFling({ vx: 1e6, vy: -1e3 }, world));
+    expect(flight.segments).toHaveLength(PHYSICS.maxBounces + 1);
+    expect(flight.segments.at(-1)?.vx).toBe(0);
     expect(flight.landing.surface).toEqual({ kind: 'floor' });
     expect(Number.isFinite(flight.durationMs)).toBe(true);
-    for (const segment of flight.segments) expect(segment.durationMs).toBeGreaterThan(0);
+    for (const segment of flight.segments) {
+      expect(segment.durationMs).toBeGreaterThan(0);
+      const end = samplePath([segment], segment.durationMs);
+      expect(end?.x).toBeGreaterThanOrEqual(bounds.left - 1e-9);
+      expect(end?.x).toBeLessThanOrEqual(bounds.right + 1e-9);
+    }
+  });
+
+  it('lands on a window top after a wall bounce', () => {
+    // The top spans x 1500…1900; thrown right at y 300, it would cross y 600 at x ≈ 1980 without the wall.
+    const nearWall = makeWorld({ windows: [makeWindow('w2', 1500, 600, 400, 300)] });
+    const flight = planFlight(nearWall, { x: 1700, y: 300 }, { vx: 1_000, vy: 0 });
+    expect(flight.segments).toHaveLength(2);
+    expect(flight.segments[1]?.vx).toBeLessThan(0);
+    expect(flight.landing).toMatchObject({ surface: { kind: 'window_top', id: 'w2' }, y: 600 });
+    expect(lastPoint(flight.segments)?.y).toBeCloseTo(600, 6);
+  });
+
+  it('a long fall after a wall bounce lands hard', () => {
+    const flight = planFlight(world, { x: RIGHT - 100, y: TOP }, { vx: 1_000, vy: 0 });
+    expect(flight.segments.length).toBeGreaterThan(1);
+    expect(flight.impact).toBe('hard');
+  });
+
+  it('a start a rounding error past a top, moving down, still lands on it (not on the floor below)', () => {
+    const flight = planFlight(onShelf, { x: 1000, y: 600 + 1e-10 }, { vx: 0, vy: 500 });
+    expect(flight.landing.surface).toMatchObject({ kind: 'window_top', id: 'w1' });
+    expect(flight.segments).toEqual([]);
   });
 
   it('the path ends exactly on the landing point', () => {
@@ -237,6 +265,30 @@ describe('checkSupport: window moved / gone under a standing character → fall 
     expect(checkSupport(behind, mid).state.behavior.kind).toBe('walk');
   });
 
+  it('a walker whose segment shrank under its arrival stops at its live x (turn back), not walking off', () => {
+    const start = standing(onShelf, { pos: { ...shelfSpot, x: 820 } });
+    const turned = startTravel(start, 1180, NOW).state;
+    const walking = advanceTravel(turned, turned.wakeAt ?? NOW).state;
+    if (walking.behavior.kind !== 'walk') throw new Error('expected a walk');
+    const mid = (walking.behavior.since + walking.behavior.until) / 2;
+    const liveX = travelX(walking, mid);
+    // An occluder now hides the edge from 20 DIP before the arrival on; the walker itself is still on the edge.
+    const front = makeWindow('front', walking.behavior.x1 - 20, 550, 400, 300);
+    const shrunk = { ...walking, world: makeWorld({ windows: [front, shelf] }) };
+    const { state, effects } = checkSupport(shrunk, mid);
+    expect(state.behavior).toEqual({
+      kind: 'turn',
+      dir: 'right',
+      then: { kind: 'front' },
+      since: mid,
+      until: mid + (TURN_PLAY.frames * 1000) / TURN_PLAY.fps,
+    });
+    expect(state.pos).toMatchObject({ surface: { kind: 'window_top', id: 'w1', right: front.rect.x }, x: liveX });
+    expect(effects).toEqual([
+      { type: 'Show', anim: 'turn', facing: 'right', playback: 'rev', motion: { kind: 'still', x: liveX, y: 600 } },
+    ]);
+  });
+
   it('leaves drag and fall to their own handling', () => {
     const dragging = standing(world, { behavior: { kind: 'drag', since: NOW, until: null } });
     expect(checkSupport(dragging, NOW)).toEqual({ state: dragging, effects: [] });
@@ -284,6 +336,17 @@ describe('startFlight / advanceFlight: fall → land → front idle', () => {
     expect(effects).toContainEqual({ type: 'Fx', mark: 'sweat', untilMs: until });
   });
 
+  it('hard or soft as planned, even when the scale changed mid-fall (art px of the path, not of the world now)', () => {
+    const limit = PHYSICS.hardLandingArtS * A;
+    // Touches down at 0.9 × the hard limit in the planned scale's art px: soft.
+    const { state: falling } = released({ x: 600, y: FLOOR - (limit * 0.9) ** 2 / (2 * G) }, { vx: 0, vy: 0 });
+    const smaller = { ...falling, world: makeWorld({ scale: 2, scaleFactor: 1 }) };
+    const { state, effects } = advanceFlight(smaller, falling.wakeAt ?? NOW);
+    const touch = falling.wakeAt ?? NOW;
+    expect(state.behavior).toEqual({ kind: 'land', since: touch, until: touch + LAND_MS });
+    expect(effects.some((effect) => effect.type === 'Fx')).toBe(false);
+  });
+
   it('released on the floor at rest: straight to land, no empty fall', () => {
     const { state } = released({ x: 600, y: FLOOR }, { vx: 0, vy: 0 });
     expect(state.behavior).toMatchObject({ kind: 'land', since: NOW });
@@ -304,6 +367,28 @@ describe('replanFlight: the world changed mid-flight', () => {
       vy: here?.vy,
     });
     expect(effects[0]).toMatchObject({ type: 'Show', anim: 'fall' });
+  });
+
+  // A fall whose end sample comes back a rounding error under the shelf top (found by sweep; FP, not geometry).
+  const toShelf = (): CoreState =>
+    startFlight(makeCoreState({ world: onShelf }), { x: 1000, y: 200.5811 }, { vx: -0.1, vy: -2.13 }, 10_001.11).state;
+
+  it('at its deadline a fall is left to advanceFlight: lands on the planned window top, never falls through', () => {
+    const falling = toShelf();
+    expect(falling.pos.surface).toMatchObject({ kind: 'window_top', id: 'w1' });
+    const until = falling.wakeAt ?? NOW;
+    expect(replanFlight(falling, until)).toEqual({ state: falling, effects: [] });
+    const { state } = advanceFlight(replanFlight(falling, until).state, until);
+    expect(state.behavior.kind).toBe('land');
+    expect(state.pos).toMatchObject({ surface: { kind: 'window_top', id: 'w1' }, y: 600 });
+  });
+
+  it('at its deadline over the floor: unchanged, then lands on the floor', () => {
+    const { state: falling } = startFlight(makeCoreState(), { x: 600, y: 300 }, { vx: 120, vy: -50 }, NOW);
+    const until = falling.wakeAt ?? NOW;
+    expect(replanFlight(falling, until + 5)).toEqual({ state: falling, effects: [] });
+    const { state } = advanceFlight(falling, until);
+    expect(state.pos).toMatchObject({ surface: { kind: 'floor' }, y: FLOOR });
   });
 
   it('leaves any other state alone', () => {

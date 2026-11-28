@@ -2,10 +2,11 @@
 // at wall and ceiling bounces, landing on the first surface it crosses downward; a standing character whose window
 // moved, closed or was hidden falls from rest. Numbers in art px from `content/physics.ts` (× DIP per art px), so
 // the feel is size-independent. Pure: the engine (M1-14) routes events here and runs `advanceFlight` at `wakeAt`.
-import { FLIGHT_BOUNDS_ART, HARD_LANDING_HOLD_MS, LAND_PLAY, PHYSICS } from '../content/physics.ts';
-import { pathDurationMs, samplePath } from '../shared/motion.ts';
-import { surfaceUnder, visibleTops, type WindowTop } from './surfaces.ts';
-import { travelX } from './travel.ts';
+import { FLIGHT_BOUNDS_ART, HARD_LANDING_HOLD_MS, LANDING_ROOT_EPSILON_S, PHYSICS } from '../content/physics.ts';
+import { LAND_PLAY } from '../content/stage.ts';
+import { MS_PER_S, pathDurationMs, samplePath } from '../shared/motion.ts';
+import { artPxDipOf, surfaceUnder, visibleTops, type WindowTop } from './surfaces.ts';
+import { fitWalkToSurface, travelX } from './travel.ts';
 import type { CoreState, Effect, PathSegment, Placement, StepResult, World } from './types.ts';
 
 export interface Point {
@@ -29,11 +30,6 @@ export interface Flight {
   readonly impact: Impact;
 }
 
-const MS_PER_S = 1000;
-
-/** Overlay DIP per art px: the integer sprite scale (device px) over the display scale factor. */
-export const artPxDipOf = ({ scale, scaleFactor }: World): number => scale / scaleFactor;
-
 /** Where the foot pivot may fly: inside the work area by half a frame at the sides, a whole frame at the top. */
 interface Bounds {
   readonly left: number;
@@ -49,9 +45,12 @@ function boundsOf(world: World): Bounds {
   return { left: side, right: width - side, top: Math.min(FLIGHT_BOUNDS_ART.top * artPx, height), floor: height };
 }
 
-/** Touch-down faster than `hardLandingArtS` (downward, DIP/s) is a hard landing. */
-const impactOf = (vy: number, world: World): Impact =>
-  vy > PHYSICS.hardLandingArtS * artPxDipOf(world) ? 'hard' : 'soft';
+/**
+ * Touch-down faster than `hardLandingArtS` art px/s (downward) is a hard landing. The art px are those of the path
+ * itself (its gravity is `gravityArtS2` art px/s² in DIP), so a scale change mid-fall does not change the verdict.
+ */
+const impactOf = (vy: number, gravity: number): Impact =>
+  vy * PHYSICS.gravityArtS2 > PHYSICS.hardLandingArtS * gravity ? 'hard' : 'soft';
 
 /** Window tops a flight may land on: none on the desktop-only layer (D-9: floor only). */
 const landingTops = (world: World): readonly WindowTop[] =>
@@ -68,12 +67,20 @@ export function clampFling(velocity: Velocity, world: World): Velocity {
   return { vx: velocity.vx * k, vy: velocity.vy * k };
 }
 
-/** Seconds until y(t) = y0 + vy·t + ½·g·t² comes down through `level` (the later root), or null if never. */
+/**
+ * Seconds until y(t) = y0 + vy·t + ½·g·t² comes down through `level` (the later root), or null if never. A root up to
+ * `LANDING_ROOT_EPSILON_S` in the past counts as now (0): a sampled start lies a rounding error past the level.
+ */
 function descendTime(y0: number, vy: number, g: number, level: number): number | null {
   const disc = vy * vy - 2 * g * (y0 - level);
   if (disc < 0) return null;
   const t = (-vy + Math.sqrt(disc)) / g;
-  return t >= 0 ? t : null;
+  return t >= -LANDING_ROOT_EPSILON_S ? Math.max(0, t) : null;
+}
+
+/** Seconds until the path comes down to the floor: it starts at or above it (bounds clamp it) and g > 0. */
+function floorTime(y0: number, vy: number, g: number, floor: number): number {
+  return Math.max(0, (-vy + Math.sqrt(Math.max(0, vy * vy - 2 * g * (y0 - floor)))) / g);
 }
 
 /** Seconds until the rising path reaches `top` (the earlier root), or Infinity if it does not rise that far. */
@@ -96,8 +103,7 @@ interface Touch {
 
 /** The first surface the piece from (x, y) with (vx, vy) comes down onto: a window top holding x then, or the floor. */
 function firstTouch(tops: readonly WindowTop[], bounds: Bounds, from: Point, v: Velocity, g: number): Touch {
-  // The floor is at or below the start (bounds clamp it) and g > 0, so the root always exists.
-  const floorT = descendTime(from.y, v.vy, g, bounds.floor) ?? 0;
+  const floorT = floorTime(from.y, v.vy, g, bounds.floor);
   let best: Touch = { t: floorT, landing: { surface: { kind: 'floor' }, x: from.x + v.vx * floorT, y: bounds.floor } };
   for (const top of tops) {
     const t = descendTime(from.y, v.vy, g, top.y);
@@ -132,7 +138,7 @@ export function planFlight(world: World, from: Point, velocity: Velocity): Fligh
     if (touch.t <= tBounce) {
       piece(touch.t);
       const durationMs = pathDurationMs(segments);
-      const impact = impactOf(v.vy + g * touch.t, world);
+      const impact = impactOf(v.vy + g * touch.t, g);
       return { segments, durationMs, landing: touch.landing, impact };
     }
     piece(tBounce);
@@ -205,11 +211,14 @@ export const startFlight = (state: CoreState, from: Point, velocity: Velocity, n
 
 /**
  * After a world change: a falling character re-plans from where it is now, at the speed it has now (a window that
- * appeared below catches it; one that vanished no longer does). Any other state is left as it is.
+ * appeared below catches it; one that vanished no longer does). Every world change during a fall must come through
+ * here, or `pos` (the planned landing) goes stale. At or past the deadline the fall is over: it is left for
+ * `advanceFlight` to land (a re-plan from the end point could miss the edge by a rounding error). Any other state is
+ * left as it is.
  */
 export function replanFlight(state: CoreState, now: number): StepResult {
   const { behavior } = state;
-  if (behavior.kind !== 'fall') return { state, effects: [] };
+  if (behavior.kind !== 'fall' || now >= behavior.until) return { state, effects: [] };
   const here = samplePath(behavior.path, now - behavior.since);
   if (here === null) return { state, effects: [] };
   return fly(state, planFlight(state.world, here, { vx: here.vx, vy: here.vy }), now);
@@ -218,8 +227,10 @@ export function replanFlight(state: CoreState, now: number): StepResult {
 /**
  * After a world change, for a character standing on `pos` (any state but `drag` and `fall`, which the engine handles
  * with the release and `replanFlight`): still supported → `pos` re-homed (surface and y; a walk keeps its start x),
- * no effect; otherwise it falls from rest at its live x (a walker's last stride). Whether a hidden or sleeping
- * character falls at once is the engine's call (M1-14).
+ * no effect — unless the fresh segment no longer holds a walk's arrival: then the walk ends early with the reversed
+ * turn at its live x (`fitWalkToSurface`). Otherwise it falls from rest at its live x (a walker's last stride).
+ * Whether a hidden or sleeping character falls at once, and re-showing a still pose whose y moved, are the engine's
+ * calls (M1-14).
  */
 export function checkSupport(state: CoreState, now: number): StepResult {
   const { behavior, pos, world } = state;
@@ -227,7 +238,7 @@ export function checkSupport(state: CoreState, now: number): StepResult {
   const x = travelX(state, now);
   const support = supportOf(world, { ...pos, x });
   if (support !== null)
-    return { state: { ...state, pos: { ...pos, surface: support.surface, y: support.y } }, effects: [] };
+    return fitWalkToSurface({ ...state, pos: { ...pos, surface: support.surface, y: support.y } }, now);
   return startFlight(state, { x, y: pos.y }, { vx: 0, vy: 0 }, now);
 }
 
@@ -240,8 +251,9 @@ export function advanceFlight(state: CoreState, now: number): StepResult {
   const { behavior } = state;
   if ((behavior.kind !== 'fall' && behavior.kind !== 'land') || now < behavior.until) return { state, effects: [] };
   if (behavior.kind === 'fall') {
+    const last = behavior.path.at(-1);
     const end = samplePath(behavior.path, behavior.until - behavior.since);
-    const impact = impactOf(end?.vy ?? 0, state.world);
+    const impact = last === undefined || end === null ? 'soft' : impactOf(end.vy, last.gravity);
     return landAt(state, state.pos, impact, now);
   }
   const anim = state.character.idle;

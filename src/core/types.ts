@@ -73,7 +73,9 @@ export type Surface =
     };
 
 /**
- * The last settled spot. While dragged or falling, the live point comes from the input or the fall path.
+ * The last settled spot. While dragged, the live point comes from the input. While falling, `pos` is the planned
+ * landing spot and the live point comes from the fall path; every world change during a fall must go through
+ * `replanFlight` (core/physics.ts), or the planned landing goes stale.
  * Engine invariant (M1-06/08/14): when the window under `surface` vanishes (a `world` without its id, a drag
  * included), the engine clears or re-homes `surface` before using it; a stale `window_top` is never kept.
  */

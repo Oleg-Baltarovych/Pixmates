@@ -4,8 +4,8 @@
 // M1-14) picks the target and runs `advanceTravel` at each `wakeAt`.
 import { SPRITE_FRAME_WIDTH_ART } from '../content/desktop.ts';
 import { TURN_PLAY, WALK_EDGE_INSET_ART, WALK_TRAVEL } from '../content/stage.ts';
-import { dirSign, walkX } from '../shared/motion.ts';
-import type { Span } from './surfaces.ts';
+import { dirSign, MS_PER_S, walkX } from '../shared/motion.ts';
+import { artPxDipOf, type Span } from './surfaces.ts';
 import type { CoreState, Direction, Effect, StepResult, Surface, World } from './types.ts';
 
 /** A walk planned in whole strides: `steps` walk frames of `stepDip`, arriving at `x1` after `durationMs`. */
@@ -18,7 +18,6 @@ export interface Stride {
   readonly durationMs: number;
 }
 
-const MS_PER_S = 1000;
 const HALF = 2;
 
 /** One turn, played either way. */
@@ -36,7 +35,7 @@ const toDeviceGrid = (x: number, { scaleFactor }: World): number => Math.round(x
  * on the edge while the sprite may overhang its ends (plan M1-07). A top narrower than both insets gives an empty span.
  */
 export function surfaceSpan(surface: Surface, world: World): Span {
-  const artDip = world.scale / world.scaleFactor;
+  const artDip = artPxDipOf(world);
   if (surface.kind === 'floor') {
     const inset = Math.max(WALK_EDGE_INSET_ART, SPRITE_FRAME_WIDTH_ART / HALF) * artDip;
     return { left: inset, right: world.workArea.width - inset };
@@ -156,6 +155,17 @@ export function advanceTravel(state: CoreState, now: number): StepResult {
     state: { ...state, behavior: { kind: 'idle', anim, since: now, until: null }, wakeAt: now },
     effects: [{ type: 'Show', anim, facing: 'front', playback: 'fwd', motion: { kind: 'still', x: pos.x, y: pos.y } }],
   };
+}
+
+/**
+ * After the surface under a walker was re-homed (an occluder or a resize shrank its segment): when the walk's arrival
+ * `x1` is no longer inside the fresh span, the walk ends early with the reversed turn at the live stride x, so it
+ * never walks off the edge. Any other state, or an arrival still inside, is left as it is.
+ */
+export function fitWalkToSurface(state: CoreState, now: number): StepResult {
+  const { behavior, pos, world } = state;
+  if (behavior.kind !== 'walk' || inSpan(behavior.x1, surfaceSpan(pos.surface, world))) return { state, effects: [] };
+  return turnBack(state, behavior.dir, travelX(state, now), now);
 }
 
 /** The live foot x: the last whole stride of a walk (what the stage shows), exactly `x1` from its arrival on. */

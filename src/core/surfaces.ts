@@ -1,9 +1,12 @@
 // Surfaces the character can stand on (SPEC §4.2, plan M1-06). M1 = the floor + visible window top edges; M1b adds
 // side edges and screen edges. Pure: the world snapshot and the sprite size come in as numbers.
 import { SPRITE_FRAME_HEIGHT_ART, SURFACE_MIN_WIDTH_ART, SURFACE_MOVED_TOLERANCE_DIP } from '../content/desktop.ts';
-import type { DesktopWindow, Placement, Size, Surface } from './types.ts';
+import type { DesktopWindow, Placement, Size, Surface, World } from './types.ts';
 
 export type WindowTop = Extract<Surface, { readonly kind: 'window_top' }>;
+
+/** Overlay DIP per art px: the integer sprite scale (device px) over the display scale factor. */
+export const artPxDipOf = ({ scale, scaleFactor }: World): number => scale / scaleFactor;
 
 /** Half-open horizontal span `[left, right)` (overlay DIP). */
 export interface Span {
