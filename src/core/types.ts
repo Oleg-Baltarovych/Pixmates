@@ -167,7 +167,15 @@ export type Behavior =
       readonly dir: Direction;
       readonly then: { readonly kind: 'walk'; readonly x1: number } | { readonly kind: 'front' };
     })
-  | (Timed & { readonly kind: 'walk'; readonly dir: Direction; readonly x0: number; readonly x1: number })
+  /** `x1 = x0 + dirSign(dir) · steps · stepDip`; the shown walk and `travelX` sample the stored strides. */
+  | (Timed & {
+      readonly kind: 'walk';
+      readonly dir: Direction;
+      readonly x0: number;
+      readonly x1: number;
+      readonly steps: number;
+      readonly stepDip: number;
+    })
   | (Timed & {
       readonly kind: 'react';
       readonly reaction: CursorReaction;

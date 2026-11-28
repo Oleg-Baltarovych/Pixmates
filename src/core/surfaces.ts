@@ -5,8 +5,8 @@ import type { DesktopWindow, Placement, Size, Surface } from './types.ts';
 
 export type WindowTop = Extract<Surface, { readonly kind: 'window_top' }>;
 
-/** Half-open horizontal span `[left, right)`. */
-interface Span {
+/** Half-open horizontal span `[left, right)` (overlay DIP). */
+export interface Span {
   readonly left: number;
   readonly right: number;
 }

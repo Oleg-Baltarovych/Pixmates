@@ -14,7 +14,7 @@ const B = {
   sit_edge: { ...open, kind: 'sit_edge' },
   activity: { ...open, kind: 'activity', id: 'stroll', anim: 'idle_b' },
   turn: { ...timed, kind: 'turn', dir: 'left', then: { kind: 'front' } },
-  walk: { ...timed, kind: 'walk', dir: 'left', x0: 100, x1: 40 },
+  walk: { ...timed, kind: 'walk', dir: 'left', x0: 100, x1: 40, steps: 10, stepDip: 6 },
   react: { ...timed, kind: 'react', reaction: 'startle', anim: 'happy', resume: { kind: 'idle', anim: 'idle_a' } },
   drag: { ...open, kind: 'drag' },
   fall: { ...timed, kind: 'fall', path: [] },

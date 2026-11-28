@@ -48,3 +48,21 @@ describe('walk sampler (shared by core and stage, ADR 010)', () => {
     expect(walkX(motion, 5 * FRAME_MS, FPS)).toBeCloseTo(468, 9);
   });
 });
+
+describe('walk sampler at frame boundaries (FP drift)', () => {
+  // Elapsed time is a difference of two `now` stamps; with a fractional start (or an epoch-scale one) the
+  // difference lands a few ulps under k frames and a plain floor would lose the stride shown on that frame.
+  const STARTS = [10_000.37, 1_800_000_000_000.37];
+  const cases = [12, 15, WALK_TRAVEL.fps].flatMap((fps) =>
+    STARTS.flatMap((since) => Array.from({ length: 31 }, (_, k) => [fps, since, k] as const)),
+  );
+
+  it.each(cases)('at %d fps from %d, frame %d is exactly that many strides', (fps, since, k) => {
+    const elapsed = since + (k * 1000) / fps - since;
+    expect(walkStepsAt(30, elapsed, fps)).toBe(k);
+  });
+
+  it('just before a frame boundary is still the previous stride', () => {
+    expect(walkStepsAt(30, (3 * 1000) / 15 - 0.01, 15)).toBe(2);
+  });
+});

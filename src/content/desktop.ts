@@ -8,6 +8,12 @@
 export const SURFACE_MIN_WIDTH_ART = 32;
 
 /**
+ * Frame width of every built-in pack, in art px (ADR 012: 48 × 56, manifests `frame.w`; axis at x = 24). Half of it
+ * keeps the whole sprite on screen while walking the floor.
+ */
+export const SPRITE_FRAME_WIDTH_ART = 48;
+
+/**
  * Frame height of every built-in pack, in art px (ADR 012: 48 × 56, manifests `frame.h`). The headroom an edge needs
  * is this whole 56-px frame height, FX rows above the head included, so a bubble or mark never clips at the top.
  */

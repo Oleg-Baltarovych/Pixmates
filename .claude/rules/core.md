@@ -18,6 +18,6 @@ paths:
   - dedup queue.
   The numbers come from `src/content/`.
 - No magic numbers: thresholds, cooldowns, weights, durations, speeds and gravity come from `src/content/`. Allowed literals: 0, 1, unit conversions.
-- Logic is 10 Hz. Core never reasons about frames or pixels-per-frame; the renderer interpolates.
+- Logic is event-driven with a 10 Hz tick. Core does not sample animation frames or interpolate motion (the renderer does, via `shared/motion.ts`). The only frame-level facts it uses are the content constants `WALK_TRAVEL` / `TURN_PLAY`, to quantise travel into whole strides and to time turns.
 - Illegal states are unrepresentable: behaviour state, surface (`floor | window_top | window_side | screen_edge`) and character pose as unions; no boolean soup.
 - Invalid input returns the unchanged state plus a rejected or ignored effect. Never throw on user or sensor data.

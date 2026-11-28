@@ -34,12 +34,22 @@ export type WalkMotion = Extract<Motion, { readonly kind: 'walk' }>;
 export const dirSign = (dir: Direction): 1 | -1 => (dir === 'right' ? 1 : -1);
 
 /**
+ * Frames this close to a whole count are that count. `elapsedMs` is a difference of two `now` stamps, so a boundary
+ * `since + k·1000/fps` comes back a few ulps short (≤ ~2e-6 frames even at epoch-scale `now`) and a bare floor would
+ * drop that frame's stride; 1e-4 frames (≤ 10 µs) is far above that error and far below any timer resolution.
+ */
+const FRAME_EPSILON = 1e-4;
+
+/**
  * Whole strides taken `elapsedMs` after a walk started at `fps` walk frames per second: one per finished frame,
  * clamped to `[0, steps]`. The sprite moves only on these steps, never by interpolation, so the planted foot of the
  * q34 walk stays put on screen (ADR 010).
  */
 export function walkStepsAt(steps: number, elapsedMs: number, fps: number): number {
-  return Math.min(steps, Math.max(0, Math.floor((elapsedMs * fps) / 1000)));
+  const frames = (elapsedMs * fps) / 1000;
+  const nearest = Math.round(frames);
+  const whole = Math.abs(frames - nearest) < FRAME_EPSILON ? nearest : Math.floor(frames);
+  return Math.min(steps, Math.max(0, whole));
 }
 
 /** Foot pivot x of `motion` after `elapsedMs` (overlay DIP). */
