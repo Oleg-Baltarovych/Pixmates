@@ -1,10 +1,17 @@
-// Interrupt priorities and the dedup queue (SPEC §4.1, plan M1-04). Pure decisions; the engine (M1-14) applies them.
-// Rule: an event preempts the current state only with a higher priority; otherwise it waits (equal → queue, and
-// SPEC's menu row: cursor reactions wait while the menu is open); `hidden` drops reactions; drag beats everything.
+// Interrupt priorities (SPEC §4.1, plan M1-04). Pure decisions; the engine (M1-14) applies them; the dedup queue
+// lives in `throttle.ts`. Rule: an event preempts the current state only with a higher priority; otherwise it waits
+// (equal → queue, and SPEC's menu row: cursor reactions wait while the menu is open); `hidden` and `sleep` drop
+// cursor reactions (waking is a transition, M1-11); drag beats everything.
+// `defer` means two things: a reaction goes to the dedup queue; a non-reaction (hidden, switch, sleep, menu,
+// activity) is not stored — the engine re-derives it from world / idle / power state when the current timed state
+// ends (M1-14).
 import { PRIORITY } from '../../content/behavior.ts';
 import type { Behavior, Interrupt, ReactionKey, ThrottleState } from '../types.ts';
 
 type Pending = ThrottleState['pending'];
+
+/** Rows whose state ignores cursor reactions outright instead of queueing them. */
+const DROPS_CURSOR: ReadonlySet<Interrupt> = new Set(['hidden', 'sleep']);
 
 /** The table row a reaction runs at. Every M1 reaction is a cursor one; M3/M4 reactions get their own rows. */
 const reactionRow = (reaction: ReactionKey): Interrupt => {
@@ -45,47 +52,19 @@ export function rowOf(behavior: Behavior): Interrupt {
 
 export const priorityOf = (behavior: Behavior): number => PRIORITY[rowOf(behavior)];
 
-/** `preempt` = enter it now; `defer` = it waits (reactions go to the dedup queue); `drop` = forget it. */
+/**
+ * `preempt` = enter it now; `drop` = forget it; `defer` = it waits: a reaction goes to the dedup queue, a
+ * non-reaction (hidden, switch, sleep, menu, activity) is re-derived from world / idle / power state when the current
+ * timed state ends.
+ */
 export type Verdict = 'preempt' | 'defer' | 'drop';
 
 export function arbitrate(current: Behavior, incoming: Interrupt): Verdict {
   // Drag beats everything (rules/core.md), so a falling character can be caught (fall shares the drag row).
   if (incoming === 'drag') return 'preempt';
+  if (incoming === 'cursor' && DROPS_CURSOR.has(rowOf(current))) return 'drop';
   if (PRIORITY[incoming] > priorityOf(current)) return 'preempt';
-  if (current.kind === 'hidden' && incoming === 'cursor') return 'drop';
   return 'defer';
-}
-
-/** Queue a reaction at `now`; a newer one of the same kind replaces the older (and moves to the back). */
-export const enqueue = (pending: Pending, reaction: ReactionKey, now: number): Pending => ({
-  ...pending,
-  [reaction]: now,
-});
-
-/** Fixed tie-break order for reactions queued at the same moment (deterministic, independent of insertion). */
-const REACTION_ORDER = ['startle', 'petted', 'poked'] as const satisfies readonly ReactionKey[];
-
-export interface Dequeued {
-  readonly reaction: ReactionKey;
-  readonly queuedAt: number;
-  readonly pending: Pending;
-}
-
-/** Take the reaction that has waited longest; null when nothing waits. */
-export function dequeue(pending: Pending): Dequeued | null {
-  let next: { reaction: ReactionKey; queuedAt: number } | null = null;
-  for (const reaction of REACTION_ORDER) {
-    const queuedAt = pending[reaction];
-    if (queuedAt !== undefined && (next === null || queuedAt < next.queuedAt)) next = { reaction, queuedAt };
-  }
-  if (next === null) return null;
-  const taken = next.reaction;
-  const rest: Partial<Record<ReactionKey, number>> = {};
-  for (const reaction of REACTION_ORDER) {
-    const queuedAt = pending[reaction];
-    if (reaction !== taken && queuedAt !== undefined) rest[reaction] = queuedAt;
-  }
-  return { ...next, pending: rest };
 }
 
 /** The queue once `next` has been entered: `hidden` drops every waiting reaction (SPEC §4.1). */

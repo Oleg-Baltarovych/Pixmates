@@ -16,6 +16,12 @@ export const PRIORITY = {
   activity: 10,
 } as const satisfies Record<Interrupt, number>;
 
+/**
+ * How long a queued reaction stays worth playing (`core/behavior/throttle.ts` `dequeue`). 3 s ≈ a menu glance or a
+ * switch transition: a poke that waited longer no longer reads as an answer to what the user just did.
+ */
+export const PENDING_MAX_AGE_MS = 3_000;
+
 /** A character with no stored state starts neutral (the drift target, SPEC §4.5) and as a new acquaintance. */
 export const NEW_CHARACTER_MOOD = { mood: 50, affinity: 0 } as const satisfies Omit<MoodState, 'updatedAt'>;
 

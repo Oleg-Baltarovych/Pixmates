@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PRIORITY } from '../../../src/content/behavior.ts';
-import { arbitrate, dequeue, enqueue, priorityOf, queueAfterEnter } from '../../../src/core/behavior/priorities.ts';
+import { arbitrate, priorityOf, queueAfterEnter } from '../../../src/core/behavior/priorities.ts';
 import type { Behavior, Interrupt, ThrottleState } from '../../../src/core/types.ts';
 
 type Pending = ThrottleState['pending'];
@@ -26,6 +26,13 @@ const B = {
   hidden: { ...open, kind: 'hidden' },
 } as const satisfies { readonly [K in Behavior['kind']]: Extract<Behavior, { kind: K }> };
 
+/** The other cursor reactions, so every reaction kind is checked against its row. */
+const R = {
+  ...B,
+  react_petted: { ...B.react, reaction: 'petted' },
+  react_poked: { ...B.react, reaction: 'poked' },
+} as const satisfies Record<string, Behavior>;
+
 describe('priorityOf (SPEC §4.1 table)', () => {
   it.each([
     ['idle', 'activity'],
@@ -34,6 +41,8 @@ describe('priorityOf (SPEC §4.1 table)', () => {
     ['turn', 'activity'],
     ['walk', 'activity'],
     ['react', 'cursor'],
+    ['react_petted', 'cursor'],
+    ['react_poked', 'cursor'],
     ['drag', 'drag'],
     ['fall', 'drag'],
     ['land', 'drag'],
@@ -43,7 +52,7 @@ describe('priorityOf (SPEC §4.1 table)', () => {
     ['switch_in', 'switch'],
     ['hidden', 'hidden'],
   ] as const)('%s runs at the %s priority', (kind, row) => {
-    expect(priorityOf(B[kind])).toBe(PRIORITY[row]);
+    expect(priorityOf(R[kind])).toBe(PRIORITY[row]);
   });
 
   it('orders the rows drag > hidden > switch > menu > cursor > sleep > activity', () => {
@@ -58,7 +67,6 @@ describe('arbitrate: an event preempts only with a higher priority', () => {
   it.each([
     ['idle', 'cursor'],
     ['walk', 'cursor'],
-    ['sleep', 'cursor'],
     ['idle', 'sleep'],
     ['react', 'menu'],
     ['menu', 'switch'],
@@ -91,58 +99,28 @@ describe('arbitrate: an event preempts only with a higher priority', () => {
     },
   );
 
-  it.each(Object.keys(B) as Behavior['kind'][])('drag beats everything, a fall or landing included: %s', (kind) => {
-    expect(arbitrate(B[kind], 'drag')).toBe('preempt');
+  // A second drag-start while dragging is not an interrupt; the engine treats it as a no-op (plan M1-14).
+  it.each((Object.keys(B) as Behavior['kind'][]).filter((kind) => kind !== 'drag'))(
+    'drag beats everything, a fall or landing included: %s',
+    (kind) => {
+      expect(arbitrate(B[kind], 'drag')).toBe('preempt');
+    },
+  );
+
+  it.each(['hidden', 'sleep'] as const)('%s drops cursor reactions instead of queueing them', (kind) => {
+    expect(arbitrate(B[kind], 'cursor')).toBe('drop');
   });
 
-  it('hidden drops cursor reactions instead of queueing them', () => {
-    expect(arbitrate(B.hidden, 'cursor')).toBe('drop');
+  it('a switch still wakes a sleeping character (only cursor reactions are dropped)', () => {
+    expect(arbitrate(B.sleep, 'switch')).toBe('preempt');
+  });
+
+  it('hidden defers sleep: it is re-derived from idle/power state on unhide', () => {
+    expect(arbitrate(B.hidden, 'sleep')).toBe('defer');
   });
 
   it('hidden still lets a non-reaction wait (a switch requested from the tray)', () => {
     expect(arbitrate(B.hidden, 'switch')).toBe('defer');
-  });
-});
-
-describe('dedup queue: one pending per kind, the newest wins', () => {
-  it('queues a reaction with the time it was queued', () => {
-    expect(enqueue({}, 'startle', 500)).toEqual({ startle: 500 });
-  });
-
-  it('a newer reaction of the same kind replaces the older one', () => {
-    const once = enqueue({}, 'petted', 500);
-    expect(enqueue(once, 'petted', 900)).toEqual({ petted: 900 });
-  });
-
-  it('different kinds wait side by side', () => {
-    expect(enqueue(enqueue({}, 'startle', 500), 'poked', 600)).toEqual({ startle: 500, poked: 600 });
-  });
-
-  it('does not change the queue it was given', () => {
-    const before: Pending = { startle: 500 };
-    enqueue(before, 'startle', 900);
-    expect(before).toEqual({ startle: 500 });
-  });
-
-  it('dequeues the reaction that has waited longest and removes it', () => {
-    const pending: Pending = { poked: 700, startle: 500, petted: 600 };
-    expect(dequeue(pending)).toEqual({ reaction: 'startle', queuedAt: 500, pending: { poked: 700, petted: 600 } });
-  });
-
-  it('a re-queued kind moves to the back of the line', () => {
-    const pending = enqueue(enqueue(enqueue({}, 'startle', 500), 'poked', 600), 'startle', 700);
-    expect(dequeue(pending)?.reaction).toBe('poked');
-  });
-
-  it('breaks a same-time tie in a fixed order, whatever the insertion order', () => {
-    const a = dequeue({ poked: 500, startle: 500 });
-    const b = dequeue({ startle: 500, poked: 500 });
-    expect(a?.reaction).toBe(b?.reaction);
-    expect(a?.pending).toEqual(b?.pending);
-  });
-
-  it('an empty queue yields nothing', () => {
-    expect(dequeue({})).toBeNull();
   });
 });
 
@@ -153,10 +131,7 @@ describe('queueAfterEnter: hidden drops everything that waited', () => {
     expect(queueAfterEnter(B.hidden, pending)).toEqual({});
   });
 
-  it.each(Object.keys(B).filter((kind) => kind !== 'hidden') as Behavior['kind'][])(
-    'entering %s keeps the queue',
-    (kind) => {
-      expect(queueAfterEnter(B[kind], pending)).toBe(pending);
-    },
-  );
+  it('entering any other state keeps the queue', () => {
+    expect(queueAfterEnter(B.react, pending)).toEqual(pending);
+  });
 });
