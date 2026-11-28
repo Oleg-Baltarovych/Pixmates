@@ -102,6 +102,7 @@ function main(): void {
   const t = createTranslator('uk');
   const hotkeys = new HotkeyService(globalShortcut);
   let tray: TrayService | undefined;
+  let stopSpike: (() => void) | undefined;
   const refreshTray = (): void => {
     tray?.update({
       stageVisible: windows.windowOf('stage')?.isVisible() ?? false,
@@ -180,9 +181,27 @@ function main(): void {
             captureStageForDev(() => windows.windowOf('stage'), captureDir);
           });
         }
+        // Spike S4 (plan M1-02): `--desktop-spike=<bench|load|poll|hook> --desktop-spike-out=<dir>`.
+        const spikeMode = argValue('desktop-spike');
+        const spikeDir = argValue('desktop-spike-out');
+        if (spikeMode !== undefined && spikeDir !== undefined) {
+          void import('./dev/desktop-spike.ts').then(({ startDesktopSpike, SPIKE_MODES }) => {
+            const mode = SPIKE_MODES.find((m) => m === spikeMode);
+            if (mode === undefined) {
+              console.error(`[spike] unknown mode ${spikeMode}`);
+              return;
+            }
+            const own = (): number[] => {
+              const win = windows.windowOf('stage');
+              return win ? [Number(win.getNativeWindowHandle().readBigUInt64LE())] : [];
+            };
+            stopSpike = startDesktopSpike(mode, spikeDir, own);
+          });
+        }
       }
 
       return () => {
+        stopSpike?.();
         screen.removeListener('display-metrics-changed', onDisplayChanged);
         screen.removeListener('display-added', onDisplayChanged);
         screen.removeListener('display-removed', onDisplayChanged);
