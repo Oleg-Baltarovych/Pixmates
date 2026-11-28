@@ -29,7 +29,7 @@ import {
 } from '../../../assets-src/rig/face.ts';
 import { JOINTS, type Body, type RigAnim } from '../../../assets-src/rig/types.ts';
 import { buildPack, loadMasterPalette, mirrorFrame, renderContext } from '../../../tools/lib/sprites.ts';
-import { WALK_TRAVEL } from '../../../src/content/stage.ts';
+import { TURN_PLAY, WALK_TRAVEL } from '../../../src/content/stage.ts';
 import { darkerMask, deriveQ34Head, tipToe } from '../../../assets-src/rig/q34.ts';
 import type { RgbaImage } from '../../../tools/lib/png.ts';
 import { facingOf, manifestSchema } from '../../../src/shared/pack.ts';
@@ -228,6 +228,10 @@ describe('q34 walk art round (MA-27c fix round A1–A6)', () => {
     expect(WALK_TRAVEL.fps).toBe(walk.fps);
     expect(WALK_TRAVEL.pxPerSecond).toBe(WALK_TRAVEL.pxPerFrame * walk.fps);
     expect(Math.abs(at(0).footL[0] - at(0).footR[0])).toBe(8);
+  });
+  it('the core times the turn from TURN_PLAY: same frame count and fps as the authored turn', () => {
+    const turn = anim('turn');
+    expect({ frames: turn.frames.length, fps: turn.fps }).toEqual(TURN_PLAY);
   });
   it('A1: on the passing frames the lifted foot sits 1–2 px behind the planted one, toe tipped down', () => {
     for (const [i, lifted, planted] of [

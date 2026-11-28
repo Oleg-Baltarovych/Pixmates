@@ -34,6 +34,18 @@ export const DEFAULT_CHARACTER = 'pixmates.maid' satisfies `${typeof BUILTIN_PRE
  */
 export const WALK_TRAVEL = { pxPerFrame: 2, fps: 10, pxPerSecond: 20 } as const;
 
+/**
+ * The built-in `turn` (front ↔ q34, ADR 010): 2 frames at 10 fps, played forward before travel and reversed after it.
+ * The core times the turn from these (it never sees manifests); a rig test keeps them equal to the authored anim.
+ */
+export const TURN_PLAY = { frames: 2, fps: 10 } as const;
+
+/**
+ * How far (art px) the walking foot pivot stays inside a surface's ends: the walk's feet stand 8 art px apart, so 6
+ * keeps both on a window edge. The sprite itself may overhang the end (plan M1-07, ≤ 12).
+ */
+export const WALK_EDGE_INSET_ART = 6;
+
 /** One step of the dev cycle: play `anim` for `loops` loops (a non-looping anim counts held ticks on its last frame). */
 export interface DevCycleStep {
   readonly anim: string;
