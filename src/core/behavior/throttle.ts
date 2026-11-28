@@ -2,6 +2,7 @@
 // limit on unsolicited lines and quiet hours. Pure: time enters as `now`, limits come from `content/behavior.ts`
 // through the caller. Verdicts carry `retryAt` so the engine can fold it into `wakeAt` (F2).
 // Quiet hours gate unsolicited lines only: M1's cursor reactions are user-initiated and silent (D-27).
+import { dailyWindowLeftMs, inDailyWindow } from '../clock.ts';
 import type { QuietHours, ReactionKey, ThrottleState } from '../types.ts';
 
 type Pending = ThrottleState['pending'];
@@ -64,9 +65,6 @@ export function dequeue(pending: Pending, now: number, maxAgeMs: number): Dequeu
   return { next: null, pending: queue };
 }
 
-const MS_PER_MINUTE = 60_000;
-const MS_PER_DAY = 24 * 60 * MS_PER_MINUTE;
-
 /** Why something may not happen now, and the first moment it could. */
 export type Verdict =
   | { readonly ok: true }
@@ -122,22 +120,9 @@ export function dequeueReady(throttle: ThrottleState, now: number, limits: Queue
   }
 }
 
-/** `a mod b` in `[0, b)`, also for negative `a`. */
-const mod = (a: number, b: number): number => ((a % b) + b) % b;
-
-/** Ms from `now` until the window ends, or null outside it (and for no / an empty window). */
-function quietLeftMs(now: number, tzOffsetMin: number, window: QuietHours | null): number | null {
-  if (window === null || window.fromMin === window.toMin) return null;
-  const local = mod(now + tzOffsetMin * MS_PER_MINUTE, MS_PER_DAY);
-  const from = window.fromMin * MS_PER_MINUTE;
-  const to = window.toMin * MS_PER_MINUTE;
-  const inside = from < to ? local >= from && local < to : local >= from || local < to;
-  return inside ? mod(to - local, MS_PER_DAY) : null;
-}
-
 /** Is local time (`now` shifted by `tzOffsetMin`) inside the daily quiet-hours window? */
-export const isQuietHours = (now: number, tzOffsetMin: number, window: QuietHours | null): boolean =>
-  quietLeftMs(now, tzOffsetMin, window) !== null;
+export const isQuietHours = (now: number, tzOffsetMin: number, quiet: QuietHours | null): boolean =>
+  inDailyWindow(now, tzOffsetMin, quiet);
 
 export interface LineRules {
   readonly lineGapMs: number;
@@ -151,7 +136,7 @@ export interface LineRules {
  * both block, the verdict names the one that frees up later (ties go to quiet hours).
  */
 export function lineVerdict(lastLineAt: number | null, now: number, rules: LineRules): Verdict {
-  const quietLeft = quietLeftMs(now, rules.tzOffsetMin, rules.quietHours);
+  const quietLeft = dailyWindowLeftMs(now, rules.tzOffsetMin, rules.quietHours);
   const quiet: Blocked | null =
     quietLeft === null ? null : { ok: false, reason: 'quiet-hours', retryAt: now + quietLeft };
   const gapEnd = lastLineAt === null ? null : lastLineAt + rules.lineGapMs;

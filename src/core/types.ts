@@ -106,13 +106,63 @@ export interface ThrottleState {
 }
 
 /**
- * A daily quiet-hours window in local minutes after midnight, `[fromMin, toMin)`; `fromMin > toMin` runs over
- * midnight, `fromMin === toMin` is empty. Bounds (0…1439) are validated by the zod
- * settings contract where the setting enters (M5); core does not re-check them.
+ * A daily window in local minutes after midnight, `[fromMin, toMin)`; `fromMin > toMin` runs over midnight,
+ * `fromMin === toMin` is empty (`core/clock.ts`).
  */
-export interface QuietHours {
+export interface DailyWindow {
   readonly fromMin: number;
   readonly toMin: number;
+}
+
+/**
+ * The quiet-hours window. Bounds (0…1439) are validated by the zod settings contract where the setting enters (M5);
+ * core does not re-check them.
+ */
+export type QuietHours = DailyWindow;
+
+export type SurfaceKind = Surface['kind'];
+
+/** Mood bands (SPEC §4.5): they gate and, from M1-12, bias activity picks; never a penalty. */
+export type MoodBand = 'low' | 'mid' | 'high';
+
+/** Inclusive `[min, max]`; the picker draws uniformly inside it. */
+export interface Range {
+  readonly min: number;
+  readonly max: number;
+}
+
+/**
+ * What an activity does on stage (SPEC §4.3, M1 shared set from existing anims): hold the pack's base idle, play one
+ * animation, sit on the edge (`sit_edge`), or stroll to a random reachable x on the current surface. Timed actions
+ * carry their duration; a stroll lasts as long as its walk.
+ */
+export type ActivityAction =
+  | { readonly kind: 'idle'; readonly durationMs: Range }
+  | { readonly kind: 'play'; readonly anim: AnimName; readonly durationMs: Range }
+  | { readonly kind: 'sit'; readonly durationMs: Range }
+  /** Distance in art px (× DIP per art px at use, so it scales with the size preset). */
+  | { readonly kind: 'stroll'; readonly distanceArt: Range };
+
+/** One entry of an activity catalogue (`content/activities.ts`; per-character weights in M1-15). */
+export interface ActivityDef {
+  readonly id: ActivityId;
+  readonly does: ActivityAction;
+  /** Relative pick weight (> 0). */
+  readonly weight: number;
+  /** Surfaces it may start on. */
+  readonly where: readonly SurfaceKind[];
+  /** Mood bands it may start in; absent = any. */
+  readonly moods?: readonly MoodBand[];
+  /** Local time of day it may start in; absent = any. */
+  readonly hours?: DailyWindow;
+  /** Ms after it last started before it may start again (0 = none; recency still lowers a repeat). */
+  readonly cooldownMs: number;
+}
+
+/** When an activity last started. */
+export interface RecentActivity {
+  readonly id: ActivityId;
+  readonly at: number;
 }
 
 /** A pointer sample, stamped with main's receipt time. */
@@ -214,8 +264,8 @@ export interface CoreState {
   readonly mood: MoodState;
   readonly throttle: ThrottleState;
   readonly cursor: CursorMemory;
-  /** Recently picked activities, newest first (recency penalty). */
-  readonly recent: readonly ActivityId[];
+  /** Last start of each activity picked so far, newest first, one entry per id (recency penalty + cooldowns). */
+  readonly recent: readonly RecentActivity[];
   /** Whether the stage window currently lets clicks through (main mirrors it with setIgnoreMouseEvents). */
   readonly hitThrough: boolean;
   /** Deadline scheduling (D-27, F2): when main must wake the core next; null = nothing due. */
