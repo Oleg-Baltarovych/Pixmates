@@ -103,6 +103,15 @@ export interface ThrottleState {
   readonly pending: Readonly<Partial<Record<ReactionKey, number>>>;
 }
 
+/**
+ * A daily quiet-hours window in local minutes after midnight, `[fromMin, toMin)`; `fromMin > toMin` runs over
+ * midnight, `fromMin === toMin` is empty. Bounds (0…1439) are checked where the setting enters (M5).
+ */
+export interface QuietHours {
+  readonly fromMin: number;
+  readonly toMin: number;
+}
+
 /** A pointer sample, stamped with main's receipt time. */
 export interface CursorSample {
   readonly x: number;
