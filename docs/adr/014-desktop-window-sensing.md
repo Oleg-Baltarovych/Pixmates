@@ -1,6 +1,6 @@
 # 014. Desktop window sensing: own Win32 calls over koffi FFI, not `get-windows`
 
-- Status: Accepted (owner, 2026-11-28); spike S4 (M1-02) confirms hook vs polling and the koffi cost — a failed spike reopens this ADR
+- Status: Accepted (owner, 2026-11-28); spike S4 (M1-02, 2026-11-28) passed → mode (a) event hook (see Spike S4 result)
 - Date: 2026-11-28
 
 ## Context
@@ -18,8 +18,9 @@ Reading its Windows source (`Sources/windows/main.cc`, v10.0.0, 2026-11-28):
 - per-call heap leaks (`new WCHAR[]` for the title, `new OwnerWindowInfo`) — unacceptable at a 1 Hz poll.
 
 ## Decision
-Proposed: a small Win32 binding in `src/main/sensors/desktop.win32.ts` over **koffi** (FFI; prebuilt binaries inside
-the npm package, no install script), behind the `DesktopSensor` interface (`sensors/desktop.ts`, ADR 001).
+A small Win32 binding in `src/main/sensors/desktop.win32.ts` over **koffi** (FFI; prebuilt Node-API binary from the
+script-free platform package `@koromix/koffi-win32-x64`; koffi's own `install` script, which only test-loads that binary
+or else builds from source with CMake, is denied in `allowBuilds`), behind the `DesktopSensor` interface (`sensors/desktop.ts`, ADR 001).
 - Calls: `EnumWindows` (z-order, front to back), `IsWindowVisible`, `IsIconic`, `GetWindowLongPtrW` (`WS_EX_TOOLWINDOW`,
   `WS_CHILD`), `GetAncestor`/owner check, `DwmGetWindowAttribute` (`DWMWA_CLOAKED`, `DWMWA_EXTENDED_FRAME_BOUNDS`),
   `GetClassNameW` only to drop shell windows (`Progman`, `WorkerW`, `Shell_TrayWnd`). **No title, no process access.**
@@ -41,8 +42,25 @@ the npm package, no install script), behind the `DesktopSensor` interface (`sens
 - Electron only — no such API.
 
 ## Consequences
-- Positive: exactly the data we need, no titles, DWM-visible bounds, event-driven falls, no install script.
+- Positive: exactly the data we need, no titles, DWM-visible bounds, event-driven falls, no install script runs.
 - Negative / trade-offs: new native dependency (koffi; `asarUnpack` check for `koffi.node`, supply-chain review);
   FFI typing is hand-written; Windows-only code path (fine for v1, ADR 001).
 - Follow-ups: SPEC §2 data row and §4.2 `DesktopSensor` text (get-windows → own binding); CONTEXT gotcha; security
   review of the binding; re-check on each Electron major.
+
+## Spike S4 result (M1-02, 2026-11-28)
+koffi 3.3.8, packaged build (fuses on, asar, `koffi.node` unpacked), `pnpm perf` 30 s + 120 s on AC. Numbers and the
+method are in `docs/plans/2026-11-28-m1.md` § M1-02 result.
+- Packaged: koffi loads and the out-of-context WinEvent hook delivers on Electron's main message loop. ✅
+- One enumeration: median 0.25 ms (tight) / 0.7–0.8 ms (1 Hz), p95 ≤ 1.8 ms with 175 handles. The full probe on
+  every handle is 11 µs, so 40 windows ≈ 0.45 ms. **< 2 ms ✅**
+- Typing in another app (36 WinEvents/s): main process +0.03 pp vs polling, +0.07 pp vs its idle; the whole-tree
+  difference is within noise. **< 0.1 pp ✅**
+- Δ private: +4.4–6.7 MB browser with koffi's default sync blocks (1 MiB stack + 2 MiB heap), so poll failed. With
+  `koffi.config({ sync_stack_size: 256 KiB, sync_heap_size: 64 KiB })` it is ≈ +2–3 MB. **< 5 MB ✅** with that
+  config, which is required.
+- `pnpm perf` within budget in every run.
+
+**Decision: (a) WinEvent hook + slow refresh**, koffi sync blocks reduced. Open for M1-20: the cursor-motion event
+load (not measured, `OBJID_CURSOR`) needs a perf spot check; option: hook `EVENT_OBJECT_LOCATIONCHANGE` per pid of
+the window under the character.
