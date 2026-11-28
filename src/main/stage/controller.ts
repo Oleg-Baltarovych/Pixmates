@@ -11,7 +11,7 @@ import {
 import { maxScale, presetScales, stepScale, type ScaleInput } from '../../core/scale.ts';
 import { initialState } from '../../core/state.ts';
 import { step } from '../../core/step.ts';
-import type { CoreEvent, CoreState, Effect, Layer, PointerInput } from '../../core/types.ts';
+import type { CoreEvent, CoreState, Effect, Layer, PointerInput, World } from '../../core/types.ts';
 import { CHANNEL, type StageAnimation } from '../../shared/ipc.ts';
 import type { Manifest } from '../../shared/pack.ts';
 import { sendEvent, type IpcRouter } from '../ipc/handle.ts';
@@ -75,6 +75,11 @@ export class StageController {
   readonly #deps: StageControllerDeps;
   /** Undefined until attach (display metrics exist only after app ready) and while no valid pack is on stage. */
   #core: CoreState | undefined;
+  #attached = false;
+  /** The pack the core last refused; not retried (or re-logged) until the primary pack changes. */
+  #refused: string | undefined;
+  /** Rejections seen per `event:reason`, so a broken sensor logs once (then at powers of ten), not per event. */
+  readonly #rejected = new Map<string, number>();
   #preset: SizePreset = DEFAULT_SIZE_PRESET;
   #scale = MIN_SCALE;
   #layer: LayerMode = 'on-top';
@@ -92,13 +97,18 @@ export class StageController {
   get layer(): LayerMode {
     return this.#layer;
   }
+  /** Read-only view of the core state (diagnostics, tests); main never edits it. */
+  get core(): CoreState | undefined {
+    return this.#core;
+  }
 
   register(ipc: IpcRouter): void {
     ipc.on(CHANNEL.stageHit, ({ overOpaque }) => {
       this.#dispatch({ type: 'input', input: { kind: 'hover', overOpaque } });
     });
     ipc.on(CHANNEL.stageInput, ({ kind }) => {
-      this.#dispatch({ type: 'input', input: this.#stageInput(kind) });
+      const core = this.#ensureCore();
+      if (core) this.#dispatch({ type: 'input', input: stageInput(core, kind) });
     });
   }
 
@@ -106,8 +116,8 @@ export class StageController {
   attach(win: BrowserWindow): void {
     // Display metrics exist only after app ready, so the first scale is computed here, not in the constructor.
     this.#scale = this.#presetScale(this.#preset);
-    this.#core = this.#initialCore();
-    win.setIgnoreMouseEvents(this.#core?.hitThrough ?? true, { forward: true });
+    this.#attached = true;
+    win.setIgnoreMouseEvents(this.#ensureCore()?.hitThrough ?? true, { forward: true });
     this.#applyLayer(win);
     win.webContents.on('did-finish-load', () => {
       this.#pushCharacters();
@@ -118,6 +128,7 @@ export class StageController {
     this.#preset = preset;
     this.#scale = this.#presetScale(preset);
     this.#pushCharacters();
+    this.#pushWorld();
   }
 
   /** «Більше» / «Менше»: one integer step within [MIN_SCALE, clamp]. */
@@ -126,12 +137,14 @@ export class StageController {
     if (!sizing) return;
     this.#scale = stepScale(this.#scale, delta, MIN_SCALE, maxScale(this.#scaleInput(0, sizing)));
     this.#pushCharacters();
+    this.#pushWorld();
   }
 
   setLayer(layer: LayerMode): void {
     this.#layer = layer;
     const win = this.#deps.stage();
     if (win) this.#applyLayer(win);
+    this.#pushWorld();
   }
 
   /** `display-metrics-changed` / `display-added` / `display-removed`: refit the overlay and the scale. */
@@ -140,6 +153,7 @@ export class StageController {
     if (win) win.setBounds(this.#deps.display().workArea);
     this.#scale = this.#presetScale(this.#preset);
     this.#pushCharacters();
+    this.#pushWorld();
   }
 
   #characters(): readonly StageCharacter[] {
@@ -206,40 +220,50 @@ export class StageController {
     else win.setAlwaysOnTop(false);
   }
 
-  /** Core state for the primary character on the current display; undefined (logged) when there is none to drive. */
-  #initialCore(): CoreState | undefined {
-    const pack = this.#characters()[0]?.pack;
-    if (!pack) return undefined;
+  /** What main knows about the desktop now. M1-20/M1-22 feed the sensed windows and the tz offset. */
+  #world(): World {
     const display = this.#deps.display();
+    return {
+      workArea: { width: display.workArea.width, height: display.workArea.height },
+      windows: [],
+      scale: this.#scale,
+      scaleFactor: display.scaleFactor,
+      layer: this.#layer,
+      tzOffsetMin: 0,
+    };
+  }
+
+  /** The core, built on first need after attach once a primary pack exists; undefined while there is none. */
+  #ensureCore(): CoreState | undefined {
+    if (this.#core || !this.#attached) return this.#core;
+    const pack = this.#characters()[0]?.pack;
+    if (!pack || pack.id === this.#refused) return undefined;
     const result = initialState({
       seed: this.#deps.seed,
       character: { id: pack.id, anims: Object.keys(pack.manifest.animations) },
-      // M1-20/M1-22 feed the sensed windows, the layer, the tz offset and the stored mood.
-      world: {
-        workArea: { width: display.workArea.width, height: display.workArea.height },
-        windows: [],
-        scale: this.#scale,
-        scaleFactor: display.scaleFactor,
-        layer: this.#layer,
-        tzOffsetMin: 0,
-      },
+      // M1-22 feeds the stored mood.
+      world: this.#world(),
       now: this.#deps.now(),
     });
-    if (result.ok) return result.state;
-    console.error(`[core] initial state rejected: ${result.reason}`);
-    return undefined;
+    if (result.ok) {
+      this.#core = result.state;
+    } else {
+      this.#refused = pack.id;
+      console.error(`[core] initial state rejected: ${result.reason}`);
+    }
+    return this.#core;
   }
 
-  /** The M0 `stage:input` contract has no release point or fling velocity yet (M1-17/M1-28 add them): report the
-   * release at rest where the core stands. */
-  #stageInput(kind: 'drag-start' | 'drag-end' | 'click'): PointerInput {
-    if (kind !== 'drag-end') return { kind };
-    return { kind, x: this.#core?.pos.x ?? 0, y: this.#core?.pos.y ?? 0, vx: 0, vy: 0 };
+  /** Scale, layer or display changed: tell the core (a freshly built core already has this world). */
+  #pushWorld(): void {
+    if (this.#core) this.#dispatch({ type: 'world', world: this.#world() });
+    else this.#ensureCore();
   }
 
   #dispatch(event: CoreEvent): void {
-    if (!this.#core) return;
-    const result = step(this.#core, event, this.#deps.now());
+    const core = this.#ensureCore();
+    if (!core) return;
+    const result = step(core, event, this.#deps.now());
     this.#core = result.state;
     for (const effect of result.effects) this.#interpret(effect);
   }
@@ -249,9 +273,14 @@ export class StageController {
       case 'SetHitThrough':
         this.#deps.stage()?.setIgnoreMouseEvents(effect.ignore, { forward: true });
         return;
-      case 'Rejected':
-        console.warn(`[core] rejected ${effect.event}: ${effect.reason}`);
+      case 'Rejected': {
+        const key = `${effect.event}: ${effect.reason}`;
+        const count = (this.#rejected.get(key) ?? 0) + 1;
+        this.#rejected.set(key, count);
+        if (count === 1) console.warn(`[core] rejected ${key}`);
+        else if (Number.isInteger(Math.log10(count))) console.warn(`[core] rejected ${key} (×${String(count)})`);
         return;
+      }
       case 'Show':
       case 'Fx':
       case 'OpenMenu':
@@ -264,4 +293,11 @@ export class StageController {
         return;
     }
   }
+}
+
+/** The M0 `stage:input` contract has no release point or fling velocity yet (M1-17/M1-28 add them): report the
+ * release at rest where the core stands. */
+function stageInput(core: CoreState, kind: 'drag-start' | 'drag-end' | 'click'): PointerInput {
+  if (kind !== 'drag-end') return { kind };
+  return { kind, x: core.pos.x, y: core.pos.y, vx: 0, vy: 0 };
 }
