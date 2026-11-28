@@ -12,7 +12,7 @@ import {
 } from '../../../src/core/physics.ts';
 import { startTravel, advanceTravel, travelX } from '../../../src/core/travel.ts';
 import type { CoreState, Placement, World } from '../../../src/core/types.ts';
-import { samplePath } from '../../../src/shared/path.ts';
+import { samplePath } from '../../../src/shared/motion.ts';
 import { makeCoreState, makeWindow, makeWorld } from '../../fixtures/core-state.ts';
 
 // makeWorld: 1920 × 1032 DIP, ×4 at 125 % → 3.2 DIP per art px.

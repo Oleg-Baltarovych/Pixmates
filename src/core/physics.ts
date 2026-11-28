@@ -3,7 +3,7 @@
 // moved, closed or was hidden falls from rest. Numbers in art px from `content/physics.ts` (× DIP per art px), so
 // the feel is size-independent. Pure: the engine (M1-14) routes events here and runs `advanceFlight` at `wakeAt`.
 import { FLIGHT_BOUNDS_ART, HARD_LANDING_HOLD_MS, LAND_PLAY, PHYSICS } from '../content/physics.ts';
-import { pathDurationMs, samplePath } from '../shared/path.ts';
+import { pathDurationMs, samplePath } from '../shared/motion.ts';
 import { surfaceUnder, visibleTops, type WindowTop } from './surfaces.ts';
 import { travelX } from './travel.ts';
 import type { CoreState, Effect, PathSegment, Placement, StepResult, World } from './types.ts';
