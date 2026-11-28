@@ -177,6 +177,12 @@ export type Behavior =
 
 export type BehaviorKind = Behavior['kind'];
 
+/**
+ * Rows of the SPEC §4.1 priority table M1 uses (numbers in `content/behavior.ts` `PRIORITY`). `activity` is the
+ * baseline row («нічого»): every resting or travelling state runs at it. M3/M4 add system and dev reaction rows.
+ */
+export type Interrupt = 'drag' | 'hidden' | 'switch' | 'menu' | 'cursor' | 'sleep' | 'activity';
+
 export interface CoreState {
   readonly rng: RngState;
   readonly character: CharacterRef;
