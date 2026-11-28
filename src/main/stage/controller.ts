@@ -9,8 +9,9 @@ import {
   type SizePreset,
 } from '../../content/stage.ts';
 import { maxScale, presetScales, stepScale, type ScaleInput } from '../../core/scale.ts';
-import { initialState, step } from '../../core/step.ts';
-import type { CoreEvent, CoreState, Effect } from '../../core/types.ts';
+import { initialState } from '../../core/state.ts';
+import { step } from '../../core/step.ts';
+import type { CoreEvent, CoreState, Effect, Layer, PointerInput } from '../../core/types.ts';
 import { CHANNEL, type StageAnimation } from '../../shared/ipc.ts';
 import type { Manifest } from '../../shared/pack.ts';
 import { sendEvent, type IpcRouter } from '../ipc/handle.ts';
@@ -30,7 +31,7 @@ export function stageAnimation(a: Manifest['animations'][string]): StageAnimatio
   };
 }
 
-export type LayerMode = 'on-top' | 'desktop';
+export type LayerMode = Layer;
 
 interface Sizing {
   readonly frameH: number;
@@ -72,14 +73,14 @@ export interface StageControllerDeps {
 
 export class StageController {
   readonly #deps: StageControllerDeps;
-  #core: CoreState;
+  /** Undefined until attach (display metrics exist only after app ready) and while no valid pack is on stage. */
+  #core: CoreState | undefined;
   #preset: SizePreset = DEFAULT_SIZE_PRESET;
   #scale = MIN_SCALE;
   #layer: LayerMode = 'on-top';
 
   constructor(deps: StageControllerDeps) {
     this.#deps = deps;
-    this.#core = initialState(deps.seed);
   }
 
   get preset(): SizePreset {
@@ -97,7 +98,7 @@ export class StageController {
       this.#dispatch({ type: 'input', input: { kind: 'hover', overOpaque } });
     });
     ipc.on(CHANNEL.stageInput, ({ kind }) => {
-      this.#dispatch({ type: 'input', input: { kind } });
+      this.#dispatch({ type: 'input', input: this.#stageInput(kind) });
     });
   }
 
@@ -105,7 +106,8 @@ export class StageController {
   attach(win: BrowserWindow): void {
     // Display metrics exist only after app ready, so the first scale is computed here, not in the constructor.
     this.#scale = this.#presetScale(this.#preset);
-    win.setIgnoreMouseEvents(this.#core.hitThrough, { forward: true });
+    this.#core = this.#initialCore();
+    win.setIgnoreMouseEvents(this.#core?.hitThrough ?? true, { forward: true });
     this.#applyLayer(win);
     win.webContents.on('did-finish-load', () => {
       this.#pushCharacters();
@@ -204,7 +206,39 @@ export class StageController {
     else win.setAlwaysOnTop(false);
   }
 
+  /** Core state for the primary character on the current display; undefined (logged) when there is none to drive. */
+  #initialCore(): CoreState | undefined {
+    const pack = this.#characters()[0]?.pack;
+    if (!pack) return undefined;
+    const display = this.#deps.display();
+    const result = initialState({
+      seed: this.#deps.seed,
+      character: { id: pack.id, anims: Object.keys(pack.manifest.animations) },
+      // M1-20/M1-22 feed the sensed windows, the layer, the tz offset and the stored mood.
+      world: {
+        workArea: { width: display.workArea.width, height: display.workArea.height },
+        windows: [],
+        scale: this.#scale,
+        scaleFactor: display.scaleFactor,
+        layer: this.#layer,
+        tzOffsetMin: 0,
+      },
+      now: this.#deps.now(),
+    });
+    if (result.ok) return result.state;
+    console.error(`[core] initial state rejected: ${result.reason}`);
+    return undefined;
+  }
+
+  /** The M0 `stage:input` contract has no release point or fling velocity yet (M1-17/M1-28 add them): report the
+   * release at rest where the core stands. */
+  #stageInput(kind: 'drag-start' | 'drag-end' | 'click'): PointerInput {
+    if (kind !== 'drag-end') return { kind };
+    return { kind, x: this.#core?.pos.x ?? 0, y: this.#core?.pos.y ?? 0, vx: 0, vy: 0 };
+  }
+
   #dispatch(event: CoreEvent): void {
+    if (!this.#core) return;
     const result = step(this.#core, event, this.#deps.now());
     this.#core = result.state;
     for (const effect of result.effects) this.#interpret(effect);
@@ -215,8 +249,18 @@ export class StageController {
       case 'SetHitThrough':
         this.#deps.stage()?.setIgnoreMouseEvents(effect.ignore, { forward: true });
         return;
-      case 'PlayAnimation':
-        // The stage plays only idle until M1 behaviour sends animations to the renderer.
+      case 'Rejected':
+        console.warn(`[core] rejected ${effect.event}: ${effect.reason}`);
+        return;
+      case 'Show':
+      case 'Fx':
+      case 'OpenMenu':
+      case 'LoadCharacter':
+      case 'CommitSwitch':
+      case 'PersistMood':
+      case 'PersistActive':
+      case 'SetSensing':
+        // Interpreted from M1-22 (frame-state, switch, persistence, sensing); the stage plays only idle until then.
         return;
     }
   }

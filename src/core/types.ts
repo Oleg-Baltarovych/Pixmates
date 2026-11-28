@@ -1,32 +1,227 @@
-// Core data shapes (ADR 002, plan M0-05). Plain, serialisable data: no classes, no functions, no platform types.
-import type { CoreAnimation } from '../content/stage.ts';
+// Core data shapes (ADR 002, plan M1 Design → Core, SPEC §4). Plain, serialisable data: no classes, no functions,
+// no platform types, so a replay log is byte-identical. Every state, event and effect is a discriminated union.
+// Units: overlay DIP (the overlay is the work area, origin at its top-left), `x` = foot pivot, `y` = surface top,
+// time = ms (`now` as given by main).
+import type { Direction, Motion, PathSegment } from '../shared/motion.ts';
+import type { Facing } from '../shared/pack.ts';
 
-export type AnimationName = CoreAnimation;
+export type { Direction, Motion, PathSegment };
 
 /** Seeded RNG state (uint32). Lives in CoreState so a replay with the same seed is identical. */
 export type RngState = number;
 
-export type DragState = { readonly kind: 'idle' } | { readonly kind: 'dragging'; readonly since: number };
+/** Pack id (`pixmates.maid`). */
+export type CharacterId = string;
+/** Animation name from the pack manifest (`idle_a`, `walk`, `react:wave`). */
+export type AnimName = string;
+export type ActivityId = string;
+/** Opaque window id minted by main; HWNDs never reach the core (ADR 014). */
+export type WindowId = string;
+
+export interface Size {
+  readonly width: number;
+  readonly height: number;
+}
+export interface Rect extends Size {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** A visible top-level window, in overlay DIP (may extend past the overlay). */
+export interface DesktopWindow {
+  readonly id: WindowId;
+  readonly rect: Rect;
+}
+
+/** D-9: «поверх усіх вікон» or «лише на робочому столі» (floor only). */
+export type Layer = 'on-top' | 'desktop';
+
+/** What main senses about the desktop, as one snapshot (`world` event). */
+export interface World {
+  readonly workArea: Size;
+  /** Front to back (z-order). */
+  readonly windows: readonly DesktopWindow[];
+  /** Integer sprite scale: device px per art px (D-10). */
+  readonly scale: number;
+  /** Display scale factor (1, 1.25, …). */
+  readonly scaleFactor: number;
+  readonly layer: Layer;
+  /** Local time = UTC + this, for time-of-day activity conditions. */
+  readonly tzOffsetMin: number;
+}
+
+/** The active character as the core sees it: its id and the animations its pack has. */
+export interface CharacterRef {
+  readonly id: CharacterId;
+  readonly anims: readonly AnimName[];
+}
+
+/** Where the character stands. M1b adds `window_side` and `screen_edge` (SPEC §4.2). */
+export type Surface =
+  | { readonly kind: 'floor' }
+  | {
+      readonly kind: 'window_top';
+      readonly id: WindowId;
+      readonly left: number;
+      readonly right: number;
+      readonly y: number;
+    };
+
+/** The last settled spot. While dragged or falling, the live point comes from the input or the fall path. */
+export interface Placement {
+  readonly surface: Surface;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** SPEC §4.5: 0–100 each, per character; drifts back to neutral analytically from `updatedAt`. */
+export interface MoodState {
+  readonly mood: number;
+  readonly affinity: number;
+  readonly updatedAt: number;
+}
+
+/** User-initiated, silent cursor reactions (SPEC §4.1/4.3, D-27: second-scale cooldowns). */
+export type CursorReaction = 'startle' | 'petted' | 'poked';
+/** Reactions the throttle tracks; M3/M4 add system and dev reactions. */
+export type ReactionKey = CursorReaction;
+
+/** Anti-spam memory (SPEC §4.1): per-reaction last fire, the last unsolicited line, the dedup queue. */
+export interface ThrottleState {
+  readonly firedAt: Readonly<Partial<Record<ReactionKey, number>>>;
+  readonly lastLineAt: number | null;
+  /** One pending entry per reaction kind; the newest replaces an older one. */
+  readonly pending: readonly { readonly reaction: ReactionKey; readonly at: number }[];
+}
+
+interface Timed {
+  readonly since: number;
+  /** When the state ends on its own; null = it lasts until an event ends it. */
+  readonly until: number | null;
+}
+
+/** States a reaction returns to when it ends. */
+export type RestingBehavior =
+  | (Timed & { readonly kind: 'idle'; readonly anim: AnimName })
+  | (Timed & { readonly kind: 'sit_edge' })
+  | (Timed & { readonly kind: 'activity'; readonly id: ActivityId; readonly anim: AnimName });
+
+export type SwitchMode = 'walk' | 'poof';
+
+/**
+ * SPEC §4.1 states as built in M1 (run/climb/hang/peek wait for the M1b art pass; talk/think/focus for M2/M3).
+ * `turn` plays forward before a walk and reversed after it (`then: front`); a walk lasts `since` → `until` (arrival).
+ */
+export type Behavior =
+  | RestingBehavior
+  | (Timed & {
+      readonly kind: 'turn';
+      readonly dir: Direction;
+      readonly then: { readonly kind: 'walk'; readonly x1: number } | { readonly kind: 'front' };
+    })
+  | (Timed & { readonly kind: 'walk'; readonly dir: Direction; readonly x0: number; readonly x1: number })
+  | (Timed & {
+      readonly kind: 'react';
+      readonly reaction: CursorReaction;
+      readonly anim: AnimName;
+      readonly resume: RestingBehavior;
+    })
+  | (Timed & { readonly kind: 'drag' })
+  | (Timed & { readonly kind: 'fall'; readonly path: readonly PathSegment[] })
+  | (Timed & { readonly kind: 'land' })
+  | (Timed & { readonly kind: 'sleep' })
+  /** Radial menu open: attending, front-facing (SPEC §4.1, priority 60). */
+  | (Timed & { readonly kind: 'menu' })
+  | (Timed & { readonly kind: 'switch_out'; readonly mode: SwitchMode; readonly to: CharacterId })
+  | (Timed & { readonly kind: 'switch_in'; readonly mode: SwitchMode })
+  | (Timed & { readonly kind: 'hidden' });
+
+export type BehaviorKind = Behavior['kind'];
 
 export interface CoreState {
   readonly rng: RngState;
-  readonly drag: DragState;
-  readonly animation: AnimationName;
+  readonly character: CharacterRef;
+  readonly world: World;
+  readonly pos: Placement;
+  /** Last travel direction; front-facing states ignore it. */
+  readonly facing: Direction;
+  readonly behavior: Behavior;
+  readonly mood: MoodState;
+  readonly throttle: ThrottleState;
+  /** Recently picked activities, newest first (recency penalty). */
+  readonly recent: readonly ActivityId[];
   /** Whether the stage window currently lets clicks through (main mirrors it with setIgnoreMouseEvents). */
   readonly hitThrough: boolean;
+  /** Deadline scheduling (D-27, F2): when main must wake the core next; null = nothing due. */
+  readonly wakeAt: number | null;
 }
 
+/** Stage input. Pointer samples are stamped with main's receipt time (`now`). */
 export type PointerInput =
+  /** Alpha hit-test result (`stage:hit`): is the cursor over an opaque pixel of the character? */
   | { readonly kind: 'hover'; readonly overOpaque: boolean }
+  | { readonly kind: 'pointer'; readonly x: number; readonly y: number }
+  | { readonly kind: 'pointer-leave' }
+  | { readonly kind: 'click' }
   | { readonly kind: 'drag-start' }
-  | { readonly kind: 'drag-end' }
-  | { readonly kind: 'click' };
+  /** Release point and fling velocity (DIP/s); physics clamps the speed (M1-08). */
+  | {
+      readonly kind: 'drag-end';
+      readonly x: number;
+      readonly y: number;
+      readonly vx: number;
+      readonly vy: number;
+    }
+  | { readonly kind: 'context-menu' };
 
-export type CoreEvent = { readonly type: 'tick' } | { readonly type: 'input'; readonly input: PointerInput };
+export type PowerState = 'lock' | 'unlock' | 'suspend' | 'resume';
+
+export type CoreEvent =
+  /** The `wakeAt` deadline came due. */
+  | { readonly type: 'tick' }
+  | { readonly type: 'world'; readonly world: World }
+  | { readonly type: 'input'; readonly input: PointerInput }
+  | { readonly type: 'user-idle'; readonly idleMs: number }
+  | { readonly type: 'power'; readonly state: PowerState }
+  | { readonly type: 'visibility'; readonly shown: boolean }
+  /** Switch to `to`, which arrives with its stored mood. */
+  | { readonly type: 'switch'; readonly to: CharacterId; readonly mood: MoodState }
+  | {
+      readonly type: 'character-loaded';
+      readonly id: CharacterId;
+      readonly ok: true;
+      readonly anims: readonly AnimName[];
+    }
+  | { readonly type: 'character-loaded'; readonly id: CharacterId; readonly ok: false }
+  | { readonly type: 'menu-closed' };
+
+export type CoreEventType = CoreEvent['type'];
+
+/** FX marks M1 uses (plan check (h)); names match `assets-src/fx/marks.ts`. */
+export type FxMark = 'zzz' | 'heart' | 'sweat' | 'exclaim' | 'question' | 'smoke';
+
+export type SensingRate = 'off' | 'slow' | 'fast';
+
+/** Why the core refused an event or an init (rules/core.md: invalid input → unchanged state + this). */
+export type RejectReason = 'non-finite' | 'out-of-range' | 'too-many' | 'no-idle';
 
 export type Effect =
-  | { readonly type: 'PlayAnimation'; readonly name: AnimationName }
-  | { readonly type: 'SetHitThrough'; readonly ignore: boolean };
+  | {
+      readonly type: 'Show';
+      readonly anim: AnimName;
+      readonly facing: Facing;
+      readonly playback: 'fwd' | 'rev';
+      readonly motion: Motion;
+    }
+  | { readonly type: 'Fx'; readonly mark: FxMark; readonly untilMs: number }
+  | { readonly type: 'SetHitThrough'; readonly ignore: boolean }
+  | { readonly type: 'OpenMenu'; readonly x: number; readonly y: number }
+  | { readonly type: 'LoadCharacter'; readonly id: CharacterId }
+  | { readonly type: 'CommitSwitch'; readonly id: CharacterId }
+  | { readonly type: 'PersistMood'; readonly id: CharacterId; readonly mood: MoodState }
+  | { readonly type: 'PersistActive'; readonly id: CharacterId }
+  | { readonly type: 'SetSensing'; readonly desktop: SensingRate; readonly idle: Exclude<SensingRate, 'off'> }
+  | { readonly type: 'Rejected'; readonly event: CoreEventType; readonly reason: RejectReason };
 
 export interface StepResult {
   readonly state: CoreState;
