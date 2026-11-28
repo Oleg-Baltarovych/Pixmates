@@ -6,6 +6,7 @@ import { app, globalShortcut, ipcMain, Menu, protocol, screen, session } from 'e
 import { APP_ID } from '../shared/app.ts';
 import { CHANNEL } from '../shared/ipc.ts';
 import { WINDOW_ROLES } from '../shared/windows.ts';
+import { devSurfaces } from './app/dev-build.ts';
 import { isDebugLaunch } from './app/launch-guard.ts';
 import { registerLifecycle } from './app/lifecycle.ts';
 import { loadRegistry } from './characters/registry.ts';
@@ -30,8 +31,10 @@ function argValue(name: string): string | undefined {
 }
 
 function main(): void {
-  // A packaged build never runs with a debugger endpoint (rules/security.md).
-  if (app.isPackaged && isDebugLaunch(process.argv, (name) => app.commandLine.hasSwitch(name))) {
+  // Dev-only surfaces need a dev build AND an unpackaged run (app/dev-build.ts); never `app.isPackaged` alone.
+  const dev = devSurfaces(app.isPackaged);
+  // A production build never runs with a debugger endpoint (rules/security.md).
+  if (!dev && isDebugLaunch(process.argv, (name) => app.commandLine.hasSwitch(name))) {
     // exit, not quit: terminate at once so a debugger endpoint has no window while a graceful quit runs.
     app.exit(1);
     return;
@@ -50,7 +53,7 @@ function main(): void {
   app.on('web-contents-created', (_event, contents) => {
     hardenWebContents(contents);
     // Dev-only: renderer console (CSP violations, errors) in the terminal.
-    if (!app.isPackaged) {
+    if (dev) {
       contents.on('console-message', ({ level, message }) => {
         console.log(`[renderer:${level}] ${message}`);
       });
@@ -59,7 +62,7 @@ function main(): void {
 
   const paths: PathContext = {
     mainDir: import.meta.dirname,
-    isPackaged: app.isPackaged,
+    dev,
     devServerUrl: process.env['ELECTRON_RENDERER_URL'],
   };
   // `--perf-seed=<n>` fixes the core seed (pnpm perf); otherwise a fresh one per run. The seed only drives
@@ -74,7 +77,7 @@ function main(): void {
   const registry = loadRegistry(charactersRoot);
   for (const error of registry.errors) console.warn(`[characters] ${error}`);
   // Dev-only art lineup (MA-31): `--art-lineup=<ids>`, up to 4 built-ins side by side; rejected when packaged.
-  const artLineup = parseArtLineup(process.argv, registry.packs, app.isPackaged);
+  const artLineup = parseArtLineup(process.argv, registry.packs, !dev);
   if (artLineup.kind === 'error') console.error(`[characters] ${artLineup.error}`);
   const lineup = artLineup.kind === 'lineup' ? artLineup.ids : undefined;
   const selection = selectCharacters({ packs: registry.packs, requested: argValue('character'), lineup });
@@ -90,7 +93,7 @@ function main(): void {
     now: () => Date.now(),
     seed,
     characters: () => onStage,
-    animCycle: lineup !== undefined || (!app.isPackaged && process.argv.includes('--anim-cycle')),
+    animCycle: lineup !== undefined || (dev && process.argv.includes('--anim-cycle')),
   });
   const ipc = new IpcRouter(ipcMain, {
     roleOf: (id) => WINDOW_ROLES.find((role) => windows.windowOf(role)?.webContents.id === id),
@@ -168,7 +171,8 @@ function main(): void {
       hotkeys.bind(TOGGLE_ACCELERATOR, toggleStage);
       refreshTray();
 
-      if (!app.isPackaged) {
+      // `import.meta.env.DEV` literally here (not only via `dev`): a production build drops this block and its chunks.
+      if (import.meta.env.DEV && dev) {
         // Dev-only helpers: open the lazy windows at start; capture the stage over light/dark backdrops.
         if (process.argv.includes('--dev-windows')) {
           windows.showChat();
@@ -176,7 +180,7 @@ function main(): void {
         }
         const captureDir = argValue('capture-stage');
         if (captureDir !== undefined) {
-          // Loaded on demand: a separate chunk that a packaged app never imports.
+          // Loaded on demand: a dev-build-only chunk.
           void import('./dev/capture.ts').then(({ captureStageForDev }) => {
             captureStageForDev(() => windows.windowOf('stage'), captureDir);
           });

@@ -14,7 +14,7 @@
   "scripts": {
     "dev": "pnpm sprites && electron-vite dev --",
     "dev:cycle": "pnpm sprites && electron-vite dev -- --anim-cycle",
-    "build": "pnpm sprites && electron-vite build",
+    "build": "pnpm sprites && electron-vite build && node tools/check-build.ts",
     "dist:dir": "pnpm build && electron-builder --dir --publish never",
     "perf": "node tools/perf.ts",
     "typecheck": "tsc -p tsconfig.core.json && tsc -p tsconfig.main.json && tsc -p tsconfig.preload.json && tsc -p tsconfig.renderer.json && tsc -p tsconfig.tools.json && tsc -p tsconfig.tests.json",

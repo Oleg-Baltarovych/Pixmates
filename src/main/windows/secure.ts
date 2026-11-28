@@ -73,7 +73,7 @@ export function createSecureWindow({ role, paths, window }: SecureWindowOptions)
     webPreferences: {
       ...SECURE_WEB_PREFERENCES,
       preload: preloadPath(role, paths),
-      devTools: !paths.isPackaged,
+      devTools: paths.dev,
     },
   });
   win.loadURL(pageSource(role, paths).url).catch((error: unknown) => {

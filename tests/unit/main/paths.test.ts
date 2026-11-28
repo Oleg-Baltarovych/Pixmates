@@ -10,11 +10,11 @@ import {
 } from '../../../src/main/windows/paths.ts';
 
 const mainDir = join('C:', 'app', 'out', 'main');
-const prod: PathContext = { mainDir, isPackaged: true, devServerUrl: undefined };
-const dev: PathContext = { mainDir, isPackaged: false, devServerUrl: 'http://localhost:5173' };
+const prod: PathContext = { mainDir, dev: false, devServerUrl: undefined };
+const dev: PathContext = { mainDir, dev: true, devServerUrl: 'http://localhost:5173' };
 
 describe('trustedDevServerUrl', () => {
-  it('accepts loopback http only when unpackaged', () => {
+  it('accepts loopback http only in a dev run', () => {
     expect(trustedDevServerUrl(dev)).toBe('http://localhost:5173');
     expect(trustedDevServerUrl({ ...dev, devServerUrl: 'http://127.0.0.1:5174/' })).toBe('http://127.0.0.1:5174');
   });
@@ -30,8 +30,8 @@ describe('trustedDevServerUrl', () => {
     expect(trustedDevServerUrl({ ...dev, devServerUrl: url })).toBeUndefined();
   });
 
-  it('ignores the variable in a packaged build', () => {
-    expect(trustedDevServerUrl({ ...dev, isPackaged: true })).toBeUndefined();
+  it('ignores the variable outside a dev run', () => {
+    expect(trustedDevServerUrl({ ...dev, dev: false })).toBeUndefined();
   });
 });
 

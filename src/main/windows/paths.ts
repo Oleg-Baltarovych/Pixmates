@@ -11,18 +11,18 @@ export interface PageSource {
 export interface PathContext {
   /** Directory of the bundled main script (`out/main`). */
   readonly mainDir: string;
-  /** `app.isPackaged`. */
-  readonly isPackaged: boolean;
+  /** Dev-only surfaces allowed (`devSurfaces` in app/dev-build.ts): a dev build running unpackaged. */
+  readonly dev: boolean;
   /** `process.env.ELECTRON_RENDERER_URL`, set by `electron-vite dev`. */
   readonly devServerUrl: string | undefined;
 }
 
 /**
- * The dev server URL, only when unpackaged and only on loopback http. A packaged build ignores the variable,
+ * The dev server URL, only in a dev run and only on loopback http. A production build ignores the variable,
  * so an environment variable can never point a window that has a preload at a remote page.
  */
 export function trustedDevServerUrl(ctx: PathContext): string | undefined {
-  if (ctx.isPackaged || ctx.devServerUrl === undefined) return undefined;
+  if (!ctx.dev || ctx.devServerUrl === undefined) return undefined;
   let url: URL;
   try {
     url = new URL(ctx.devServerUrl);

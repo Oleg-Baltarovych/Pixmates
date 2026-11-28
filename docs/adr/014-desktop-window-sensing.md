@@ -64,3 +64,9 @@ method are in `docs/plans/2026-11-28-m1.md` § M1-02 result.
 **Decision: (a) WinEvent hook + slow refresh**, koffi sync blocks reduced. Open for M1-20: the cursor-motion event
 load (not measured, `OBJID_CURSOR`) needs a perf spot check; option: hook `EVENT_OBJECT_LOCATIONCHANGE` per pid of
 the window under the character.
+
+**Security review (M1-02):** the unpacked `koffi.node` sits outside asar integrity validation. M1-20 narrows
+`asarUnpack` to that one file (koffi's resolver needs only the package's `package.json` + `index.js`, which stay in
+app.asar; `koffi.lib` is not loaded at runtime), loads `user32.dll` / `dwmapi.dll` by absolute System32 path, and
+keeps the WinEvent callback registered until exit. Authenticode signing of the release (exe + `koffi.node`) is
+planned for M6 packaging. Details: plan § M1-02 result, security carry-overs.

@@ -2,7 +2,7 @@
 
 > Current state only; update it in the commit that changes structure, systems, commands or decisions.
 > Finished narratives go to `docs/CONTEXT-HISTORY.md`.
-> Last updated: 2026-11-28 (M1-02 spike S4: koffi + WinEvent hook; D-27; SPEC v1.20).
+> Last updated: 2026-11-28 (M1-02 spike S4: koffi + WinEvent hook; review fix: build-time dev gate; D-27; SPEC v1.20).
 
 ## 1. Status
 - **M0 ✅** (spikes S1–S3 on unmerged `spike/*` branches). **M-ART ✅ accepted by qa-lead 2026-11-28** (with follow-ups: packaged smoke look, perf re-run before M1) on `feat/m-art` (draft PR #4), plan `docs/plans/2026-11-23-m-art.md`. SPEC v1.20, ART-BIBLE v1. MVP for the portfolio = M0 + M-ART + M1 + M2.
@@ -69,7 +69,8 @@ Not started (scope in SPEC §12; order D-24): M1b motion art pass (after M2) · 
 - Vite pre-bundling reloads on the first dev run; `optimizeDeps.include` lists pixi/react.
 - `screen`, `Tray`, `globalShortcut` only after `app.whenReady()`. The stage subscribes to `onCharacters` before any `await`.
 - Pages load from `app://renderer/<role>/index.html` (never `file://`); `app://` reads go through `readContainedFile`; the characters host (`windows/app-protocol.ts`) serves only registered atlases, with CORS for `app://renderer` + the dev origin; CSP `img-src`/`connect-src` include `app://characters`. Fuses: `GrantFileProtocolExtraPrivileges` off, `EnableCookieEncryption` on.
-- Lifecycle via `app/lifecycle.ts`; packaged builds quit on `--remote-debugging-port`/`--inspect*`. Single-instance lock is per userData: use `--user-data-dir=<temp>` beside a running `pnpm dev`.
+- Dev-only surfaces (dev switches, devtools, dev server URL, debugger-switch bypass, `src/main/dev/*`) need `devSurfaces(app.isPackaged)` (`app/dev-build.ts` = `import.meta.env.DEV && !isPackaged`), never `app.isPackaged` alone (a renamed `electron.exe` passes it). A dynamic `import()` of dev code must sit under a literal `import.meta.env.DEV` test or rolldown still emits its chunk; `pnpm build` ends with `tools/check-build.ts` (fails on dev markers in `out/main`).
+- Lifecycle via `app/lifecycle.ts`; production builds quit on `--remote-debugging-port`/`--inspect*`. Single-instance lock is per userData: use `--user-data-dir=<temp>` beside a running `pnpm dev`.
 - Overlay GPU memory scales with work-area size. Main timers tick at 15.6 ms → per-frame motion via renderer rAF; `setBounds`, not `setPosition`, at 125 %; Pixi `maxFPS = 60` skips vsyncs (M1: own throttle). Perf RAM is bimodal per launch: gpu-process private ≈ 87 or ≈ 132 MB (Δ ≈ 45 MB, any character, M1-00) → compare runs on the high plateau (≈ 262 MB), repeat a run before trusting a drop. Black instead of transparency on some GPUs (electron#40515) → `--compat-mode` (+ walking ≈ 16 % CPU).
 - Stage: named Pixi imports, `skipExtensionImports: true`, plain DOM input; canvas = exact device-pixel box (`device-pixel-content-box`). Check scales with `pnpm dev -- --character=pixmates.<id> --force-device-scale-factor=1|1.25 --capture-stage=<dir> --user-data-dir=<temp>` (the dev box is natively 125 %; `stage-capture.json` sizes are device px). Never screenshot the whole desktop.
 - `pnpm perf` writes `reports/perf/<date>-<character>.md` (`-default` without `--character`; a same-day rerun of one character overwrites its own report); `--skip-build` reuses `release/win-unpacked` (rebuild first if it predates your change). Flags are strict, `=` form only: unknown flag, bad value, repeat or `--character maid` → usage error, exit 2.

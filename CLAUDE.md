@@ -20,7 +20,7 @@ pure behavior core in `src/core` · Zustand (renderer view state) · zod (IPC, m
 - `pnpm check` — typecheck → test → lint → format:check, stops at the first failure; must be green before reporting a task done (typecheck = 6 TS projects: core, main, preload, renderer, tools, tests)
 - `pnpm test:coverage` — Vitest + v8 coverage (core ≥ 90%)
 - `pnpm format` — Prettier write
-- `pnpm build` — electron-vite production build into `out/` (pages served from `app://renderer/...`)
+- `pnpm build` — electron-vite production build into `out/` (pages served from `app://renderer/...`), then `tools/check-build.ts` fails if dev-only code reached `out/main`
 - `pnpm dist:dir` — build + `electron-builder --dir` (unpacked app with fuses in `release/win-unpacked/`, no installer, no publish)
 - `pnpm perf [-- --character=<id>]` — builds `dist:dir`, launches the packaged app with a temp profile, samples all processes 30 s warm-up + 120 s → `reports/perf/<date>-<character>.md` (unknown or space-separated flags exit 2); verdict: CPU < 2 % and private-bytes sum avg ≤ 280 MB (ADR 007, SPEC §1). Run plugged in, with no `pnpm dev` instance open
 - `pnpm sprites:lock` — rewrite the committed sprite fingerprint `assets-src/sprites.lock.json` after an intended pack change (`pnpm test` fails when a pack drifts from it)
