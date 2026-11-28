@@ -50,10 +50,15 @@ export interface World {
   readonly tzOffsetMin: number;
 }
 
-/** The active character as the core sees it: its id and the animations its pack has. */
-export interface CharacterRef {
+/** A character as main hands it over: its id and the animations its pack has. */
+export interface CharacterSpec {
   readonly id: CharacterId;
   readonly anims: readonly AnimName[];
+}
+
+/** The active character as the core sees it: a checked spec plus its base idle, derived once (`toCharacterRef`). */
+export interface CharacterRef extends CharacterSpec {
+  readonly idle: AnimName;
 }
 
 /** Where the character stands. M1b adds `window_side` and `screen_edge` (SPEC §4.2). */
@@ -67,7 +72,11 @@ export type Surface =
       readonly y: number;
     };
 
-/** The last settled spot. While dragged or falling, the live point comes from the input or the fall path. */
+/**
+ * The last settled spot. While dragged or falling, the live point comes from the input or the fall path.
+ * Engine invariant (M1-06/08/14): when the window under `surface` vanishes (a `world` without its id, a drag
+ * included), the engine clears or re-homes `surface` before using it; a stale `window_top` is never kept.
+ */
 export interface Placement {
   readonly surface: Surface;
   readonly x: number;
@@ -90,21 +99,50 @@ export type ReactionKey = CursorReaction;
 export interface ThrottleState {
   readonly firedAt: Readonly<Partial<Record<ReactionKey, number>>>;
   readonly lastLineAt: number | null;
-  /** One pending entry per reaction kind; the newest replaces an older one. */
-  readonly pending: readonly { readonly reaction: ReactionKey; readonly at: number }[];
+  /** Dedup queue: when each reaction kind was last queued; the newest replaces an older one. */
+  readonly pending: Readonly<Partial<Record<ReactionKey, number>>>;
 }
 
+/** A pointer sample, stamped with main's receipt time. */
+export interface CursorSample {
+  readonly x: number;
+  readonly y: number;
+  readonly at: number;
+}
+
+/** Cursor memory for startle speed and petting circles (M1-10); the trail is bounded by `CURSOR_TRAIL.samples`. */
+export interface CursorMemory {
+  readonly last: CursorSample | null;
+  /** Oldest first. */
+  readonly trail: readonly CursorSample[];
+}
+
+/** A state that ends on its own at `until`. */
 interface Timed {
   readonly since: number;
-  /** When the state ends on its own; null = it lasts until an event ends it. */
+  readonly until: number;
+}
+
+/** A state an event ends; `until` is an optional cap (an activity's max duration), null = open-ended. */
+interface Open {
+  readonly since: number;
   readonly until: number | null;
 }
 
 /** States a reaction returns to when it ends. */
 export type RestingBehavior =
-  | (Timed & { readonly kind: 'idle'; readonly anim: AnimName })
-  | (Timed & { readonly kind: 'sit_edge' })
-  | (Timed & { readonly kind: 'activity'; readonly id: ActivityId; readonly anim: AnimName });
+  | (Open & { readonly kind: 'idle'; readonly anim: AnimName })
+  | (Open & { readonly kind: 'sit_edge' })
+  | (Open & { readonly kind: 'activity'; readonly id: ActivityId; readonly anim: AnimName });
+
+/** Omit over each member of a union (plain `Omit` would collapse it). */
+type Untimed<T> = T extends unknown ? Omit<T, 'since' | 'until'> : never;
+
+/**
+ * What a reaction resumes: a resting state's kind and payload; its times are stamped when it resumes
+ * (`resumeBehavior`). Walk and turn are not resumable: an interrupted walk is re-planned from where it stopped.
+ */
+export type Resume = Untimed<RestingBehavior>;
 
 export type SwitchMode = 'walk' | 'poof';
 
@@ -124,17 +162,18 @@ export type Behavior =
       readonly kind: 'react';
       readonly reaction: CursorReaction;
       readonly anim: AnimName;
-      readonly resume: RestingBehavior;
+      readonly resume: Resume;
     })
-  | (Timed & { readonly kind: 'drag' })
+  | (Open & { readonly kind: 'drag' })
   | (Timed & { readonly kind: 'fall'; readonly path: readonly PathSegment[] })
   | (Timed & { readonly kind: 'land' })
-  | (Timed & { readonly kind: 'sleep' })
+  | (Open & { readonly kind: 'sleep' })
   /** Radial menu open: attending, front-facing (SPEC §4.1, priority 60). */
-  | (Timed & { readonly kind: 'menu' })
+  | (Open & { readonly kind: 'menu' })
+  /** `until` = the load timeout (`SWITCH_LOAD_TIMEOUT_MS`) or the walk-off arrival. */
   | (Timed & { readonly kind: 'switch_out'; readonly mode: SwitchMode; readonly to: CharacterId })
   | (Timed & { readonly kind: 'switch_in'; readonly mode: SwitchMode })
-  | (Timed & { readonly kind: 'hidden' });
+  | (Open & { readonly kind: 'hidden' });
 
 export type BehaviorKind = Behavior['kind'];
 
@@ -148,6 +187,7 @@ export interface CoreState {
   readonly behavior: Behavior;
   readonly mood: MoodState;
   readonly throttle: ThrottleState;
+  readonly cursor: CursorMemory;
   /** Recently picked activities, newest first (recency penalty). */
   readonly recent: readonly ActivityId[];
   /** Whether the stage window currently lets clicks through (main mirrors it with setIgnoreMouseEvents). */
@@ -172,7 +212,8 @@ export type PointerInput =
       readonly vx: number;
       readonly vy: number;
     }
-  | { readonly kind: 'context-menu' };
+  /** Right-click at the cursor point; the menu opens there (M1-25 `OpenMenu`). */
+  | { readonly kind: 'context-menu'; readonly x: number; readonly y: number };
 
 export type PowerState = 'lock' | 'unlock' | 'suspend' | 'resume';
 
@@ -203,7 +244,7 @@ export type FxMark = 'zzz' | 'heart' | 'sweat' | 'exclaim' | 'question' | 'smoke
 export type SensingRate = 'off' | 'slow' | 'fast';
 
 /** Why the core refused an event or an init (rules/core.md: invalid input → unchanged state + this). */
-export type RejectReason = 'non-finite' | 'out-of-range' | 'too-many' | 'no-idle';
+export type RejectReason = 'non-finite' | 'out-of-range' | 'too-many' | 'duplicate' | 'no-idle';
 
 export type Effect =
   | {

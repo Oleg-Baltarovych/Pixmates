@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { INPUT_LIMITS, NEW_CHARACTER_MOOD } from '../../../src/content/behavior.ts';
 import { STAGE_LAYOUT_DIP } from '../../../src/content/stage.ts';
 import { seedRng } from '../../../src/core/rng.ts';
-import { initialState, type InitInput } from '../../../src/core/state.ts';
+import { initialState, resumeBehavior, type InitInput } from '../../../src/core/state.ts';
+import { ANIM_NAME_MAX, PACK_LIMITS } from '../../../src/shared/limits.ts';
 import {
   makeCharacter as maid,
   makeInit,
@@ -16,17 +17,18 @@ describe('initialState', () => {
     const state = ready(makeInit());
     expect(state.pos).toEqual({ surface: { kind: 'floor' }, x: 1920 - STAGE_LAYOUT_DIP.rightMargin, y: 1032 });
     expect(state.behavior).toEqual({ kind: 'idle', anim: 'idle_a', since: 1_000, until: null });
-    expect(state.character).toEqual(maid());
+    expect(state.character).toEqual({ ...maid(), idle: 'idle_a' });
     expect(state.world).toEqual(makeWorld());
     expect(state.hitThrough).toBe(true);
     expect(state.wakeAt).toBe(1_000);
     expect(state.rng).toBe(seedRng(7));
   });
 
-  it('starts with empty anti-spam memory and no recent activities', () => {
+  it('starts with empty anti-spam memory, no recent activities and no cursor memory', () => {
     const state = ready(makeInit());
-    expect(state.throttle).toEqual({ firedAt: {}, lastLineAt: null, pending: [] });
+    expect(state.throttle).toEqual({ firedAt: {}, lastLineAt: null, pending: {} });
     expect(state.recent).toEqual([]);
+    expect(state.cursor).toEqual({ last: null, trail: [] });
   });
 
   it('a character with no stored mood starts at the new-character mood, dated now', () => {
@@ -41,6 +43,7 @@ describe('initialState', () => {
   it("plays the pack's own idle name when it has `idle` instead of `idle_a`", () => {
     const state = ready(makeInit({ character: maid(['idle', 'walk']) }));
     expect(state.behavior).toMatchObject({ kind: 'idle', anim: 'idle' });
+    expect(state.character.idle).toBe('idle');
   });
 
   it('stays inside a work area narrower than the start margin', () => {
@@ -57,6 +60,22 @@ describe('initialState', () => {
     const edge = makeWorld({ windows, tzOffsetMin: -INPUT_LIMITS.tzOffsetMin });
     expect(initialState(makeInit({ world: edge })).ok).toBe(true);
     expect(initialState(makeInit({ mood: { mood: 0, affinity: 100, updatedAt: 0 } })).ok).toBe(true);
+    const longId = 'p'.repeat(PACK_LIMITS.idMax);
+    const longAnim = `${'a'.repeat(32)}:${'b'.repeat(ANIM_NAME_MAX - 33)}`;
+    expect(initialState(makeInit({ character: { id: longId, anims: ['idle_a', longAnim] } })).ok).toBe(true);
+    expect(initialState(makeInit({ world: makeWorld({ windows: [win(longId, 0, 0, 9, 9)] }) })).ok).toBe(true);
+  });
+});
+
+describe('resumeBehavior', () => {
+  it('stamps a stored resting state with fresh times: it lasts until an event ends it', () => {
+    expect(resumeBehavior({ kind: 'idle', anim: 'idle_b' }, 900)).toEqual({
+      kind: 'idle',
+      anim: 'idle_b',
+      since: 900,
+      until: null,
+    });
+    expect(resumeBehavior({ kind: 'sit_edge' }, 5)).toEqual({ kind: 'sit_edge', since: 5, until: null });
   });
 });
 
@@ -86,6 +105,27 @@ describe('initialState rejects illegal input without throwing', () => {
     ['NaN mood date', { mood: { mood: 50, affinity: 0, updatedAt: Number.NaN } }, 'non-finite'],
     ['character without an idle', { character: maid(['walk', 'turn']) }, 'no-idle'],
     ['character with an empty id', { character: { id: '', anims: ['idle_a'] } }, 'out-of-range'],
+    [
+      'character id past the id limit',
+      { character: { id: 'p'.repeat(PACK_LIMITS.idMax + 1), anims: ['idle_a'] } },
+      'out-of-range',
+    ],
+    [
+      'animation name past the name limit',
+      { character: maid(['idle_a', 'a'.repeat(ANIM_NAME_MAX + 1)]) },
+      'out-of-range',
+    ],
+    ['empty animation name', { character: maid(['idle_a', '']) }, 'out-of-range'],
+    [
+      'window id past the id limit',
+      { world: makeWorld({ windows: [win('w'.repeat(PACK_LIMITS.idMax + 1), 0, 0, 9, 9)] }) },
+      'out-of-range',
+    ],
+    [
+      'two windows with one id',
+      { world: makeWorld({ windows: [win('w1', 0, 0, 9, 9), win('w1', 20, 0, 9, 9)] }) },
+      'duplicate',
+    ],
     ['NaN now', { now: Number.NaN }, 'non-finite'],
   ])('%s', (_name, overrides, reason) => {
     expect(initialState(makeInit(overrides))).toEqual({ ok: false, reason });

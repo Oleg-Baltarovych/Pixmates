@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { INPUT_LIMITS } from '../../../src/content/behavior.ts';
-import { CLICK_REACTIONS } from '../../../src/content/stage.ts';
-import { PACK_LIMITS } from '../../../src/shared/pack.ts';
+import { CLICK_REACTION_MS, CLICK_REACTIONS } from '../../../src/content/stage.ts';
+import { PACK_LIMITS } from '../../../src/shared/limits.ts';
 import { step } from '../../../src/core/step.ts';
 import type { CoreEvent, CoreState, Effect, PointerInput } from '../../../src/core/types.ts';
 import { makeCoreState, makeWindow, makeWorld, readyState } from '../../fixtures/core-state.ts';
@@ -64,7 +64,15 @@ describe('step determinism', () => {
       playback: 'fwd',
       motion: { kind: 'still', x: start.pos.x, y: start.pos.y },
     });
-    expect(state.behavior).toMatchObject({ kind: 'react', reaction: 'poked', anim: effect.anim, since: 50 });
+    expect(state.behavior).toEqual({
+      kind: 'react',
+      reaction: 'poked',
+      anim: effect.anim,
+      // The resting state to return to, without times: they are stamped when it resumes.
+      resume: { kind: 'idle', anim: 'idle_a' },
+      since: 50,
+      until: 50 + CLICK_REACTION_MS,
+    });
   });
 
   it('does not mutate the input state', () => {
@@ -150,8 +158,32 @@ describe('illegal input → unchanged state + Rejected', () => {
     ['pointer with NaN', input({ kind: 'pointer', x: 0, y: NaN }), 'non-finite'],
     ['release with an infinite speed', release({ vx: Infinity }), 'non-finite'],
     ['release past the coordinate limit', release({ y: -INPUT_LIMITS.coordDip - 1 }), 'out-of-range'],
+    ['release at a NaN point', release({ x: NaN }), 'non-finite'],
+    ['context menu at a NaN point', input({ kind: 'context-menu', x: NaN, y: 0 }), 'non-finite'],
+    [
+      'context menu past the coordinate limit',
+      input({ kind: 'context-menu', x: 0, y: INPUT_LIMITS.coordDip + 1 }),
+      'out-of-range',
+    ],
+    [
+      'world with two windows sharing an id',
+      { type: 'world', world: makeWorld({ windows: [makeWindow('w', 0, 0, 9, 9), makeWindow('w', 9, 9, 9, 9)] }) },
+      'duplicate',
+    ],
     ['negative user idle', { type: 'user-idle', idleMs: -1 }, 'out-of-range'],
     ['NaN user idle', { type: 'user-idle', idleMs: NaN }, 'non-finite'],
+    ['infinite user idle', { type: 'user-idle', idleMs: Infinity }, 'non-finite'],
+    [
+      'switch with a NaN mood date',
+      { type: 'switch', to: 'pixmates.goth', mood: { mood: 50, affinity: 0, updatedAt: NaN } },
+      'non-finite',
+    ],
+    [
+      'switch to an id past the id limit',
+      { type: 'switch', to: 'p'.repeat(PACK_LIMITS.idMax + 1), mood: { mood: 50, affinity: 0, updatedAt: 0 } },
+      'out-of-range',
+    ],
+    ['failed load with an empty id', { type: 'character-loaded', id: '', ok: false }, 'out-of-range'],
     [
       'switch to an empty id',
       { type: 'switch', to: '', mood: { mood: 50, affinity: 0, updatedAt: 0 } },
@@ -202,14 +234,21 @@ describe('illegal input → unchanged state + Rejected', () => {
     ['zero user idle', { type: 'user-idle', idleMs: 0 }],
     ['a failed load', { type: 'character-loaded', id: 'pixmates.goth', ok: false }],
     ['lock', { type: 'power', state: 'lock' }],
+    ['a context menu on the overlay', input({ kind: 'context-menu', x: 10, y: 20 })],
   ])('accepts %s', (_name, event) => {
     expect(step(makeCoreState(), event, 10).effects.filter((effect) => effect.type === 'Rejected')).toEqual([]);
   });
 });
 
-describe('tick', () => {
-  it('changes nothing before the M1 engine (no behaviour loop yet)', () => {
-    const state = makeCoreState();
-    expect(step(state, { type: 'tick' }, 1000)).toEqual({ state, effects: [] });
+describe('world', () => {
+  it('a valid snapshot replaces what the core knows about the desktop', () => {
+    const world = makeWorld({ layer: 'desktop', scale: 3, windows: [makeWindow('w1', 10, 20, 300, 200)] });
+    const { state, effects } = step(makeCoreState(), { type: 'world', world }, 10);
+    expect(state.world).toEqual(world);
+    expect(effects).toEqual([]);
   });
+});
+
+describe('tick', () => {
+  it.todo('ends a timed state at its `until` and resumes the stored resting state (M1-14 engine)');
 });

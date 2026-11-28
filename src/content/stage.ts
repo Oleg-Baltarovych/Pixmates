@@ -59,3 +59,6 @@ export type CoreAnimation = 'idle_a' | 'drag' | 'happy' | 'wave';
 
 /** A click picks one of these, uniformly, from the seeded RNG. */
 export const CLICK_REACTIONS = ['happy', 'wave'] as const satisfies readonly CoreAnimation[];
+
+/** How long the interim click reaction lasts, ms: two loops of `happy` (6 f at 8 fps), 1.5 of `wave` (8 f at 8 fps). */
+export const CLICK_REACTION_MS = 1_500;

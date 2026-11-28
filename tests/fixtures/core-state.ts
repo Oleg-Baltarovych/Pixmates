@@ -1,6 +1,6 @@
 // Core test builders (rules/testing.md): a valid world, character and state, overridable per test.
 import { initialState, type InitInput } from '../../src/core/state.ts';
-import type { CharacterRef, CoreState, DesktopWindow, World } from '../../src/core/types.ts';
+import type { CharacterSpec, CoreState, DesktopWindow, World } from '../../src/core/types.ts';
 
 export const makeWorld = (overrides: Partial<World> = {}): World => ({
   workArea: { width: 1920, height: 1032 },
@@ -14,7 +14,7 @@ export const makeWorld = (overrides: Partial<World> = {}): World => ({
 
 export const makeCharacter = (
   anims: readonly string[] = ['idle_a', 'idle_b', 'walk', 'turn', 'drag', 'happy', 'wave'],
-): CharacterRef => ({ id: 'pixmates.maid', anims });
+): CharacterSpec => ({ id: 'pixmates.maid', anims });
 
 export const makeWindow = (id: string, x: number, y: number, width: number, height: number): DesktopWindow => ({
   id,

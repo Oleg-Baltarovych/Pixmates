@@ -1,9 +1,8 @@
 // The core step (ADR 002): (state, event, now) → { state, effects }. Pure and deterministic.
 // Interim M0 behaviour on the M1 shapes (plan M1-03): drag, click-through and a click reaction. Every event is
 // checked first; the M1 engine (`core/behavior/engine.ts`, M1-14) replaces the rest.
-import { CLICK_REACTIONS } from '../content/stage.ts';
+import { CLICK_REACTION_MS, CLICK_REACTIONS } from '../content/stage.ts';
 import { nextInt } from './rng.ts';
-import { idleOf } from './state.ts';
 import type { AnimName, CoreEvent, CoreState, Effect, PointerInput, StepResult } from './types.ts';
 import { checkEvent } from './validate.ts';
 
@@ -15,8 +14,10 @@ export function step(state: CoreState, event: CoreEvent, now: number): StepResul
   switch (event.type) {
     case 'input':
       return onInput(state, event.input, now);
-    case 'tick':
     case 'world':
+      // Re-homing on vanished or moved windows arrives with surfaces/physics (M1-06/M1-08).
+      return { state: { ...state, world: event.world }, effects: NOTHING };
+    case 'tick':
     case 'user-idle':
     case 'power':
     case 'visibility':
@@ -58,24 +59,30 @@ function onInput(state: CoreState, input: PointerInput, now: number): StepResult
       };
     }
     case 'drag-end': {
-      const idle = idleOf(state.character);
-      if (!dragging || idle === undefined) return { state, effects: NOTHING };
+      if (!dragging) return { state, effects: NOTHING };
+      const idle = state.character.idle;
       return {
         state: { ...state, behavior: { kind: 'idle', anim: idle, since: now, until: null } },
         effects: [showStill(state, idle)],
       };
     }
     case 'click': {
-      const idle = idleOf(state.character);
-      if (dragging || idle === undefined) return { state, effects: NOTHING };
+      if (dragging) return { state, effects: NOTHING };
+      const idle = state.character.idle;
       const draw = nextInt(state.rng, CLICK_REACTIONS.length);
       const anim = CLICK_REACTIONS[draw.value] ?? idle;
-      const resume = { kind: 'idle', anim: idle, since: now, until: null } as const;
       return {
         state: {
           ...state,
           rng: draw.state,
-          behavior: { kind: 'react', reaction: 'poked', anim, resume, since: now, until: null },
+          behavior: {
+            kind: 'react',
+            reaction: 'poked',
+            anim,
+            resume: { kind: 'idle', anim: idle },
+            since: now,
+            until: now + CLICK_REACTION_MS,
+          },
         },
         effects: [showStill(state, anim)],
       };

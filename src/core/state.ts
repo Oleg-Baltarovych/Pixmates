@@ -1,14 +1,13 @@
 // The core's first state (plan M1-03). Main builds it once the display and the active pack are known.
 import { NEW_CHARACTER_MOOD } from '../content/behavior.ts';
 import { STAGE_LAYOUT_DIP } from '../content/stage.ts';
-import { IDLE_NAMES } from '../shared/anim.ts';
 import { seedRng } from './rng.ts';
-import type { AnimName, CharacterRef, CoreState, MoodState, RejectReason, World } from './types.ts';
-import { checkCharacter, checkMood, checkWorld } from './validate.ts';
+import type { CharacterSpec, CoreState, MoodState, RejectReason, RestingBehavior, Resume, World } from './types.ts';
+import { checkMood, checkWorld, toCharacterRef } from './validate.ts';
 
 export interface InitInput {
   readonly seed: number;
-  readonly character: CharacterRef;
+  readonly character: CharacterSpec;
   readonly world: World;
   /** The character's stored mood; absent for a character never seen before. */
   readonly mood?: MoodState | undefined;
@@ -18,9 +17,12 @@ export interface InitInput {
 export type InitResult =
   { readonly ok: true; readonly state: CoreState } | { readonly ok: false; readonly reason: RejectReason };
 
-/** The pack's base idle (`idle_a` on the rig, `idle` allowed by SPEC §5.1); validated to exist. */
-export const idleOf = (character: CharacterRef): AnimName | undefined =>
-  IDLE_NAMES.find((name) => character.anims.includes(name));
+/** A stored resting state, stamped to start `now`; it lasts until an event (or the engine's next pick) ends it. */
+export const resumeBehavior = (resume: Resume, now: number): RestingBehavior => ({
+  ...resume,
+  since: now,
+  until: null,
+});
 
 /**
  * Idle on the floor near the right edge (where the M0 stage placed it), click-through, with empty anti-spam memory
@@ -30,24 +32,25 @@ export function initialState({ seed, character, world, mood, now }: InitInput): 
   const reason =
     (Number.isFinite(now) && Number.isFinite(seed) ? undefined : 'non-finite') ??
     checkWorld(world) ??
-    checkCharacter(character.id, character.anims) ??
     (mood === undefined ? undefined : checkMood(mood));
-  const idle = idleOf(character);
   if (reason !== undefined) return { ok: false, reason };
-  if (idle === undefined) return { ok: false, reason: 'no-idle' };
+  const checked = toCharacterRef(character.id, character.anims);
+  if (!checked.ok) return checked;
+  const ref = checked.character;
   const { width, height } = world.workArea;
   return {
     ok: true,
     state: {
       rng: seedRng(seed),
-      character,
+      character: ref,
       world,
       pos: { surface: { kind: 'floor' }, x: Math.max(0, width - STAGE_LAYOUT_DIP.rightMargin), y: height },
       // It starts at the right edge, so the room to walk is on its left.
       facing: 'left',
-      behavior: { kind: 'idle', anim: idle, since: now, until: null },
+      behavior: { kind: 'idle', anim: ref.idle, since: now, until: null },
       mood: mood ?? { ...NEW_CHARACTER_MOOD, updatedAt: now },
-      throttle: { firedAt: {}, lastLineAt: null, pending: [] },
+      throttle: { firedAt: {}, lastLineAt: null, pending: {} },
+      cursor: { last: null, trail: [] },
       recent: [],
       hitThrough: true,
       wakeAt: now,
