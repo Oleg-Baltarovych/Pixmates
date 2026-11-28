@@ -9,6 +9,10 @@ allowBuilds:
   # Transitive via electron-builder-squirrel-windows; its `install` only picks a 7-Zip binary for the Squirrel
   # target, which Pixmates does not build (NSIS only). Denied.
   electron-winstaller: false
+  # Win32 FFI for window sensing (ADR 014). Its `install` (cnoke --prebuild) only test-loads the prebuilt binary,
+  # which comes from the platform package `@koromix/koffi-win32-x64` (no scripts), or else compiles from source
+  # with CMake. The prebuilt is enough, so the compile fallback stays off. Denied.
+  koffi: false
 
 # An unapproved build script fails the install instead of being skipped silently.
 strictDepBuilds: true
