@@ -111,6 +111,7 @@ export interface DequeuedReady {
  */
 export function dequeueReady(throttle: ThrottleState, now: number, limits: QueueLimits): DequeuedReady {
   let pending = throttle.pending;
+  // Terminates: every pass that does not return removes at least one entry from `pending`.
   for (;;) {
     const taken = dequeue(pending, now, limits.maxAgeMs);
     pending = taken.pending;
@@ -150,16 +151,15 @@ export interface LineRules {
  * both block, the verdict names the one that frees up later (ties go to quiet hours).
  */
 export function lineVerdict(lastLineAt: number | null, now: number, rules: LineRules): Verdict {
-  const blocks: Blocked[] = [];
   const quietLeft = quietLeftMs(now, rules.tzOffsetMin, rules.quietHours);
-  if (quietLeft !== null) blocks.push({ ok: false, reason: 'quiet-hours', retryAt: now + quietLeft });
-  if (lastLineAt !== null && now < lastLineAt + rules.lineGapMs) {
-    blocks.push({ ok: false, reason: 'line-gap', retryAt: lastLineAt + rules.lineGapMs });
-  }
-  return blocks.reduce<Verdict>(
-    (latest, block) => (latest.ok || block.retryAt > latest.retryAt ? block : latest),
-    READY,
-  );
+  const quiet: Blocked | null =
+    quietLeft === null ? null : { ok: false, reason: 'quiet-hours', retryAt: now + quietLeft };
+  const gapEnd = lastLineAt === null ? null : lastLineAt + rules.lineGapMs;
+  const gap: Blocked | null =
+    gapEnd !== null && now < gapEnd ? { ok: false, reason: 'line-gap', retryAt: gapEnd } : null;
+  if (quiet === null) return gap ?? READY;
+  if (gap === null) return quiet;
+  return gap.retryAt > quiet.retryAt ? gap : quiet;
 }
 
 /** Record an unsolicited line said at `now`. */

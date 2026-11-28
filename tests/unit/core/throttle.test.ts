@@ -291,7 +291,20 @@ describe('quiet hours (local time, may run over midnight)', () => {
   });
 
   it('works before the epoch too (negative ms)', () => {
+    // -13 h is 11:00 local the day before: outside the night window (a sign-keeping `%` would read it as quiet).
+    expect(isQuietHours(-13 * HOUR, 0, night)).toBe(false);
     expect(isQuietHours(-1 * HOUR, 0, night)).toBe(true);
+  });
+
+  it('a negative offset that pushes local time before the epoch still reads the right clock', () => {
+    // 01:00 UTC at UTC-5 is 20:00 local the day before: not quiet.
+    expect(isQuietHours(1 * HOUR, -300, night)).toBe(false);
+    // 00:30 UTC at UTC-12 is 12:30 local: inside lunch, which ends 30 min later.
+    expect(lineVerdict(null, 30 * MIN, { lineGapMs: 10 * MIN, quietHours: lunch, tzOffsetMin: -720 })).toEqual({
+      ok: false,
+      reason: 'quiet-hours',
+      retryAt: 60 * MIN,
+    });
   });
 
   it('no window (the default) and an empty window are never quiet', () => {
@@ -322,6 +335,12 @@ describe('quiet hours (local time, may run over midnight)', () => {
       reason: 'quiet-hours',
       retryAt: localAt(7, 0, 0),
     });
+    // last line 06:50 → gap frees 07:00, the same minute quiet ends: the tie goes to quiet hours
+    expect(lineVerdict(localAt(6, 50, 0), localAt(6, 55, 0), rules)).toEqual({
+      ok: false,
+      reason: 'quiet-hours',
+      retryAt: localAt(7, 0, 0),
+    });
     // last line 06:57 → gap frees 07:07, after quiet ends
     expect(lineVerdict(localAt(6, 57, 0), localAt(6, 58, 0), rules)).toEqual({
       ok: false,
@@ -332,7 +351,7 @@ describe('quiet hours (local time, may run over midnight)', () => {
 });
 
 describe('shipped numbers (content/behavior.ts)', () => {
-  it('cursor reactions cool down in seconds (D-27, F4), not the 30-min default', () => {
+  it('cursor reactions cool down in seconds (D-27, F4): guards against reverting to the SPEC 30-min default', () => {
     for (const { cooldownMs } of Object.values(CURSOR_REACTIONS)) {
       expect(cooldownMs).toBeGreaterThanOrEqual(1_000);
       expect(cooldownMs).toBeLessThan(MIN);

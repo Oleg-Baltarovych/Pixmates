@@ -105,7 +105,8 @@ export interface ThrottleState {
 
 /**
  * A daily quiet-hours window in local minutes after midnight, `[fromMin, toMin)`; `fromMin > toMin` runs over
- * midnight, `fromMin === toMin` is empty. Bounds (0…1439) are checked where the setting enters (M5).
+ * midnight, `fromMin === toMin` is empty. Bounds (0…1439) are validated by the zod
+ * settings contract where the setting enters (M5); core does not re-check them.
  */
 export interface QuietHours {
   readonly fromMin: number;
