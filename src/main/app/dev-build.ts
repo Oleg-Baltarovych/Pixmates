@@ -8,7 +8,8 @@
  *
  * Code that must not even ship (the `src/main/dev/*` chunks) also tests `import.meta.env.DEV` literally at the
  * `import()` site: only a branch that is dead at transform time drops its dynamic import from the chunk graph; a
- * call to this function would still emit the chunks. `tests/unit/main/dev-build.test.ts` checks the build output.
+ * call to this function would still emit the chunks. `tools/check-build.ts` (last step of `pnpm build`) checks the build output;
+ * its rules are tested in `tests/unit/tools/dev-leak.test.ts`.
  */
 export function devSurfaces(isPackaged: boolean): boolean {
   return import.meta.env.DEV && !isPackaged;
